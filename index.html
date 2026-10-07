@@ -281,6 +281,13 @@
     background:rgba(255,255,255,.07);padding:3px 8px;border-radius:3px;min-width:104px;display:inline-block}
   .cheatrow .st{margin-left:auto;font-size:11px;letter-spacing:2px;color:#6f8399}
   .cheatrow .st.on{color:#86efac}
+  #trainhud{position:absolute;right:22px;top:210px;display:none;min-width:190px;
+    background:rgba(4,8,16,.72);border:1px solid rgba(255,255,255,.14);border-radius:6px;
+    padding:12px 14px;font-size:12px;line-height:1.55;color:#cfe0f0;pointer-events:none}
+  #trainhud b{display:block;font-size:10px;letter-spacing:3px;color:#ffd873;margin-bottom:7px}
+  #trainhud div{display:flex;justify-content:space-between;gap:12px}
+  #trainhud span{color:#8ea4bd}
+  #trainhud i{display:block;margin-top:8px;font-size:10px;letter-spacing:1px;color:#64748b;font-style:normal}
   #coach{position:absolute;left:50%;top:70%;transform:translate(-50%,-50%);display:none;
     background:rgba(4,8,16,.82);border:1px solid rgba(255,216,115,.45);border-radius:7px;
     padding:12px 22px;font-size:16px;letter-spacing:.5px;text-align:center;
@@ -470,6 +477,7 @@
   <div id="chatinput"><span>ALL</span><input id="chatbox" maxlength="200" autocomplete="off"></div>
   <div id="voiceind"><i></i>TALKING</div>
   <div id="coach"></div>
+  <div id="trainhud"></div>
   <div id="elimbanner"></div>
   <div id="emotewheel">
     <div class="ehead">EMOTES</div>
@@ -537,6 +545,8 @@
       <button class="modebtn" data-mode="tournament"><b>TOURNAMENT</b><span>40 players · sharper aim · faster storm</span></button>
       <button class="modebtn" data-mode="zonewars"><b>ZONE WARS</b><span>12 players · tiny map · relentless storm · best of 3</span></button>
       <button class="modebtn" data-mode="boxfight"><b>BOX FIGHT</b><span>1v1 vs a real player · five boxes · first to 10</span></button>
+      <button class="modebtn" data-mode="insane"><b>INSANE</b><span>100 players · merciless aim · storm that never waits</span></button>
+      <button class="modebtn" data-mode="training"><b>TRAINING</b><span>aim range · build zone · edit course · no pressure</span></button>
     </div>
     <button id="startBtn">PLAY</button>
   </div>
@@ -649,6 +659,11 @@ const MODES={
                playR:520, arena:'island', bus:true, phases:'br', rounds:1 },
   zonewars  :{ label:'ZONE WARS',     short:'zw', players:12, bots:11, skill:1.35, storm:1,
                playR:180, arena:'zone', bus:true, phases:'zw', rounds:3, loadout:'zw' },
+  insane    :{ label:'INSANE',         short:'in', players:100, bots:99, skill:2.7, storm:1.7,
+               playR:640, arena:'island', bus:true, phases:'br', rounds:1, simpleBots:true },
+  training  :{ label:'TRAINING',       short:'tr', players:1, bots:4, skill:1, storm:1,
+               playR:150, arena:'training', bus:false, phases:'box', rounds:1,
+               loadout:'train', respawn:true },
   boxfight  :{ label:'BOX FIGHT',     short:'bx', players:2, bots:1, skill:1.55, storm:1,
                playR:190, arena:'box', bus:false, phases:'box', rounds:1,
                loadout:'box', respawn:true, target:10 }
@@ -4200,6 +4215,21 @@ function updateTeamPads(dt){
     if(d<2.6 && Math.abs(player.pos.y-p.pos.y)<3.2){ on=p; p.t+=dt; } else p.t=0;
   }
   if(!on) return;
+  if(modeCfg().arena==='training'){
+    if(on.t>=0.6){
+      on.t=0;
+      if(on.team.indexOf('FIGHT')>=0){
+        trainAggro=!trainAggro;
+        for(const b of bots) if(b.alive) b.weapon=trainAggro?'smg':null;
+        padPrompt='Dummies are now <u>'+(trainAggro?'fighting back':'passive')+'</u>';
+      } else {
+        clearPlayerBuilds();
+        padPrompt='Builds <u>cleared</u>';
+      }
+      pickupSound();
+    } else padPrompt='Hold · <u>'+on.team+'</u>';
+    return;
+  }
   if(netParty===on.team){ padPrompt='You are on <u>'+on.team+'</u>'; return; }
   if(on.t>=0.9){
     setParty(on.team);
@@ -4394,6 +4424,109 @@ function buildLobbyArea(){
   readyPad={pos:V(rx,cy,rz),ring:rring,t:0};
 }
 
+const targets=[];
+const trainStats={shots:0,hits:0,heads:0,targets:0,streak:0,best:0,t:0};
+let trainAggro=false;
+
+function buildArenaTraining(){
+  boxMaterials();
+  teamPads.length=0; targets.length=0;
+  const cy=groundH(0,0);
+  const pad=(w,d,x,z,mat)=>bSolid(w,.6,d,x,cy-.3,z,mat||BOXMAT.deck);
+  boxOffX=0; boxOffZ=0;
+
+  // ---- aim range, three distance bands ----
+  pad(70,16,0,-26);
+  signBoard('AIM RANGE',0,cy+6.4,-16,'#ffd873',11);
+  [[15,0xffd873],[34,0xff9a4d],[62,0xff5c5c]].forEach(([dist,col],row)=>{
+    for(let i=0;i<5;i++){
+      const x=(i-2)*8.5, z=-26-dist;
+      const post=bSolid(.45,3.2,.45,x,cy+1.6,z,BOXMAT.frame);
+      const t=new THREE.Mesh(new THREE.CylinderGeometry(1.15,1.15,.3,20),
+        new THREE.MeshStandardMaterial({color:col,roughness:.5,
+          emissive:new THREE.Color(col).multiplyScalar(.25)}));
+      t.rotation.x=Math.PI/2;
+      t.position.set(x,cy+3.6,z);
+      t.castShadow=true;
+      t.userData.target=true; t.userData.home=t.position.clone(); t.userData.down=0;
+      scene.add(t); hittables.push(t);
+      targets.push(t);
+      const ring=new THREE.Mesh(new THREE.TorusGeometry(1.15,.10,8,22),
+        new THREE.MeshBasicMaterial({color:0xffffff}));
+      ring.position.copy(t.position); scene.add(ring);
+      t.userData.ring=ring;
+    }
+    signBoard(dist+'m',-26,cy+4.2,-26-dist,'#'+col.toString(16).padStart(6,'0'),5);
+  });
+
+  // ---- build zone, clear and gridded ----
+  pad(56,56,0,42);
+  signBoard('BUILD ZONE',0,cy+6.4,16,'#9fd4ff',11);
+  for(let i=-7;i<=7;i++){
+    bDeco(56,.04,.09,0,cy+.33,42+i*4,BOXMAT.trim);
+    bDeco(.09,.04,56,i*4,cy+.33,42,BOXMAT.trim);
+  }
+
+  // ---- edit course: pieces already placed to practise on ----
+  pad(30,20,-52,10);
+  signBoard('EDIT COURSE',-52,cy+6.4,0,'#6ee7a8',9);
+  for(let i=0;i<4;i++){
+    const ix=Math.floor((-52+(i-1.5)*CELL*1.4)/CELL), iz=Math.floor(10/CELL);
+    const key=pieceKey('wall',ix,0,iz,2);
+    if(PIECES.has(key)) continue;
+    const pc={key,type:'wall',ix,iy:0,iz,dir:2,mask:new Array(9).fill(true),meshes:[],boxes:[]};
+    PIECES.set(key,pc); builds.push(pc);
+    buildPieceMeshes(pc);
+  }
+
+  // ---- control pads ----
+  addTeamPad(-14,8,'DUMMIES FIGHT BACK',0xd83a3a);
+  addTeamPad( 14,8,'CLEAR MY BUILDS',0x3a7ad8);
+  signBoard('TRAINING',0,cy+8.6,0,'#ffffff',13);
+}
+
+function trainTick(dt){
+  if(modeCfg().arena!=='training') return;
+  trainStats.t+=dt;
+  player.mats=999;
+  const g=heldGun();
+  if(g){ g.ammo=WEAPONS[g.kind].mag; g.res=999; }
+  const now=performance.now()*.004;
+  for(const t of targets){
+    if(t.userData.down>0){
+      t.userData.down-=dt;
+      if(t.userData.down<=0){
+        t.visible=true; t.userData.ring.visible=true;
+      }
+    }
+    if(t.visible) t.userData.ring.rotation.z=now+t.position.x;
+  }
+  const el=document.getElementById('trainhud');
+  if(el){
+    const acc=trainStats.shots?Math.round(trainStats.hits/trainStats.shots*100):0;
+    el.style.display='block';
+    el.innerHTML=
+      '<b>TRAINING</b>'+
+      '<div><span>targets</span>'+trainStats.targets+'</div>'+
+      '<div><span>accuracy</span>'+acc+'%</div>'+
+      '<div><span>headshots</span>'+trainStats.heads+'</div>'+
+      '<div><span>streak</span>'+trainStats.streak+' (best '+trainStats.best+')</div>'+
+      '<div><span>dummies</span>'+(trainAggro?'fighting back':'passive')+'</div>'+
+      '<i>walk onto a pad to change things</i>';
+  }
+}
+function hitTarget(obj){
+  if(!obj.userData.target||!obj.visible) return;
+  obj.visible=false; obj.userData.ring.visible=false;
+  obj.userData.down=1.1;
+  trainStats.targets++;
+  trainStats.streak++;
+  trainStats.best=Math.max(trainStats.best,trainStats.streak);
+  hitmarker();
+  blip(1200,.05,.1,'triangle');
+  floatDamage(obj.userData.home.clone(),100,false);
+}
+
 function buildArenaBox(){
   boxMaterials();
   boxArenas=[]; weaponPads=[]; readyPad=null;
@@ -4482,6 +4615,7 @@ function buildWorld(){
   const arena=modeCfg().arena||'island';
   const area=Math.pow(PLAY_R/520,2);
   flatArena = (arena!=='island');
+  targets.length=0;
   eroReady=false;
   if(!flatArena) buildErosion();
 
@@ -4489,7 +4623,9 @@ function buildWorld(){
     buildSky();
     buildArenaFloor();
     buildWater();
-    if(arena==='box') buildArenaBox(); else buildArenaZone();
+    if(arena==='box') buildArenaBox();
+    else if(arena==='training') buildArenaTraining();
+    else buildArenaZone();
     for(let i=0;i<(arena==='box'?10:34);i++){
       const a=RNG()*6.283, d=Math.sqrt(RNG())*(PLAY_R-14);
       spawnPickup(KINDS[Math.floor(RNG()*KINDS.length)],Math.cos(a)*d,Math.sin(a)*d);
@@ -5272,9 +5408,9 @@ function runCode(raw){
     return;
   }
   if(code==='REVEAL'){
-    codesRevealed=!codesRevealed;
-    set(codesRevealed?'':'Hidden again.','');
-    buildCheatScreen(); blip(700,.07,.1,'triangle'); return;
+    set('The list is not kept in here. It ships with the source, in a file '+
+        'called .codex — base64 over rot13. Decode that and you have everything.','');
+    blip(700,.07,.1,'triangle'); return;
   }
   if(!CODES[code]){ set('Nothing happens.','bad'); blip(170,.1,.12,'sine'); return; }
   const c=CODES[code];
@@ -6306,7 +6442,8 @@ function limb(len,rTop,rBot,mat,foot){
 function spawnBot(name,jumpAt){
   const skinId=SKINS[Math.floor(RNG()*SKINS.length)].id;
   const packId=PACKS[Math.floor(RNG()*PACKS.length)].id;
-  const f=makeFighter({skin:skinId,pack:packId,detail:true,lowpoly:true});
+  const simple=!!modeCfg().simpleBots;
+  const f=makeFighter({skin:skinId,pack:packId,detail:!simple,lowpoly:true});
   const g=f.group;
 
   const gun=new THREE.Mesh(new THREE.BoxGeometry(.08,.11,.58),MAT.dark);
@@ -6533,9 +6670,24 @@ function botOpenChest(b,c){
   noiseAt(c.pos,60,1100,.16,.5);
 }
 
+let botPhase=0;
 function updateBots(dt){
+  // with a hundred of them, only a third think per frame
+  const heavy=bots.length>40, slices=3;
+  if(heavy) botPhase=(botPhase+1)%slices;
+  let idx=-1;
   for(const b of bots){
+    idx++;
     if(!b.alive) continue;
+    if(heavy && b.state==='ground' && (idx%slices)!==botPhase){
+      b.pos.addScaledVector(b.vel,dt);
+      const gy=groundH(b.pos.x,b.pos.z);
+      if(b.pos.y<gy){ b.pos.y=gy; b.vel.y=0; } else b.vel.y+=GRAV*dt*.5;
+      b.g.position.copy(b.pos);
+      if(b.shootCd>0) b.shootCd-=dt;
+      continue;
+    }
+    if(heavy) dt*=1;
     if(b.ghost){ updateGhostBot(b,dt); continue; }
 
     if(b.state==='bus'){
@@ -6692,6 +6844,14 @@ function killBot(bot,by){
   mark.rotation.x=-Math.PI/2; mark.position.set(bot.pos.x,groundH(bot.pos.x,bot.pos.z)+.06,bot.pos.z); scene.add(mark);
   if(bot.weapon) spawnPickup(bot.weapon,bot.pos.x+rnd(-1,1),bot.pos.z+rnd(-1,1));
   else if(RNG()<.35) spawnPickup(KINDS[Math.floor(RNG()*4)],bot.pos.x,bot.pos.z);
+  if(modeCfg().arena==='training'){
+    setTimeout(()=>{
+      if(!running) return;
+      const q=arenaSpawn(Math.max(1,bots.indexOf(bot)+1));
+      bot.alive=true; bot.hp=100; bot.pos.copy(q); bot.g.position.copy(q);
+      setBotVisible(bot,true); refreshAlive();
+    },1500);
+  }
   if(by==='you'){
     player.kills++; feed('You',bot.name); killSound(); updateModeBadge(); showElim(bot.name);
     if(modeCfg().arena==='box'){ boxAwardRound(true); return; }
@@ -6753,6 +6913,7 @@ function shoot(){
   }
   pelletHits.clear(); remoteHits.clear();
   let anyHit=false;
+  if(modeCfg().arena==='training') trainStats.shots+=(t.pellets||1);
   const sp=t.spread*(1-player.aim*.62)*((cheats.aim||cheats.steady)?0:(cheats.wall?.25:1));
 
   for(let p=0;p<t.pellets;p++){
@@ -6772,6 +6933,7 @@ function shoot(){
     }
     if(h){
       end=h.point.clone();
+      if(h.object.userData.target){ hitTarget(h.object); anyHit=true; continue; }
       const bot=h.object.userData.bot;
       const rem=h.object.userData.remote;
       if(p<3){
@@ -6811,6 +6973,7 @@ function shoot(){
         const isHead=!!h.object.userData.headshot;
         let dmg=isHead?(t.head||t.dmg*(t.headMul||2)):t.dmg;
         if(g.kind==='shotgun') dmg*=clamp(1.26-h.distance/44,.26,1);
+        if(modeCfg().arena==='training'){ trainStats.hits++; if(isHead) trainStats.heads++; }
         damageBot(bot,dmg,isHead,true);
         const acc=pelletHits.get(bot)||{d:0,head:false};
         acc.d+=dmg; acc.head=acc.head||isHead; pelletHits.set(bot,acc);
@@ -6910,6 +7073,7 @@ function hurtPlayer(amount, from){
   syncHUD();
   if(player.hp<=0){
     player.hp=0;
+    if(modeCfg().arena==='training'){ respawnT=1.2; startSpectate(); return; }
     if(modeCfg().arena==='box' && !ended){ boxAwardRound(false); return; }
     if(modeCfg().respawn && !ended){
       respawnT=3;
@@ -8584,6 +8748,13 @@ function giveLoadout(kind){
     player.inv[2]=wep('rifle');
     player.inv[3]={type:'heal',kind:'shieldsm',count:5};
     player.mats=999; player.shield=100;
+  } else if(kind==='train'){
+    player.inv[0]=wep('rifle');
+    player.inv[1]=wep('smg');
+    player.inv[2]=wep('shotgun');
+    player.inv[3]=wep('sniper');
+    player.inv[4]={type:'heal',kind:'medkit',count:9};
+    player.mats=999; player.shield=100;
   } else if(kind==='zw'){
     player.inv[0]=wep('shotgun');
     player.inv[1]=wep('smg');
@@ -8599,6 +8770,10 @@ function giveLoadout(kind){
 }
 function arenaSpawn(i){
   const cfg=modeCfg();
+  if(cfg.arena==='training'){
+    const x=(i===0?0:(i-2.5)*7), z=(i===0?-8:30);
+    return V(x, groundH(x,z)+0.4, z);
+  }
   if(cfg.arena==='box'){
     if(roundPhase==='lobby' && lobbyCentre){
       const lx=(i===0?-13:13), lz=lobbyCentre.z-4;
@@ -8633,9 +8808,10 @@ function respawnPlayer(){
   syncHUD(); refreshAlive();
 }
 function armBots(){
+  const train=modeCfg().arena==='training';
   for(const b of bots){
     if(!b.alive) continue;
-    b.weapon=KINDS[Math.floor(RNG()*KINDS.length)];
+    b.weapon=train?(trainAggro?'smg':null):KINDS[Math.floor(RNG()*KINDS.length)];
     if(b.gunMesh) b.gunMesh.visible=true;
     b.mats=400;
   }
@@ -8738,6 +8914,9 @@ function resetGame(){
   phase='bus'; ended=false; winPending=false; toastTimer=0; sprintLatch=false;
   endEdit(); PIECES.clear(); builds.length=0; ghostGroup=null; buildRot=0;
   hideCoach(); elimT=0; shake=0;
+  trainStats.shots=trainStats.hits=trainStats.heads=trainStats.targets=0;
+  trainStats.streak=trainStats.best=0; trainStats.t=0; trainAggro=false;
+  const th=document.getElementById('trainhud'); if(th) th.style.display='none';
   boxScore.me=0; boxScore.them=0; roundPhase=''; roundT=0; roundLock=false;
   boxIdx=0; boxBarrier=null; barrierCol=null;
   showRoundText('');
@@ -9303,7 +9482,7 @@ function tick(){
     voiceSync(dt);
     voiceUpdatePositions();
     if((waterTick&63)===0) paintChat();
-    updateCoach(dt); updateElim(dt); updateCrosshair();
+    updateCoach(dt); updateElim(dt); updateCrosshair(); trainTick(dt);
     cheatTick(dt);
     updateEsp(dt);
     updateWallMarks();
