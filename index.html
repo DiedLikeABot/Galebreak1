@@ -22,12 +22,13 @@
     text-shadow:0 2px 5px #000,0 0 3px #000;animation:rise .85s ease-out forwards}
   .dnum.head{color:#ffd873;font-size:27px}
   @keyframes rise{from{opacity:1}to{opacity:0;transform:translate(-50%,-150%)}}
-  #cross{position:absolute;left:50%;top:50%;width:26px;height:26px;transform:translate(-50%,-50%);opacity:.9}
-  #cross i{position:absolute;background:#fff;box-shadow:0 0 2px #000}
-  #cross i:nth-child(1){left:11px;top:0;width:2px;height:8px}
-  #cross i:nth-child(2){left:11px;bottom:0;width:2px;height:8px}
-  #cross i:nth-child(3){top:11px;left:0;height:2px;width:8px}
-  #cross i:nth-child(4){top:11px;right:0;height:2px;width:8px}
+  /* the four arms are placed from the centre point outwards, so the gap can
+     grow with your spread instead of the whole box being stretched */
+  #cross{position:absolute;left:50%;top:50%;width:0;height:0;opacity:.95}
+  #cross i{position:absolute;background:#fff;border-radius:1px;
+    box-shadow:0 0 2px #000,0 0 4px rgba(0,0,0,.6)}
+  #cross b{position:absolute;background:#fff;border-radius:50%;
+    transform:translate(-50%,-50%);box-shadow:0 0 2px #000}
   #hitmark{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(45deg);width:22px;height:22px;opacity:0}
   #hitmark b{position:absolute;background:#ff4b2b;width:2px;height:9px}
   #hitmark b:nth-child(1){left:10px;top:0}
@@ -429,7 +430,7 @@
   <div id="scope"><i></i><i></i></div>
   <canvas id="cues"></canvas>
   <div id="dmgnums"></div>
-  <div id="cross"><i></i><i></i><i></i><i></i></div>
+  <div id="cross"><i></i><i></i><i></i><i></i><b></b></div>
   <div id="hitmark"><b></b><b></b><b></b><b></b></div>
   <div id="dmgflash"></div>
   <div id="stormflash"></div>
@@ -1145,14 +1146,49 @@ function shakeOffset(dt){
            y:(Math.random()*2-1)*k*0.14,
            r:(Math.random()*2-1)*k*0.03 };
 }
+/* one shape per weapon, the way each gun actually behaves */
+const CROSS_STYLE={
+  smg:      { len:7,  thick:2, gap:5,  dot:0 },
+  rifle:    { len:9,  thick:2, gap:5,  dot:2 },
+  shotgun:  { len:5,  thick:3, gap:12, dot:0 },
+  sniper:   { len:13, thick:1, gap:4,  dot:2 },
+  railstorm:{ len:10, thick:2, gap:6,  dot:3, color:'#c4b5fd' },
+  _pickaxe: { len:4,  thick:2, gap:3,  dot:2 },
+  _build:   { len:6,  thick:1, gap:8,  dot:2, color:'#9fd4ff' }
+};
 function updateCrosshair(){
   const el=document.getElementById('cross');
   if(!el) return;
+  const arms=el.querySelectorAll('i'), dot=el.querySelector('b');
+  if(arms.length<4||!dot) return;
+
   const g=heldGun();
-  const base=g?WEAPONS[g.kind].spread*620:6;
-  const move=Math.min(1,Math.hypot(player.vel.x||0,player.vel.z||0)/6);
-  const sz=6+base*(1-player.aim*.6)+player.recoil*16+move*4;
-  el.style.width=el.style.height=Math.round(14+sz)+'px';
+  const st = g ? (CROSS_STYLE[g.kind]||CROSS_STYLE.rifle)
+              : (player.slot>=6 ? CROSS_STYLE._build : CROSS_STYLE._pickaxe);
+
+  // the gap opens with spread, recoil and movement, and closes when you aim
+  const spread = g ? WEAPONS[g.kind].spread*300 : 0;
+  const move   = Math.min(1,Math.hypot(player.vel.x||0,player.vel.z||0)/6);
+  const aimed  = player.aim||0;
+  const gap = Math.round(
+      st.gap + spread*(1-aimed*0.7) + (player.recoil||0)*14 + move*4 - aimed*2);
+  const L=st.len, T=st.thick, col=st.color||'#fff';
+
+  const set=(n,css)=>{ const a=arms[n]; for(const k in css) a.style[k]=css[k]; a.style.background=col; };
+  set(0,{ width:T+'px', height:L+'px', left:(-T/2)+'px', top:(-gap-L)+'px' });   // up
+  set(1,{ width:T+'px', height:L+'px', left:(-T/2)+'px', top:(gap)+'px' });      // down
+  set(2,{ width:L+'px', height:T+'px', top:(-T/2)+'px', left:(-gap-L)+'px' });   // left
+  set(3,{ width:L+'px', height:T+'px', top:(-T/2)+'px', left:(gap)+'px' });      // right
+
+  dot.style.width=dot.style.height=(st.dot||0)+'px';
+  dot.style.background=col;
+  dot.style.display=st.dot?'block':'none';
+  dot.style.left='0px'; dot.style.top='0px';
+
+  // the scope replaces the crosshair entirely
+  const scoped = g && g.kind==='sniper' && aimed>0.6;
+  el.style.display = scoped ? 'none' : 'block';
+  el.style.opacity = String(0.95 - aimed*0.12);
 }
 
 /* ================= accounts ================= */
