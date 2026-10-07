@@ -1,0 +1,5 @@
+node_modules/
+accounts.json
+accounts.json.tmp
+*.log
+.DS_Store
