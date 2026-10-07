@@ -6,7 +6,14 @@ const WebSocket = require('ws');
 
 const PORT = process.env.PORT || 8080;
 const ROOT = __dirname;
-const INDEX = '/galebreak.html';
+// serve whichever of these exists, so the folder can be laid out either way
+const INDEX_CANDIDATES = ['/index.html', '/galebreak.html'];
+function indexFile(){
+  for(const f of INDEX_CANDIDATES){
+    try { if (fs.existsSync(path.join(__dirname, f))) return f; } catch (e) {}
+  }
+  return INDEX_CANDIDATES[0];
+}
 const rooms = new Map();
 const hosts = new Map();
 const byCode = new Map();   // friend code -> player, for presence and invites
@@ -186,12 +193,21 @@ const server = http.createServer((req, res) => {
     return res.end(JSON.stringify({ ok:true, online: totalOnline(),
       accounts: Object.keys(accounts).length, rooms: list }));
   }
-  const file = u.pathname === '/' ? INDEX : u.pathname;
+  const file = u.pathname === '/' ? indexFile() : u.pathname;
   const safe = path.normalize(file).replace(/^(\.\.[\/\\])+/, '');
   const full = path.join(ROOT, safe);
   if(!full.startsWith(ROOT)){ res.writeHead(403); return res.end('Forbidden'); }
   fs.readFile(full, (err, data) => {
-    if(err){ res.writeHead(404); return res.end('Not found'); }
+    if(err){
+      res.writeHead(404, { 'Content-Type':'text/html' });
+      if(u.pathname === '/'){
+        return res.end('<body style="background:#0a0e16;color:#dbe6f2;font-family:system-ui;'+
+          'padding:40px;line-height:1.6"><h2>The game file is missing</h2>'+
+          '<p>The server is running, but there is no <b>index.html</b> next to '+
+          '<b>server.js</b>. Upload it to the same folder and redeploy.</p></body>');
+      }
+      return res.end('Not found');
+    }
     const ext = path.extname(full);
     const type = ext === '.html' ? 'text/html'
                : ext === '.js'   ? 'text/javascript'
