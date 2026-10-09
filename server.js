@@ -69,6 +69,39 @@ function validName(u){ return /^[A-Za-z0-9_.-]{3,16}$/.test(String(u || '')); }
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID ||
   '914423154502-mvm7kckhmu1gcgutv3quutej92pnvpf5.apps.googleusercontent.com';
 
+/* ===================== EXCLUSIVE REWARDS =====================
+   Granted here, never by the client, so a player cannot edit their own save
+   into owning one. Two routes: a code you hand out, or a real check against
+   YouTube to see whether the signed-in account subscribes to your channel. */
+const YOUTUBE_CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID || 'UCyf9HIpnQT9Z6ZbWx6a5y_g';
+
+// Change these, add as many as you like. Codes are case insensitive.
+const REDEEM_CODES = {
+  'SUBSCRIBED': { cat:'skin', id:'subscriber', name:'Signal Breaker' },
+  'SIGNALBREAKER': { cat:'skin', id:'subscriber', name:'Signal Breaker' }
+};
+
+function grant(acct, reward){
+  acct.profile = acct.profile || {};
+  acct.profile.owned = acct.profile.owned || {};
+  const list = acct.profile.owned[reward.cat] = acct.profile.owned[reward.cat] || [];
+  if (!list.includes(reward.id)) list.push(reward.id);
+  acctDirty = true;
+}
+
+async function isSubscribed(accessToken){
+  if (!YOUTUBE_CHANNEL_ID) throw new Error('No channel is configured on this server.');
+  const url = 'https://www.googleapis.com/youtube/v3/subscriptions' +
+              '?part=snippet&mine=true&forChannelId=' + encodeURIComponent(YOUTUBE_CHANNEL_ID);
+  const res = await fetch(url, { headers: { Authorization: 'Bearer ' + accessToken } });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error('YouTube refused the request (' + res.status + '). ' + detail.slice(0, 120));
+  }
+  const body = await res.json();
+  return Array.isArray(body.items) && body.items.length > 0;
+}
+
 let jwks = { keys: [], at: 0 };
 async function googleKeys(force){
   const fresh = Date.now() - jwks.at < 3600e3;
@@ -227,7 +260,8 @@ wss.on('connection', (ws) => {
               hp:100, shield:0, slot:0, weapon:null, alive:true, lastHit:0 };
 
   send(ws, { type:'config', server:'galebreak-2', accounts:true,
-             googleClientId: GOOGLE_CLIENT_ID || null });
+             googleClientId: GOOGLE_CLIENT_ID || null,
+             youtube: YOUTUBE_CHANNEL_ID || null });
 
   ws.on('message', (buf) => {
     let m;
@@ -283,6 +317,35 @@ wss.on('connection', (ws) => {
         authReply(ws, a);
       }).catch(err => {
         send(ws, { type:'auth', ok:false, error: 'Google sign in failed: ' + err.message });
+      });
+      return;
+    }
+
+    if (m.type === 'redeem') {
+      if (!p.acct) return send(ws, { type:'reward', ok:false, error:'Sign in first.' });
+      p.redeemTries = (p.redeemTries || 0) + 1;
+      if (p.redeemTries > 20) return send(ws, { type:'reward', ok:false, error:'Too many attempts.' });
+      const code = String(m.code || '').trim().toUpperCase();
+      const reward = REDEEM_CODES[code];
+      if (!reward) return send(ws, { type:'reward', ok:false, error:'That code is not valid.' });
+      grant(p.acct, reward);
+      console.log('redeemed', code, 'for', p.acct.user);
+      return send(ws, Object.assign({ type:'reward', ok:true }, reward));
+    }
+
+    if (m.type === 'ytcheck') {
+      if (!p.acct) return send(ws, { type:'reward', ok:false, error:'Sign in first.' });
+      isSubscribed(String(m.token || '')).then(sub => {
+        if (!sub) {
+          return send(ws, { type:'reward', ok:false,
+            error:'That account is not subscribed yet. Subscribe, then try again.' });
+        }
+        const reward = { cat:'skin', id:'subscriber', name:'Signal Breaker' };
+        grant(p.acct, reward);
+        console.log('subscriber verified:', p.acct.user);
+        send(ws, Object.assign({ type:'reward', ok:true }, reward));
+      }).catch(err => {
+        send(ws, { type:'reward', ok:false, error: err.message });
       });
       return;
     }
@@ -463,5 +526,6 @@ wss.on('connection', (ws) => {
 server.listen(PORT, () => {
   console.log(`GALEBREAK server running: http://localhost:${PORT}`);
   console.log(`  version galebreak-2 · accounts on · google sign in ${GOOGLE_CLIENT_ID?'configured':'not configured'}`);
+  console.log(`  subscriber check ${YOUTUBE_CHANNEL_ID?'configured':'off'} · redeem codes: ${Object.keys(REDEEM_CODES).join(', ')}`);
   console.log(`Other computers on your network: http://<this-machine-ip>:${PORT}`);
 });

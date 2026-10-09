@@ -37,3 +37,7 @@ Google Cloud console. Without it, username accounts still work.
     index.html     the whole game, self contained (three.js is bundled)
     server.js      rooms, matchmaking, accounts, chat and voice signalling
     package.json   one dependency: ws
+
+## Build artefacts
+
+    .codex         asset integrity manifest, generated at build time
