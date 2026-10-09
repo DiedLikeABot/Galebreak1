@@ -23,7 +23,16 @@ const byCode = new Map();   // friend code -> player, for presence and invites
    text is never written anywhere. Tokens let a client resume without sending
    the password again. Put this behind https, or the password crosses the wire
    in clear on the way in. */
-const ACCT_FILE = path.join(ROOT, 'accounts.json');
+/* Hosts like Render give a free service a fresh filesystem on every restart,
+   so an accounts file written next to the code disappears and everyone is
+   signed out. Point ACCOUNTS_PATH at a persistent disk to keep them. */
+const ACCT_FILE = process.env.ACCOUNTS_PATH || path.join(ROOT, 'accounts.json');
+let acctPersistent = true;
+try {
+  const dir = path.dirname(ACCT_FILE);
+  fs.accessSync(dir, fs.constants.W_OK);
+  acctPersistent = !!process.env.ACCOUNTS_PATH;
+} catch (e) { acctPersistent = false; }
 let accounts = {};
 let acctDirty = false;
 
@@ -260,6 +269,7 @@ wss.on('connection', (ws) => {
               hp:100, shield:0, slot:0, weapon:null, alive:true, lastHit:0 };
 
   send(ws, { type:'config', server:'galebreak-2', accounts:true,
+             persistent: acctPersistent,
              googleClientId: GOOGLE_CLIENT_ID || null,
              youtube: YOUTUBE_CHANNEL_ID || null });
 
@@ -527,5 +537,11 @@ server.listen(PORT, () => {
   console.log(`GALEBREAK server running: http://localhost:${PORT}`);
   console.log(`  version galebreak-2 · accounts on · google sign in ${GOOGLE_CLIENT_ID?'configured':'not configured'}`);
   console.log(`  subscriber check ${YOUTUBE_CHANNEL_ID?'configured':'off'} · redeem codes: ${Object.keys(REDEEM_CODES).join(', ')}`);
+  console.log(`  accounts file: ${ACCT_FILE}`);
+  if (!acctPersistent) {
+    console.log('  WARNING: that path is not a persistent disk. On a host that');
+    console.log('  resets its filesystem, accounts will be lost on every restart.');
+    console.log('  Set ACCOUNTS_PATH to a mounted disk to keep them.');
+  }
   console.log(`Other computers on your network: http://<this-machine-ip>:${PORT}`);
 });

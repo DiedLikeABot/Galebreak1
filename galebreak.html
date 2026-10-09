@@ -235,6 +235,17 @@
   .ordiv{display:flex;align-items:center;gap:12px;margin:14px 0 6px;color:#64748b}
   .ordiv:before,.ordiv:after{content:'';flex:1;height:1px;background:rgba(255,255,255,.14)}
   .ordiv span{font-size:10px;letter-spacing:3px}
+  .warnbox{background:rgba(255,154,77,.12);border:1px solid rgba(255,154,77,.4);
+    border-radius:5px;padding:12px 14px;margin-top:14px;font-size:12.5px;line-height:1.6;color:#ffd0ad}
+  .exclusive{background:linear-gradient(135deg,rgba(255,45,45,.14),rgba(10,14,22,.6));
+    border:1px solid rgba(255,45,45,.4);border-radius:6px;padding:22px 24px;text-align:center}
+  .exclusive.got{border-color:rgba(123,216,143,.5);
+    background:linear-gradient(135deg,rgba(123,216,143,.14),rgba(10,14,22,.6))}
+  .exname{font-size:28px;letter-spacing:4px;color:#fff}
+  .exrar{font-size:10px;letter-spacing:3px;color:#ff8a8a;margin-top:6px}
+  .exclusive.got .exrar{color:#7bd88f}
+  .exstate{font-size:13px;color:#9db2c9;margin-top:12px}
+  .cp.locked{color:#ff8a8a}
   .codebox{display:flex;align-items:center;gap:14px;background:rgba(74,222,128,.10);
     border:1px solid rgba(74,222,128,.32);border-radius:6px;padding:12px 16px;margin-top:6px}
   .codebox span{font-size:10px;letter-spacing:3px;color:#86efac}
@@ -510,6 +521,7 @@
       <button class="lnavbtn on" data-tab="play">PLAY</button>
       <button class="lnavbtn" data-tab="locker">LOCKER</button>
       <button class="lnavbtn" data-tab="shop">ITEM SHOP</button>
+      <button class="lnavbtn" data-tab="unlock">UNLOCK</button>
       <button class="lnavbtn" data-tab="friends">FRIENDS</button>
       <button class="lnavbtn" data-tab="account">ACCOUNT</button>
       <button class="lnavbtn" id="menuParty">PARTY</button>
@@ -1200,10 +1212,82 @@ function updateCrosshair(){
   el.style.opacity = String(0.95 - aimed*0.12);
 }
 
+/* ================= rewards =================
+   Exclusive pieces are granted by the server, never unlocked locally, so a
+   player cannot simply edit their own save to get one. */
+let redeemMsg='';
+function redeemCode(){
+  const f=document.getElementById('redeemBox');
+  const code=(f?f.value:'').trim();
+  if(!code){ redeemMsg='Enter a code first.'; renderLobbyPanel(); return; }
+  if(!netConnected){ redeemMsg='Connect to the server to redeem a code.'; renderLobbyPanel(); return; }
+  if(!signedIn()){ redeemMsg='Sign in first, so the reward has somewhere to live.'; renderLobbyPanel(); return; }
+  redeemMsg='Checking…';
+  netSend({type:'redeem',code});
+  renderLobbyPanel();
+}
+function handleReward(m){
+  ytBusy=false; clearTimeout(ytTimer);
+  if(!m.ok){ redeemMsg=m.error||'That code did not work.'; renderLobbyPanel(); return; }
+  const cat=m.cat||'skin', id=m.id;
+  profile.owned[cat]=(profile.owned[cat]||[]).concat([id]).filter((v,i,a)=>a.indexOf(v)===i);
+  saveProfile(); refreshCosmetics(); updateWallet();
+  redeemMsg='Unlocked '+(m.name||id)+'. It is in your locker.';
+  renderLobbyPanel();
+  blip(880,.12,.18,'triangle');
+}
+
+/* ---- subscriber check, if the channel owner has configured one ---- */
+let ytChannel=null, ytBusy=false, ytTimer=null;
+function ytVerify(){
+  if(!ytChannel){ redeemMsg='No channel is configured on this server.'; renderLobbyPanel(); return; }
+  if(!signedIn()){ redeemMsg='Sign in first, so the reward has somewhere to live.'; renderLobbyPanel(); return; }
+  if(!gisReady||!window.google||!google.accounts||!google.accounts.oauth2){
+    loadGIS(()=>ytVerify()); return;
+  }
+  ytBusy=true; redeemMsg='Opening Google…'; renderLobbyPanel();
+  clearTimeout(ytTimer);
+  const giveUp=(msg)=>{
+    if(!ytBusy) return;
+    ytBusy=false; clearTimeout(ytTimer);
+    redeemMsg=msg; renderLobbyPanel();
+  };
+  // If the window is closed or Google refuses, nothing calls back, so the
+  // button would sit on CHECKING for ever. Give it a deadline.
+  ytTimer=setTimeout(()=>giveUp(
+    'Google did not come back. If it said the app is not verified, that '+
+    'account is not on the test user list — use a code instead.'), 75000);
+  try{
+    const tc=google.accounts.oauth2.initTokenClient({
+      client_id: googleClientId,
+      scope: 'https://www.googleapis.com/auth/youtube.readonly',
+      callback: resp=>{
+        clearTimeout(ytTimer);
+        ytBusy=false;
+        if(!resp||!resp.access_token){ redeemMsg='Google did not grant access.'; renderLobbyPanel(); return; }
+        redeemMsg='Checking your subscriptions…'; renderLobbyPanel();
+        netSend({type:'ytcheck', token:resp.access_token});
+      },
+      error_callback: err=>{
+        const t=(err&&err.type)||'';
+        giveUp(t==='popup_closed'
+          ? 'You closed the Google window.'
+          : t==='popup_failed_to_open'
+            ? 'Your browser blocked the popup. Allow popups for this site and try again.'
+            : 'Google refused the request. If it said the app is not verified, '+
+              'that account is not on the test user list — use a code instead.');
+      }
+    });
+    tc.requestAccessToken();
+  }catch(e){
+    giveUp('Could not start the Google check.');
+  }
+}
+
 /* ================= accounts ================= */
 let account=null, authMsg='', authBusy=false, cloudSaveT=0;
 let googleClientId=null, gisLoaded=false, gisReady=false;
-let serverHasAccounts=false, authTimer=null, serverVersion='';
+let serverHasAccounts=false, authTimer=null, serverVersion='', serverPersistent=true;
 const CLIENT_BUILD='2026-10-05c';
 
 /* ---------- Google sign in ----------
@@ -1221,7 +1305,30 @@ function loadGIS(cb){
   sc.onerror=()=>{ authMsg='Could not reach Google. Check your connection.'; renderLobbyPanel(); };
   document.head.appendChild(sc);
 }
+function usedGoogle(v){
+  try{ v?localStorage.setItem('galebreak:google','1'):localStorage.removeItem('galebreak:google'); }catch(e){}
+}
+function wasGoogle(){
+  try{ return localStorage.getItem('galebreak:google')==='1'; }catch(e){ return false; }
+}
+let silentTried=false;
+function googleSilentSignIn(){
+  if(silentTried||!googleClientId||!wasGoogle()||signedIn()) return;
+  silentTried=true;
+  loadGIS(()=>{
+    try{
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: onGoogleCredential,
+        auto_select: true,
+        cancel_on_tap_outside: false
+      });
+      window.google.accounts.id.prompt();      // signs back in with no click
+    }catch(e){}
+  });
+}
 function onGoogleCredential(resp){
+  usedGoogle(true);
   if(!resp||!resp.credential) return;
   authBusy=true; authMsg='Checking with Google…';
   renderLobbyPanel();
@@ -1289,6 +1396,8 @@ function doLogin(){
   authSend('login',{user:u,pass:pw});
 }
 function doLogout(){
+  usedGoogle(false);
+  silentTried=true;
   try{ if(window.google&&google.accounts&&google.accounts.id) google.accounts.id.disableAutoSelect(); }catch(e){}
   netSend({type:'logout'});
   account=null; setAuthToken('');
@@ -1299,6 +1408,14 @@ function handleAuth(m){
   authBusy=false;
   clearTimeout(authTimer);
   if(!m.ok){
+    // A restarted server forgets its sessions. If Google got us in before,
+    // get back in the same way instead of dumping the player at a login form.
+    if(/expired/i.test(m.error||'') && wasGoogle() && !silentTried){
+      authMsg='Signing you back in…';
+      renderLobbyPanel();
+      googleSilentSignIn();
+      return;
+    }
     if(account && /Signed out/.test(m.error||'')) account=null;
     authMsg=m.error||'That did not work.';
     renderLobbyPanel();
@@ -1333,7 +1450,8 @@ function cloudSave(dt){
 }
 function tryResume(){
   const t=authToken();
-  if(t&&netConnected&&!account) netSend({type:'resume',token:t});
+  if(t&&netConnected&&!account){ netSend({type:'resume',token:t}); return; }
+  if(!t&&netConnected&&!account) googleSilentSignIn();
 }
 
 /* ================= social: friends, chat, voice ================= */
@@ -1717,6 +1835,7 @@ function connectMultiplayer(quiet){
     net=new WebSocket(netUrl());
     net.addEventListener('open',()=>{
       netConnected=true; netJoined=true; serverHasAccounts=false; serverVersion='';
+      silentTried=false;
       setTimeout(()=>{
         if(netConnected&&!serverVersion&&lobbyTab==='account'){
           authMsg='The server did not identify itself, which means it is an older '+
@@ -1963,8 +2082,13 @@ function handleNet(m){
   } else if(m.type==='config'){
     serverHasAccounts=!!m.accounts;
     serverVersion=m.server||'';
+    ytChannel=m.youtube||null;
+    serverPersistent=m.persistent!==false;
+    if(!account) setTimeout(googleSilentSignIn,400);
     googleClientId=m.googleClientId||null;
     if(lobbyTab==='account') renderLobbyPanel();
+  } else if(m.type==='reward'){
+    handleReward(m);
   } else if(m.type==='auth'){
     handleAuth(m);
   } else if(m.type==='chat'){
@@ -5605,10 +5729,12 @@ function swatchFor(cat,it){
 }
 function itemCard(cat,it,ctx){
   const own=cat==='emote'?owns('emote',it.id):owns(cat,it.id);
+  if(it.exclusive && !own && ctx!=='locker') return '';
   const eq=profile.equipped[cat]===it.id;
   const price=itemPrice(it);
   let foot;
-  if(ctx==='shop') foot=own?'<div class="cp owned">OWNED</div>':'<div class="cp">◆ '+price+'</div>';
+  if(it.exclusive) foot=own?'<div class="cp owned">UNLOCKED</div>':'<div class="cp locked">LOCKED</div>';
+  else if(ctx==='shop') foot=own?'<div class="cp owned">OWNED</div>':'<div class="cp">◆ '+price+'</div>';
   else foot=own?'<div class="cp owned">'+(eq?'EQUIPPED':'OWNED')+'</div>':'<div class="cp">◆ '+price+'</div>';
   return '<button class="card'+(eq?' equipped':'')+(own?'':' locked')+'" data-cat="'+cat+'" data-id="'+it.id+
     '" data-ctx="'+ctx+'">'+swatchFor(cat,it)+
@@ -5713,7 +5839,7 @@ function dailyShop(){
   const classics=[];
   for(const cat in CATALOG)
     for(const it of CATALOG[cat])
-      if(!it.generated && itemPrice(it)>0 && it.id!=='none' &&
+      if(!it.generated && !it.exclusive && itemPrice(it)>0 && it.id!=='none' &&
          it.id!=='recruit' && it.id!=='standard') classics.push({cat,it});
   for(let i=classics.length-1;i>0;i--){
     const j=Math.floor(rand()*(i+1));
@@ -5784,6 +5910,10 @@ function renderLobbyPanel(){
       (signedIn()
         ? '<div class="codebox"><span>SIGNED IN AS</span><b>'+account.user+'</b>'+
             '<button class="ghost small" id="logoutBtn">SIGN OUT</button></div>'+
+          (serverPersistent?'':
+            '<div class="warnbox">This server stores accounts on a disk that its host wipes '+
+            'on every restart, so sign-ins do not survive a redeploy. Your progress is still '+
+            'safe in this browser and uploads again when you sign back in.</div>')+
           '<div class="psub" style="margin-top:14px">Your level, sparks, locker and friends are '+
             'stored on the server, so they follow you to any device that can reach it. '+
             'Progress is saved every few seconds while you are connected.</div>'+
@@ -5823,6 +5953,32 @@ function renderLobbyPanel(){
           : !serverHasAccounts
             ? 'This server has no account system. Replace <i>server.js</i> with the current one and restart it.'
             : (googleClientId?'':'Google sign in is not set up on this server — use a username.')))+'</div>';
+  } else if(lobbyTab==='unlock'){
+    const got=owns('skin','subscriber');
+    el.innerHTML='<div class="ptitle">SUBSCRIBER OUTFIT</div>'+
+      '<div class="exclusive'+(got?' got':'')+'">'+
+        '<div class="exname">Signal Breaker</div>'+
+        '<div class="exrar">LEGENDARY — NOT SOLD IN THE SHOP</div>'+
+        '<div class="exstate">'+(got?'Unlocked. Equip it in the locker.':'Locked')+'</div>'+
+      '</div>'+
+      (got?'' :
+        '<div class="psub" style="margin-top:18px">There are two ways to get it.</div>'+
+        (ytChannel
+          ? '<div class="setgroup">Check your subscription</div>'+
+            '<div class="psub">Sign in with the Google account you use on YouTube and the '+
+              'server will ask Google whether you are subscribed. It reads nothing else.<br>'+
+              '<b>Only accounts on the developer\'s Google test list can use this,</b> and the '+
+              'subscription has to be public. If it refuses, use a code.</div>'+
+            '<button class="ghost small" id="ytBtn"'+(ytBusy?' disabled':'')+'>'+
+              (ytBusy?'CHECKING…':'CHECK MY SUBSCRIPTION')+'</button>'
+          : '')+
+        '<div class="setgroup">Or enter a code</div>'+
+        '<div class="psub">Codes are given out in the videos.</div>'+
+        '<div class="prow"><label>Code</label>'+
+          '<input id="redeemBox" maxlength="24" placeholder="from the video" style="text-transform:uppercase;letter-spacing:2px">'+
+          '<button class="ghost small" id="redeemBtn" style="margin:0">REDEEM</button></div>')+
+      '<div class="buyline'+(/Unlocked/.test(redeemMsg)?' good':'')+'">'+
+        (redeemMsg||(signedIn()?'':'Sign in on the ACCOUNT tab first — rewards attach to an account, not a browser.'))+'</div>';
   } else if(lobbyTab==='friends'){
     const list=friends();
     const online=list.filter(f=>f.online).length;
@@ -5870,6 +6026,14 @@ function renderLobbyPanel(){
 }
 function bindPanel(){
   if(lobbyTab==='account') mountGoogleButton();
+  const rdb=document.getElementById('redeemBtn');
+  if(rdb) rdb.addEventListener('click',()=>{ uiClick(); redeemCode(); });
+  const rbx=document.getElementById('redeemBox');
+  if(rbx) rbx.addEventListener('keydown',e=>{
+    e.stopPropagation(); if(e.key==='Enter') redeemCode();
+  });
+  const ytb=document.getElementById('ytBtn');
+  if(ytb) ytb.addEventListener('click',()=>{ uiClick(); ytVerify(); });
   const lb=document.getElementById('loginBtn');
   if(lb) lb.addEventListener('click',()=>{ uiClick(); doLogin(); });
   const rb2=document.getElementById('registerBtn');
@@ -6115,6 +6279,9 @@ const RARITY={
 
 // pri = jacket/arms, sec = legs/hips, tone = skin, acc = headgear and trim
 const SKINS=[
+  {id:'subscriber', name:'Signal Breaker', rarity:'legendary', exclusive:true,
+   pri:0x1b1b20, sec:0x0d0d10, tone:0xd3a884, acc:0xff2d2d,
+   head:'helmet', torso:'armor'},
   {id:'recruit',   name:'Recruit',        rarity:'common',    pri:0x3a6ea5, sec:0x22384d, tone:0xcfa284, acc:0x1d3448, head:'cap',    torso:'plain'},
   {id:'dustline',  name:'Dustline',       rarity:'common',    pri:0x9a8460, sec:0x4a4032, tone:0xb98963, acc:0x6b5a3c, head:'beanie', torso:'vest'},
   {id:'seawall',   name:'Seawall',        rarity:'uncommon',  pri:0x1d6f6a, sec:0x113a38, tone:0xe0b58e, acc:0xf2d06b, head:'hood',   torso:'jacket'},
@@ -6167,7 +6334,8 @@ const EMOTE_ITEMS=[
 
 const CATALOG={ skin:SKINS, pack:PACKS, pick:PICKS, glider:GLIDERS, emote:EMOTE_ITEMS };
 const CAT_LABEL={ skin:'Outfit', pack:'Back Bling', pick:'Harvesting Tool', glider:'Glider', emote:'Emote' };
-function itemPrice(it){ return it.price!==undefined ? it.price : RARITY[it.rarity].px; }
+function itemPrice(it){
+  if(it.exclusive) return 0; return it.price!==undefined ? it.price : RARITY[it.rarity].px; }
 function findItem(cat,id){ return (CATALOG[cat]||[]).find(x=>x.id===id) || CATALOG[cat][0]; }
 
 /* ================= profile ================= */
