@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GALEBREAK codex reader</title>
+<style>
+  :root{
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    --ink:#e7eef6;
+    --dim:#7f94ab;
+    --plate:#101722;
+    --edge:#22303f;
+    --live:#7bd88f;
+    --warn:#ff8a5c;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(900px 500px at 70% -10%, #1b2740 0%, transparent 60%),
+      #070b12;
+    color:var(--ink);
+    font:16px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    padding:40px 22px 60px;
+  }
+  .wrap{max-width:62ch;margin:0 auto}
+  h1{
+    font-size:clamp(28px,6vw,42px);
+    letter-spacing:.24em;
+    font-weight:700;
+    margin:0 0 6px;
+  }
+  .lede{color:var(--dim);margin:0 0 30px;max-width:54ch}
+
+  .drop{
+    border:1px dashed var(--edge);
+    border-radius:4px;
+    background:var(--plate);
+    padding:34px 20px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  .drop:hover,.drop:focus-visible{border-color:var(--live);background:#14202e}
+  .drop.over{border-color:var(--live);background:#152436}
+  .drop strong{display:block;font-size:17px;margin-bottom:4px}
+  .drop span{color:var(--dim);font-size:13px}
+  input[type=file]{display:none}
+
+  .or{display:flex;align-items:center;gap:14px;color:#4d6076;margin:26px 0 14px;font-size:12px}
+  .or::before,.or::after{content:"";flex:1;height:1px;background:var(--edge)}
+
+  textarea{
+    width:100%;min-height:120px;resize:vertical;
+    background:var(--plate);color:var(--ink);
+    border:1px solid var(--edge);border-radius:4px;
+    padding:12px 14px;font:13px/1.5 inherit;
+  }
+  textarea:focus{outline:2px solid var(--live);outline-offset:1px;border-color:transparent}
+
+  button{
+    margin-top:12px;
+    background:var(--live);color:#06130b;border:0;border-radius:3px;
+    padding:11px 22px;font:inherit;font-weight:700;letter-spacing:.08em;cursor:pointer;
+  }
+  button:hover{filter:brightness(1.08)}
+  button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+  .status{min-height:22px;margin:18px 0 0;font-size:13px;color:var(--dim)}
+  .status.bad{color:var(--warn)}
+  .status.good{color:var(--live)}
+
+  pre{
+    display:none;
+    white-space:pre-wrap;word-break:break-word;
+    background:var(--plate);border:1px solid var(--edge);border-left:3px solid var(--live);
+    border-radius:0 4px 4px 0;
+    padding:20px 22px;margin:20px 0 0;font-size:13.5px;
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>CODEX</h1>
+  <p class="lede">The code index that ships with GALEBREAK is stored as base64 over rot13.
+    Drop the file here and it reads out in plain text. Nothing is uploaded; the decoding
+    happens in this page.</p>
+
+  <label class="drop" id="drop" tabindex="0">
+    <strong>Choose the .codex file</strong>
+    <span>or drag it onto this panel</span>
+    <input type="file" id="file">
+  </label>
+
+  <div class="or">or paste the payload</div>
+  <textarea id="paste" placeholder="Paste everything between BEGIN PAYLOAD and END PAYLOAD" spellcheck="false"></textarea>
+  <button id="go">Decode</button>
+
+  <p class="status" id="status"></p>
+  <pre id="out"></pre>
+</div>
+
+<script>
+const drop=document.getElementById('drop');
+const file=document.getElementById('file');
+const paste=document.getElementById('paste');
+const out=document.getElementById('out');
+const status=document.getElementById('status');
+
+function say(msg,kind){ status.textContent=msg; status.className='status'+(kind?' '+kind:''); }
+
+function rot13(s){
+  return s.replace(/[a-zA-Z]/g,c=>
+    String.fromCharCode((c<='Z'?90:122) >= (c=c.charCodeAt(0)+13) ? c : c-26));
+}
+
+function decode(raw){
+  const payload=raw.split('\n')
+    .filter(l=>!l.trim().startsWith('#'))
+    .join('').replace(/\s+/g,'');
+  if(!payload){ say('No payload found in that file.','bad'); return; }
+  let text;
+  try{
+    text=rot13(decodeURIComponent(escape(atob(payload))));
+  }catch(e){
+    say('That does not decode. Check you copied the whole block.','bad');
+    return;
+  }
+  out.textContent=text;
+  out.style.display='block';
+  const lines=text.split('\n').filter(l=>/^[A-Z0-9 ]{3,}\s{2,}/.test(l)).length;
+  say('Decoded '+lines+' entries.','good');
+}
+
+function readFile(f){
+  if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>decode(String(r.result));
+  r.onerror=()=>say('Could not read that file.','bad');
+  r.readAsText(f);
+}
+
+file.addEventListener('change',e=>readFile(e.target.files[0]));
+drop.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); file.click(); } });
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{
+  e.preventDefault(); drop.classList.add('over');
+}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{
+  e.preventDefault(); drop.classList.remove('over');
+}));
+drop.addEventListener('drop',e=>readFile(e.dataTransfer.files[0]));
+document.getElementById('go').addEventListener('click',()=>{
+  const v=paste.value.trim();
+  if(!v){ say('Paste the payload first.','bad'); return; }
+  decode(v);
+});
+</script>
+</body>
+</html>
