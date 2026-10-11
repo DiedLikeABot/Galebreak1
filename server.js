@@ -86,8 +86,7 @@ const YOUTUBE_CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID || 'UCyf9HIpnQT9Z6ZbWx
 
 // Change these, add as many as you like. Codes are case insensitive.
 const REDEEM_CODES = {
-  'SUBSCRIBED': { cat:'skin', id:'subscriber', name:'Signal Breaker' },
-  'SIGNALBREAKER': { cat:'skin', id:'subscriber', name:'Signal Breaker' }
+  'ILIKECHEESEMODLY': { cat:'skin', id:'subscriber', name:'Signal Breaker' }
 };
 
 function grant(acct, reward){
