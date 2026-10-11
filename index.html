@@ -235,6 +235,8 @@
   .ordiv{display:flex;align-items:center;gap:12px;margin:14px 0 6px;color:#64748b}
   .ordiv:before,.ordiv:after{content:'';flex:1;height:1px;background:rgba(255,255,255,.14)}
   .ordiv span{font-size:10px;letter-spacing:3px}
+  .warnbox{background:rgba(255,154,77,.12);border:1px solid rgba(255,154,77,.4);
+    border-radius:5px;padding:12px 14px;margin-top:14px;font-size:12.5px;line-height:1.6;color:#ffd0ad}
   .exclusive{background:linear-gradient(135deg,rgba(255,45,45,.14),rgba(10,14,22,.6));
     border:1px solid rgba(255,45,45,.4);border-radius:6px;padding:22px 24px;text-align:center}
   .exclusive.got{border-color:rgba(123,216,143,.5);
@@ -292,6 +294,14 @@
     background:rgba(255,255,255,.07);padding:3px 8px;border-radius:3px;min-width:104px;display:inline-block}
   .cheatrow .st{margin-left:auto;font-size:11px;letter-spacing:2px;color:#6f8399}
   .cheatrow .st.on{color:#86efac}
+  #clipflash{position:absolute;left:50%;top:92px;transform:translateX(-50%);display:none;
+    background:rgba(232,56,13,.92);color:#fff;font-size:12px;letter-spacing:3px;
+    padding:8px 18px;border-radius:4px;transition:opacity .5s;pointer-events:none}
+  #killcam{position:absolute;left:50%;top:14%;transform:translateX(-50%);display:none;
+    text-align:center;pointer-events:none;text-shadow:0 4px 18px #000}
+  #killcam b{display:block;font-size:11px;letter-spacing:5px;color:#ff8a5c}
+  #killcam i{display:block;font-size:34px;letter-spacing:2px;color:#fff;font-style:normal;margin:4px 0}
+  #killcam small{display:block;font-size:10px;letter-spacing:4px;color:#8ea4bd}
   #trainhud{position:absolute;right:22px;top:210px;display:none;min-width:190px;
     background:rgba(4,8,16,.72);border:1px solid rgba(255,255,255,.14);border-radius:6px;
     padding:12px 14px;font-size:12px;line-height:1.55;color:#cfe0f0;pointer-events:none}
@@ -489,6 +499,8 @@
   <div id="voiceind"><i></i>TALKING</div>
   <div id="coach"></div>
   <div id="trainhud"></div>
+  <div id="clipflash">● CLIP SAVED</div>
+  <div id="killcam"></div>
   <div id="elimbanner"></div>
   <div id="emotewheel">
     <div class="ehead">EMOTES</div>
@@ -519,6 +531,7 @@
       <button class="lnavbtn on" data-tab="play">PLAY</button>
       <button class="lnavbtn" data-tab="locker">LOCKER</button>
       <button class="lnavbtn" data-tab="shop">ITEM SHOP</button>
+      <button class="lnavbtn" data-tab="maps">MAPS</button>
       <button class="lnavbtn" data-tab="unlock">UNLOCK</button>
       <button class="lnavbtn" data-tab="friends">FRIENDS</button>
       <button class="lnavbtn" data-tab="account">ACCOUNT</button>
@@ -558,6 +571,7 @@
       <button class="modebtn" data-mode="zonewars"><b>ZONE WARS</b><span>12 players · tiny map · relentless storm · best of 3</span></button>
       <button class="modebtn" data-mode="boxfight"><b>BOX FIGHT</b><span>1v1 vs a real player · five boxes · first to 10</span></button>
       <button class="modebtn" data-mode="insane"><b>INSANE</b><span>100 players · merciless aim · storm that never waits</span></button>
+      <button class="modebtn" data-mode="galeball"><b>GALEBALL</b><span>shoot the ball into their goal · build to block · first to 5</span></button>
       <button class="modebtn" data-mode="training"><b>TRAINING</b><span>aim range · build zone · edit course · no pressure</span></button>
     </div>
     <button id="startBtn">PLAY</button>
@@ -673,6 +687,9 @@ const MODES={
                playR:180, arena:'zone', bus:true, phases:'zw', rounds:3, loadout:'zw' },
   insane    :{ label:'INSANE',         short:'in', players:100, bots:99, skill:2.7, storm:1.7,
                playR:640, arena:'island', bus:true, phases:'br', rounds:1, simpleBots:true },
+  galeball  :{ label:'GALEBALL',       short:'gb', players:8, bots:3, skill:1.2, storm:1,
+               playR:150, arena:'ball', bus:false, phases:'box', rounds:1,
+               loadout:'ball', respawn:true, target:5 },
   training  :{ label:'TRAINING',       short:'tr', players:1, bots:4, skill:1, storm:1,
                playR:150, arena:'training', bus:false, phases:'box', rounds:1,
                loadout:'train', respawn:true },
@@ -703,7 +720,7 @@ const DEFAULTS = {
          slotPick:'Digit1', slot1:'Digit2', slot2:'Digit3', slot3:'Digit4',
          slot4:'Digit5', slot5:'Digit6',
          fire:'Mouse0', aim:'Mouse2', wall:'KeyQ', ramp:'KeyC', floor:'KeyF', cone:'KeyV',
-         edit:'KeyG', use:'KeyT', drop:'KeyX', thirdPerson:'KeyP', map:'KeyM', emote:'KeyB', blink:'KeyZ', fort:'KeyH', rotate:'KeyR',
+         edit:'KeyG', use:'KeyT', drop:'KeyX', thirdPerson:'KeyP', map:'KeyM', emote:'KeyB', blink:'KeyZ', fort:'KeyH', rotate:'KeyR', clip:'F9',
          chat:'Enter', teamChat:'Slash', talk:'KeyK', accept:'KeyY' },
   sens:1, invertY:false, arrowSpeed:1, edgeTurn:1,
   thirdPerson:true, camDist:4.2, camSide:.65, shadowRate:2, bloomIters:1, quality:'high', fov:78, fpsCap:0, renderScale:100, shadows:'medium', bob:true, grassOn:true, showFps:false,
@@ -714,7 +731,7 @@ const DEFAULTS = {
   volMaster:.95, volShots:1, volSteps:1, volUI:1, volAmbient:0,
   volVoice:1, voiceProximity:true, voiceMode:'ptt', voiceWho:'team',
   cues:true, minimap:true, killFeed:true, dmgNums:true, hitMarker:true, stormPanel:true,
-  showTips:true, botLobby:true, toggleSprint:false, autoReload:true, autoPickup:false,
+  showTips:true, killcam:true, botLobby:true, toggleSprint:false, autoReload:true, autoPickup:false,
   botCount:19, botSkill:1, stormSpeed:1, startMats:0
 };
 let S = JSON.parse(JSON.stringify(DEFAULTS));
@@ -734,7 +751,7 @@ const KEY_LABELS = { forward:'Move forward', back:'Move back', left:'Strafe left
   slot4:'Inventory 4', slot5:'Inventory 5',
   wall:'Build wall', ramp:'Build stairs', floor:'Build floor', cone:'Build cone',
   edit:'Edit a build piece', use:'Use held item', drop:'Drop held item',
-  thirdPerson:'Toggle camera view', map:'Full map', emote:'Emote menu', blink:'Teleport (code)', fort:'Instant fort (code)', rotate:'Rotate the build piece',
+  thirdPerson:'Toggle camera view', map:'Full map', emote:'Emote menu', blink:'Teleport (code)', fort:'Instant fort (code)', rotate:'Rotate the build piece', clip:'Save a clip of the last 30s',
   chat:'Open chat', teamChat:'Team chat', talk:'Push to talk', accept:'Accept invite' };
 
 const SCHEMA = [
@@ -809,6 +826,7 @@ const SCHEMA = [
  ]},
  { group:'Gameplay', items:[
    { k:'showTips', label:'Show control tips while playing', type:'toggle' },
+   { k:'killcam', label:'Killcam when you are eliminated', type:'toggle' },
    { k:'botLobby', label:'Bot lobby (fill empty seats with AI)', type:'toggle' },
    { k:'toggleSprint', label:'Sprint toggles instead of held', type:'toggle' },
    { k:'autoReload', label:'Reload automatically when empty', type:'toggle' },
@@ -1218,10 +1236,367 @@ function updateCrosshair(){
   el.style.opacity = String(0.95 - aimed*0.12);
 }
 
+/* ================= map codes =================
+   Everything you build is a short list of integers, so a whole arena fits in
+   a string you can paste to a friend. Pieces are packed as
+   type/x/y/z/dir/mask and the lot is base64'd. */
+const MAP_TYPES=['wall','floor','ramp','cone'];
+function exportMap(){
+  const out=[];
+  for(const p of PIECES.values()){
+    const t=MAP_TYPES.indexOf(p.type);
+    if(t<0) continue;
+    let mask=0;
+    p.mask.forEach((on,i)=>{ if(on) mask|=(1<<i); });
+    out.push([t,p.ix,p.iy,p.iz,p.dir,mask].join('.'));
+  }
+  if(!out.length) return '';
+  const body='GB1|'+out.join(',');
+  try{ return btoa(body).replace(/=+$/,''); }catch(e){ return ''; }
+}
+function importMap(code){
+  let body;
+  try{ body=atob(String(code||'').trim()); }catch(e){ return 'That code is not readable.'; }
+  if(body.indexOf('GB1|')!==0) return 'That is not a GALEBREAK map code.';
+  const rows=body.slice(4).split(',').filter(Boolean);
+  if(!rows.length) return 'That code has nothing in it.';
+  clearPlayerBuilds();
+  let made=0;
+  for(const r of rows){
+    const f=r.split('.').map(Number);
+    if(f.length<6 || f.some(n=>!isFinite(n))) continue;
+    const type=MAP_TYPES[f[0]];
+    if(!type) continue;
+    const key=pieceKey(type,f[1],f[2],f[3],f[4]);
+    if(PIECES.has(key)) continue;
+    const n=tileCount(type);
+    const mask=[];
+    for(let i=0;i<n;i++) mask.push(!!(f[5]&(1<<i)));
+    if(!mask.some(Boolean)) continue;
+    const pc={key,type,ix:f[1],iy:f[2],iz:f[3],dir:f[4],mask,meshes:[],boxes:[]};
+    PIECES.set(key,pc); builds.push(pc);
+    buildPieceMeshes(pc);
+    made++;
+    if(made>900) break;                 // a sane ceiling on a pasted code
+  }
+  rebuildColGrid();
+  return made?('Loaded '+made+' pieces.'):'Nothing in that code could be placed.';
+}
+let mapMsg='';
+function copyMapCode(){
+  const code=exportMap();
+  if(!code){ mapMsg='Build something first.'; renderLobbyPanel(); return; }
+  try{ navigator.clipboard.writeText(code); mapMsg='Code copied — '+code.length+' characters.'; }
+  catch(e){ mapMsg='Your code: '+code; }
+  renderLobbyPanel();
+}
+/* ================= galeball =================
+   A ball, two goals, and every tool you already have. Shots push it, the
+   pickaxe thumps it, and a wall you place will stop it dead. */
+const ball={ mesh:null, pos:null, vel:null, goalA:null, goalB:null, cool:0 };
+const ballScore={ me:0, them:0 };
+let ballMsg='', ballMsgT=0;
+
+function buildArenaBall(){
+  boxMaterials();
+  teamPads.length=0;
+  boxOffX=0; boxOffZ=0;
+  const cy=groundH(0,0), R=54, D=34, H=9, T=.8;
+
+  bSolid(R*2+T*2,.7,D*2+T*2, 0, cy-.35, 0, BOXMAT.deck);
+  bSolid(T,H,D*2, -R-T/2, cy+H/2, 0);
+  bSolid(T,H,D*2,  R+T/2, cy+H/2, 0);
+  bSolid(R*2+T*2,H,T, 0, cy+H/2, -D-T/2);
+  bSolid(R*2+T*2,H,T, 0, cy+H/2,  D-0+T/2);
+
+  // halfway line and centre circle
+  bDeco(.3,.06,D*2, 0, cy+.05, 0, BOXMAT.gold);
+  for(let i=0;i<28;i++){
+    const a=i/28*Math.PI*2;
+    bDeco(.9,.05,.9, Math.cos(a)*9, cy+.05, Math.sin(a)*9, BOXMAT.gold);
+  }
+
+  // the goals, open at the front
+  const mkGoal=(sx,col)=>{
+    const gx=sx*(R-3);
+    const m=new THREE.MeshStandardMaterial({color:col,roughness:.5,
+      emissive:new THREE.Color(col).multiplyScalar(.3),transparent:true,opacity:.5});
+    const g=new THREE.Mesh(new THREE.BoxGeometry(.5,7,16),m);
+    g.position.set(gx,cy+3.5,0); scene.add(g); stat(g);
+    bSolid(3,.4,16, gx+sx*1.4, cy+7, 0, BOXMAT.frame);
+    bSolid(3,7,.5, gx+sx*1.4, cy+3.5, -8, BOXMAT.frame);
+    bSolid(3,7,.5, gx+sx*1.4, cy+3.5,  8, BOXMAT.frame);
+    signBoard(sx<0?'TEAM 2 GOAL':'TEAM 1 GOAL', gx, cy+9.4, 0, '#'+col.toString(16).padStart(6,'0'), 10);
+    return new THREE.Box3(V(gx-2.5,cy,-8), V(gx+2.5,cy+7,8));
+  };
+  ball.goalA=mkGoal(1,0x3a7ad8);     // you score here
+  ball.goalB=mkGoal(-1,0xd83a3a);
+
+  addTeamPad(-R+8, 0, 'TEAM 1', 0x3a7ad8);
+  addTeamPad( R-8, 0, 'TEAM 2', 0xd83a3a);
+
+  // the ball
+  const bm=new THREE.Mesh(new THREE.SphereGeometry(1.5,22,16),
+    new THREE.MeshStandardMaterial({color:0xffd873,roughness:.4,metalness:.1,
+      emissive:0x4a3708}));
+  bm.castShadow=true;
+  scene.add(bm);
+  ball.mesh=bm;
+  ball.pos=V(0,cy+1.6,0);
+  ball.vel=V(0,0,0);
+  hittables.push(bm);
+  bm.userData.ball=true;
+  ballReset();
+}
+function ballReset(){
+  if(!ball.mesh) return;
+  const cy=groundH(0,0);
+  ball.pos.set(0,cy+6,0);
+  ball.vel.set(0,0,0);
+  ball.mesh.position.copy(ball.pos);
+  ball.cool=1.2;
+}
+function ballKick(dir,power){
+  if(!ball.mesh||ball.cool>0) return;
+  ball.vel.addScaledVector(dir, power);
+  ball.vel.y+=power*0.22;
+  blip(300,.09,.16,'sine');
+}
+function updateBall(dt){
+  if(modeCfg().arena!=='ball'||!ball.mesh) return;
+  if(ball.cool>0) ball.cool-=dt;
+  const cy=groundH(0,0);
+
+  ball.vel.y+=GRAV*0.55*dt;
+  ball.vel.multiplyScalar(1-Math.min(1,dt*0.35));
+  const step=ball.vel.clone().multiplyScalar(dt);
+  const next=ball.pos.clone().add(step);
+
+  // bounce off anything solid, including walls players put down
+  const near=nearColliders(next.x,next.z);
+  for(const b of near){
+    if(next.x>b.min.x-1.5 && next.x<b.max.x+1.5 &&
+       next.y>b.min.y-1.5 && next.y<b.max.y+1.5 &&
+       next.z>b.min.z-1.5 && next.z<b.max.z+1.5){
+      const cx=(b.min.x+b.max.x)/2, cz=(b.min.z+b.max.z)/2, cyb=(b.min.y+b.max.y)/2;
+      const dx=(next.x-cx)/((b.max.x-b.min.x)/2+1.5);
+      const dy=(next.y-cyb)/((b.max.y-b.min.y)/2+1.5);
+      const dz=(next.z-cz)/((b.max.z-b.min.z)/2+1.5);
+      const ax=Math.abs(dx), ay=Math.abs(dy), az=Math.abs(dz);
+      if(ax>=ay&&ax>=az){ ball.vel.x*=-0.62; next.x=ball.pos.x; }
+      else if(ay>=az){ ball.vel.y*=-0.52; next.y=ball.pos.y; }
+      else { ball.vel.z*=-0.62; next.z=ball.pos.z; }
+      blip(220,.05,.09,'sine');
+      break;
+    }
+  }
+  if(next.y<cy+1.5){ next.y=cy+1.5; ball.vel.y=Math.abs(ball.vel.y)*0.55; ball.vel.x*=0.94; ball.vel.z*=0.94; }
+
+  ball.pos.copy(next);
+  ball.mesh.position.copy(ball.pos);
+  ball.mesh.rotation.x+=ball.vel.z*dt*0.6;
+  ball.mesh.rotation.z-=ball.vel.x*dt*0.6;
+
+  // a player running into it shoves it
+  const pd=Math.hypot(player.pos.x-ball.pos.x, player.pos.z-ball.pos.z);
+  if(pd<2.4 && Math.abs(player.pos.y-ball.pos.y)<2.6 && ball.cool<=0){
+    const d=V(ball.pos.x-player.pos.x,0,ball.pos.z-player.pos.z).normalize();
+    ball.vel.addScaledVector(d, 9);
+  }
+
+  if(ball.cool<=0){
+    if(ball.goalA && ball.goalA.containsPoint(ball.pos)) ballGoal(true);
+    else if(ball.goalB && ball.goalB.containsPoint(ball.pos)) ballGoal(false);
+  }
+  if(ballMsgT>0){
+    ballMsgT-=dt;
+    if(ballMsgT<=0) showRoundText('');
+  }
+  const el=document.getElementById('boxscore');
+  if(el){
+    el.style.display='flex';
+    el.querySelector('.me').textContent=ballScore.me;
+    el.querySelector('.them').textContent=ballScore.them;
+    el.querySelector('em').innerHTML='GALEBALL<br>FIRST TO '+(modeCfg().target||5);
+  }
+}
+function ballGoal(mine){
+  if(mine) ballScore.me++; else ballScore.them++;
+  showRoundText(mine?'GOAL':'CONCEDED', ballScore.me+' — '+ballScore.them);
+  ballMsgT=2.2;
+  victorySting?blip(880,.12,.2,'triangle'):0;
+  const target=modeCfg().target||5;
+  if(ballScore.me>=target){ endGame(true); return; }
+  if(ballScore.them>=target){ endGame(false); return; }
+  ballReset();
+}
+/* ================= killcam =================
+   Every tenth of a second the position and facing of everyone alive goes into
+   a ring buffer. On death we rewind four seconds and watch it back from the
+   killer's eyes, which answers the only question that matters: where were
+   they standing. */
+const KC_HZ=10, KC_SECS=6, KC_MAX=KC_HZ*KC_SECS;
+const kcBuf=[];
+let kcT=0, kcPlay=null;
+
+function kcSample(dt){
+  if(!running||ended||kcPlay) return;
+  kcT-=dt;
+  if(kcT>0) return;
+  kcT=1/KC_HZ;
+  const frame={ me:[player.pos.x,player.pos.y,player.pos.z], ents:[] };
+  for(const b of bots){
+    if(!b.alive) continue;
+    frame.ents.push(['b',b.name,b.pos.x,b.pos.y,b.pos.z,b.face]);
+  }
+  for(const [id,r] of remotePlayers){
+    if(!r.alive) continue;
+    frame.ents.push(['r',id,r.pos.x,r.pos.y,r.pos.z,r.yaw]);
+  }
+  kcBuf.push(frame);
+  if(kcBuf.length>KC_MAX) kcBuf.shift();
+}
+function kcFindKiller(name){
+  if(!name) return null;
+  for(const b of bots) if(b.name===name) return {kind:'b',key:b.name};
+  for(const [id,r] of remotePlayers) if(r.name===name) return {kind:'r',key:id};
+  return null;
+}
+function startKillcam(killerName){
+  if(!S.killcam||kcBuf.length<KC_HZ) return false;
+  const who=kcFindKiller(killerName);
+  if(!who) return false;
+  kcPlay={ who, i:Math.max(0,kcBuf.length-KC_HZ*4), hold:0, name:killerName };
+  const el=document.getElementById('killcam');
+  if(el){ el.style.display='block'; el.innerHTML='<b>ELIMINATED BY</b><i>'+killerName+'</i><small>KILLCAM</small>'; }
+  ['cross','vitals','slots','weaponbox','matbox','trainhud'].forEach(id=>{
+    const e=document.getElementById(id); if(e) e.style.display='none';
+  });
+  return true;
+}
+function stopKillcam(){
+  kcPlay=null;
+  const el=document.getElementById('killcam');
+  if(el) el.style.display='none';
+}
+function updateKillcam(dt){
+  if(!kcPlay) return false;
+  kcPlay.hold+=dt;
+  const idx=kcPlay.i+Math.floor(kcPlay.hold*KC_HZ);
+  if(idx>=kcBuf.length){ stopKillcam(); return false; }
+  const f=kcBuf[idx];
+  for(const e of f.ents){
+    if(e[0]==='b'){
+      const b=bots.find(x=>x.name===e[1]);
+      if(b&&b.g){ b.g.position.set(e[2],e[3],e[4]); b.g.rotation.y=e[5]; }
+    } else {
+      const r=remotePlayers.get(e[1]);
+      if(r&&r.g){ r.g.position.set(e[2],e[3],e[4]); r.g.rotation.y=e[5]; }
+    }
+  }
+  const k=f.ents.find(e=>e[0]===kcPlay.who.kind && e[1]===kcPlay.who.key);
+  if(!k){ stopKillcam(); return false; }
+  camera.position.lerp(V(k[2],k[3]+EYE,k[4]), Math.min(1,dt*14));
+  camera.lookAt(V(f.me[0], f.me[1]+1.2, f.me[2]));
+  return true;
+}
+
+/* ================= clip recorder =================
+   The canvas is recorded continuously in rolling segments. A file is only
+   built when you ask for one, so this costs memory and nothing else. Each
+   segment carries its own header, so whatever we hand you is a complete,
+   playable video rather than a spliced fragment. */
+const CLIP_SEG=30;
+const clip={ on:false, rec:null, stream:null, mime:'', cur:[], prev:[],
+             curStart:0, prevLen:0, timer:0, saving:false };
+
+function clipSupported(){
+  return typeof MediaRecorder!=='undefined' &&
+         renderer && renderer.domElement && renderer.domElement.captureStream;
+}
+function clipStart(){
+  if(clip.on||!clipSupported()) return;
+  try{
+    const cs=renderer.domElement.captureStream(30);
+    try{
+      if(actx&&master&&actx.createMediaStreamDestination){
+        const dest=actx.createMediaStreamDestination();
+        master.connect(dest);
+        dest.stream.getAudioTracks().forEach(t=>cs.addTrack(t));
+      }
+    }catch(e){}
+    const tries=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+    clip.mime=tries.find(m=>{ try{ return MediaRecorder.isTypeSupported(m); }catch(e){ return false; } })||'';
+    clip.stream=cs;
+    clip.on=true;
+    clipRoll();
+  }catch(e){ clip.on=false; }
+}
+function clipRoll(){
+  if(!clip.on) return;
+  const old=clip.rec, finished=clip.cur, startedAt=clip.curStart;
+  clip.cur=[]; clip.curStart=performance.now();
+  try{
+    const r=new MediaRecorder(clip.stream, clip.mime?{mimeType:clip.mime,videoBitsPerSecond:5000000}:undefined);
+    const bucket=clip.cur;
+    r.ondataavailable=e=>{ if(e.data&&e.data.size) bucket.push(e.data); };
+    r.start(1000);
+    clip.rec=r;
+  }catch(e){ clip.on=false; return; }
+  if(old){
+    try{ old.stop(); }catch(e){}
+    if(finished.length){ clip.prev=finished; clip.prevLen=(performance.now()-startedAt)/1000; }
+  }
+  clip.timer=CLIP_SEG;
+}
+function clipTick(dt){
+  if(!clip.on) return;
+  clip.timer-=dt;
+  if(clip.timer<=0) clipRoll();
+}
+function clipSave(){
+  if(!clip.on){ toast('Clip recording is not available in this browser'); return; }
+  if(clip.saving) return;
+  clip.saving=true;
+  const curLen=(performance.now()-clip.curStart)/1000;
+  const useCur = curLen>=8 || !clip.prev.length;
+  const finish=(parts,secs)=>{
+    clip.saving=false;
+    if(!parts.length){ toast('Nothing recorded yet — give it a few seconds'); return; }
+    const blob=new Blob(parts,{type:clip.mime||'video/webm'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    const d=new Date(), p2=n=>String(n).padStart(2,'0');
+    a.href=url;
+    a.download='galebreak-'+d.getFullYear()+p2(d.getMonth()+1)+p2(d.getDate())+
+      '-'+p2(d.getHours())+p2(d.getMinutes())+p2(d.getSeconds())+'.webm';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),20000);
+    toast('Saved <u>'+Math.round(secs)+'s</u> to your downloads');
+    blip(980,.09,.14,'triangle');
+    flashClip();
+  };
+  if(useCur){
+    const parts=clip.cur.slice(), rec=clip.rec;
+    if(rec && rec.state==='recording'){
+      rec.ondataavailable=e=>{ if(e.data&&e.data.size) parts.push(e.data); };
+      rec.onstop=()=>{ finish(parts,curLen); clip.rec=null; clipRoll(); };
+      try{ rec.stop(); }catch(e){ finish(parts,curLen); }
+    } else finish(parts,curLen);
+  } else finish(clip.prev.slice(), clip.prevLen);
+}
+function flashClip(){
+  const el=document.getElementById('clipflash');
+  if(!el) return;
+  el.style.display='block'; el.style.opacity='1';
+  setTimeout(()=>{ el.style.opacity='0'; },900);
+  setTimeout(()=>{ el.style.display='none'; },1500);
+}
+
 /* ================= rewards =================
    Exclusive pieces are granted by the server, never unlocked locally, so a
    player cannot simply edit their own save to get one. */
-let redeemMsg='';
+let redeemMsg='', serverCodeCount=null, redeemTimer=null;
 function redeemCode(){
   const f=document.getElementById('redeemBox');
   const code=(f?f.value:'').trim();
@@ -1231,9 +1606,23 @@ function redeemCode(){
   redeemMsg='Checking…';
   netSend({type:'redeem',code});
   renderLobbyPanel();
+  clearTimeout(redeemTimer);
+  redeemTimer=setTimeout(()=>{
+    if(!/Checking/.test(redeemMsg)) return;
+    redeemMsg='The server never answered. It is running an older <i>server.js</i> with no '+
+              'redeem support — update it on your host and restart it.';
+    renderLobbyPanel();
+  },8000);
 }
 function handleReward(m){
-  if(!m.ok){ redeemMsg=m.error||'That code did not work.'; renderLobbyPanel(); return; }
+  ytBusy=false; clearTimeout(ytTimer); clearTimeout(redeemTimer);
+  if(!m.ok){
+    if(m.known!==undefined && m.known!==1){
+      redeemMsg='That code is not valid, and this server only knows '+m.known+
+                ' code'+(m.known===1?'':'s')+' — it is running an older <i>server.js</i>. '+
+                'Update it on your host and restart it.';
+      renderLobbyPanel(); return;
+    } redeemMsg=m.error||'That code did not work.'; renderLobbyPanel(); return; }
   const cat=m.cat||'skin', id=m.id;
   profile.owned[cat]=(profile.owned[cat]||[]).concat([id]).filter((v,i,a)=>a.indexOf(v)===i);
   saveProfile(); refreshCosmetics(); updateWallet();
@@ -1243,7 +1632,7 @@ function handleReward(m){
 }
 
 /* ---- subscriber check, if the channel owner has configured one ---- */
-let ytChannel=null, ytBusy=false;
+let ytChannel=null, ytBusy=false, ytTimer=null;
 function ytVerify(){
   if(!ytChannel){ redeemMsg='No channel is configured on this server.'; renderLobbyPanel(); return; }
   if(!signedIn()){ redeemMsg='Sign in first, so the reward has somewhere to live.'; renderLobbyPanel(); return; }
@@ -1251,27 +1640,48 @@ function ytVerify(){
     loadGIS(()=>ytVerify()); return;
   }
   ytBusy=true; redeemMsg='Opening Google…'; renderLobbyPanel();
+  clearTimeout(ytTimer);
+  const giveUp=(msg)=>{
+    if(!ytBusy) return;
+    ytBusy=false; clearTimeout(ytTimer);
+    redeemMsg=msg; renderLobbyPanel();
+  };
+  // If the window is closed or Google refuses, nothing calls back, so the
+  // button would sit on CHECKING for ever. Give it a deadline.
+  ytTimer=setTimeout(()=>giveUp(
+    'Google did not come back. If it said the app is not verified, that '+
+    'account is not on the test user list — use a code instead.'), 75000);
   try{
     const tc=google.accounts.oauth2.initTokenClient({
       client_id: googleClientId,
       scope: 'https://www.googleapis.com/auth/youtube.readonly',
       callback: resp=>{
+        clearTimeout(ytTimer);
         ytBusy=false;
         if(!resp||!resp.access_token){ redeemMsg='Google did not grant access.'; renderLobbyPanel(); return; }
         redeemMsg='Checking your subscriptions…'; renderLobbyPanel();
         netSend({type:'ytcheck', token:resp.access_token});
+      },
+      error_callback: err=>{
+        const t=(err&&err.type)||'';
+        giveUp(t==='popup_closed'
+          ? 'You closed the Google window.'
+          : t==='popup_failed_to_open'
+            ? 'Your browser blocked the popup. Allow popups for this site and try again.'
+            : 'Google refused the request. If it said the app is not verified, '+
+              'that account is not on the test user list — use a code instead.');
       }
     });
     tc.requestAccessToken();
   }catch(e){
-    ytBusy=false; redeemMsg='Could not start the Google check.'; renderLobbyPanel();
+    giveUp('Could not start the Google check.');
   }
 }
 
 /* ================= accounts ================= */
 let account=null, authMsg='', authBusy=false, cloudSaveT=0;
 let googleClientId=null, gisLoaded=false, gisReady=false;
-let serverHasAccounts=false, authTimer=null, serverVersion='';
+let serverHasAccounts=false, authTimer=null, serverVersion='', serverPersistent=true;
 const CLIENT_BUILD='2026-10-05c';
 
 /* ---------- Google sign in ----------
@@ -1289,7 +1699,30 @@ function loadGIS(cb){
   sc.onerror=()=>{ authMsg='Could not reach Google. Check your connection.'; renderLobbyPanel(); };
   document.head.appendChild(sc);
 }
+function usedGoogle(v){
+  try{ v?localStorage.setItem('galebreak:google','1'):localStorage.removeItem('galebreak:google'); }catch(e){}
+}
+function wasGoogle(){
+  try{ return localStorage.getItem('galebreak:google')==='1'; }catch(e){ return false; }
+}
+let silentTried=false;
+function googleSilentSignIn(){
+  if(silentTried||!googleClientId||!wasGoogle()||signedIn()) return;
+  silentTried=true;
+  loadGIS(()=>{
+    try{
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: onGoogleCredential,
+        auto_select: true,
+        cancel_on_tap_outside: false
+      });
+      window.google.accounts.id.prompt();      // signs back in with no click
+    }catch(e){}
+  });
+}
 function onGoogleCredential(resp){
+  usedGoogle(true);
   if(!resp||!resp.credential) return;
   authBusy=true; authMsg='Checking with Google…';
   renderLobbyPanel();
@@ -1357,6 +1790,8 @@ function doLogin(){
   authSend('login',{user:u,pass:pw});
 }
 function doLogout(){
+  usedGoogle(false);
+  silentTried=true;
   try{ if(window.google&&google.accounts&&google.accounts.id) google.accounts.id.disableAutoSelect(); }catch(e){}
   netSend({type:'logout'});
   account=null; setAuthToken('');
@@ -1367,6 +1802,14 @@ function handleAuth(m){
   authBusy=false;
   clearTimeout(authTimer);
   if(!m.ok){
+    // A restarted server forgets its sessions. If Google got us in before,
+    // get back in the same way instead of dumping the player at a login form.
+    if(/expired/i.test(m.error||'') && wasGoogle() && !silentTried){
+      authMsg='Signing you back in…';
+      renderLobbyPanel();
+      googleSilentSignIn();
+      return;
+    }
     if(account && /Signed out/.test(m.error||'')) account=null;
     authMsg=m.error||'That did not work.';
     renderLobbyPanel();
@@ -1401,7 +1844,8 @@ function cloudSave(dt){
 }
 function tryResume(){
   const t=authToken();
-  if(t&&netConnected&&!account) netSend({type:'resume',token:t});
+  if(t&&netConnected&&!account){ netSend({type:'resume',token:t}); return; }
+  if(!t&&netConnected&&!account) googleSilentSignIn();
 }
 
 /* ================= social: friends, chat, voice ================= */
@@ -1785,6 +2229,7 @@ function connectMultiplayer(quiet){
     net=new WebSocket(netUrl());
     net.addEventListener('open',()=>{
       netConnected=true; netJoined=true; serverHasAccounts=false; serverVersion='';
+      silentTried=false;
       setTimeout(()=>{
         if(netConnected&&!serverVersion&&lobbyTab==='account'){
           authMsg='The server did not identify itself, which means it is an older '+
@@ -2032,6 +2477,9 @@ function handleNet(m){
     serverHasAccounts=!!m.accounts;
     serverVersion=m.server||'';
     ytChannel=m.youtube||null;
+    serverPersistent=m.persistent!==false;
+    serverCodeCount=(m.codeCount===undefined)?null:m.codeCount;
+    if(!account) setTimeout(googleSilentSignIn,400);
     googleClientId=m.googleClientId||null;
     if(lobbyTab==='account') renderLobbyPanel();
   } else if(m.type==='reward'){
@@ -4691,6 +5139,7 @@ function buildWorld(){
     buildArenaFloor();
     buildWater();
     if(arena==='box') buildArenaBox();
+    else if(arena==='ball') buildArenaBall();
     else if(arena==='training') buildArenaTraining();
     else buildArenaZone();
     for(let i=0;i<(arena==='box'?10:34);i++){
@@ -5857,6 +6306,10 @@ function renderLobbyPanel(){
       (signedIn()
         ? '<div class="codebox"><span>SIGNED IN AS</span><b>'+account.user+'</b>'+
             '<button class="ghost small" id="logoutBtn">SIGN OUT</button></div>'+
+          (serverPersistent?'':
+            '<div class="warnbox">This server stores accounts on a disk that its host wipes '+
+            'on every restart, so sign-ins do not survive a redeploy. Your progress is still '+
+            'safe in this browser and uploads again when you sign back in.</div>')+
           '<div class="psub" style="margin-top:14px">Your level, sparks, locker and friends are '+
             'stored on the server, so they follow you to any device that can reach it. '+
             'Progress is saved every few seconds while you are connected.</div>'+
@@ -5896,6 +6349,26 @@ function renderLobbyPanel(){
           : !serverHasAccounts
             ? 'This server has no account system. Replace <i>server.js</i> with the current one and restart it.'
             : (googleClientId?'':'Google sign in is not set up on this server — use a username.')))+'</div>';
+  } else if(lobbyTab==='maps'){
+    const code=exportMap();
+    el.innerHTML='<div class="ptitle">MAP CODES</div>'+
+      '<div class="psub">Anything you build in Training or a Box Fight can be packed into a '+
+        'code. Send it to a friend and they load the same arena, piece for piece.</div>'+
+      '<div class="setgroup">Your current build</div>'+
+      '<div class="codebox"><span>'+(code?PIECES.size+' PIECES':'NOTHING BUILT YET')+'</span>'+
+        '<b style="font-size:13px;letter-spacing:1px;word-break:break-all;text-align:left">'+
+          (code?code.slice(0,120)+(code.length>120?'…':''):'—')+'</b>'+
+        (code?'<button class="ghost small" id="copyMap">COPY</button>':'')+'</div>'+
+      '<div class="setgroup">Load a code</div>'+
+      '<div class="prow"><label>Code</label>'+
+        '<textarea id="mapIn" rows="2" placeholder="paste a map code" '+
+          'style="flex:1;background:rgba(4,8,16,.6);border:1px solid rgba(255,255,255,.18);'+
+          'border-radius:4px;color:#fff;font-family:inherit;font-size:12px;padding:8px"></textarea>'+
+        '<button class="ghost small" id="loadMap" style="margin:0">LOAD</button></div>'+
+      '<div class="psub">Loading replaces whatever you have built. Start a Training match '+
+        'first, then come back here and paste.</div>'+
+      '<div class="buyline'+(/Loaded|copied/.test(mapMsg)?' good':'')+'">'+
+        (mapMsg||(running?'':'Not in a match — codes load into the arena you are playing.'))+'</div>';
   } else if(lobbyTab==='unlock'){
     const got=owns('skin','subscriber');
     el.innerHTML='<div class="ptitle">SUBSCRIBER OUTFIT</div>'+
@@ -5909,7 +6382,9 @@ function renderLobbyPanel(){
         (ytChannel
           ? '<div class="setgroup">Check your subscription</div>'+
             '<div class="psub">Sign in with the Google account you use on YouTube and the '+
-              'server will ask Google whether you are subscribed. It reads nothing else.</div>'+
+              'server will ask Google whether you are subscribed. It reads nothing else.<br>'+
+              '<b>Only accounts on the developer\'s Google test list can use this,</b> and the '+
+              'subscription has to be public. If it refuses, use a code.</div>'+
             '<button class="ghost small" id="ytBtn"'+(ytBusy?' disabled':'')+'>'+
               (ytBusy?'CHECKING…':'CHECK MY SUBSCRIPTION')+'</button>'
           : '')+
@@ -5918,6 +6393,11 @@ function renderLobbyPanel(){
         '<div class="prow"><label>Code</label>'+
           '<input id="redeemBox" maxlength="24" placeholder="from the video" style="text-transform:uppercase;letter-spacing:2px">'+
           '<button class="ghost small" id="redeemBtn" style="margin:0">REDEEM</button></div>')+
+      '<div class="diagbox">'+
+        '<span>LINK <b>'+(netConnected?'connected':'offline')+'</b></span>'+
+        '<span>SIGNED IN <b>'+(signedIn()?account.user:'no')+'</b></span>'+
+        '<span>SERVER CODES <b>'+(serverCodeCount===null?'old build':serverCodeCount)+'</b></span>'+
+      '</div>'+
       '<div class="buyline'+(/Unlocked/.test(redeemMsg)?' good':'')+'">'+
         (redeemMsg||(signedIn()?'':'Sign in on the ACCOUNT tab first — rewards attach to an account, not a browser.'))+'</div>';
   } else if(lobbyTab==='friends'){
@@ -5967,6 +6447,17 @@ function renderLobbyPanel(){
 }
 function bindPanel(){
   if(lobbyTab==='account') mountGoogleButton();
+  const cm=document.getElementById('copyMap');
+  if(cm) cm.addEventListener('click',()=>{ uiClick(); copyMapCode(); });
+  const lm=document.getElementById('loadMap');
+  if(lm) lm.addEventListener('click',()=>{
+    uiClick();
+    const v=document.getElementById('mapIn').value;
+    mapMsg = running ? importMap(v) : 'Start a match first, then load the code.';
+    renderLobbyPanel();
+  });
+  const mi=document.getElementById('mapIn');
+  if(mi) mi.addEventListener('keydown',e=>e.stopPropagation());
   const rdb=document.getElementById('redeemBtn');
   if(rdb) rdb.addEventListener('click',()=>{ uiClick(); redeemCode(); });
   const rbx=document.getElementById('redeemBox');
@@ -6814,7 +7305,7 @@ function botFire(b,e){
   }
   if(RNG() < b.skill*clamp(1-d/(g.rng*1.3),.10,.90)){
     const dmg=g.dmg*rnd(.8,1.2);
-    if(e.isPlayer) hurtPlayer(dmg,b.pos);
+    if(e.isPlayer) hurtPlayer(dmg,b.pos,b.name);
     else if(e.isRemote) netSend({type:'hit',target:e.id,dmg:dmg,asName:b.name});
     else damageBotBy(e,dmg,b);
   }
@@ -7143,6 +7634,10 @@ function shoot(){
     }
     if(h){
       end=h.point.clone();
+      if(h.object.userData.ball){
+        ballKick(dir.clone().normalize(), (t.kind==='shotgun'?3.2:1.5)*(t.dmg/12));
+        hitmarker(); anyHit=true; continue;
+      }
       if(h.object.userData.target){ hitTarget(h.object); anyHit=true; continue; }
       const bot=h.object.userData.bot;
       const rem=h.object.userData.remote;
@@ -7266,8 +7761,10 @@ function swing(){
   }
 }
 
-function hurtPlayer(amount, from){
+let lastHitBy='';
+function hurtPlayer(amount, from, byName){
   if(ended||winPending||spectating) return;
+  if(byName) lastHitBy=byName;
   if(roundLock) return;               // staging lobby and the countdown are safe
   if(cheats.god && cheatsAllowed()){
     player.hp=100; player.shield=Math.max(player.shield,100); syncHUD();
@@ -7284,14 +7781,18 @@ function hurtPlayer(amount, from){
   if(player.hp<=0){
     player.hp=0;
     if(modeCfg().arena==='training'){ respawnT=1.2; startSpectate(); return; }
+    if(modeCfg().arena==='ball'){ respawnT=3; startSpectate(); return; }
     if(modeCfg().arena==='box' && !ended){ boxAwardRound(false); return; }
     if(modeCfg().respawn && !ended){
       respawnT=3;
-      startSpectate();
+      if(!startKillcam(lastHitBy)) startSpectate();
       toast('Respawning…');
       return;
     }
-    if(!spectating && bots.filter(b=>b.alive).length>0) startSpectate();
+    if(!spectating && bots.filter(b=>b.alive).length>0){
+      if(!startKillcam(lastHitBy)) startSpectate();
+      else setTimeout(()=>{ if(!ended) startSpectate(); }, 4200);
+    }
     else endGame(false);
   }
 }
@@ -7883,14 +8384,15 @@ function ambientFights(dt){
 
 /* ================= HUD ================= */
 function applyModeHud(){
-  const arena=modeCfg().arena==='box';
+  const a=modeCfg().arena;
+  const arena = a==='box'||a==='ball'||a==='training';
   const show=(id,on)=>{ const el=document.getElementById(id); if(el) el.style.display=on?'':'none'; };
   show('stormline', !arena && S.stormPanel);
   show('alive', !arena);
   show('map', !arena && S.minimap);
   if(arena){
     const d=document.getElementById('dropui'); if(d) d.style.display='none';
-    const a=document.getElementById('alt');    if(a) a.style.display='none';
+    const al=document.getElementById('alt');   if(al) al.style.display='none';
   }
 }
 function updateModeBadge(){
@@ -7898,7 +8400,7 @@ function updateModeBadge(){
   if(!mb) return;
   const cfg=modeCfg();
   let t=cfg.label;
-  if(cfg.arena==='box'){ mb.style.display='none'; return; }
+  if(cfg.arena==='box'||cfg.arena==='ball'){ mb.style.display='none'; return; }
   else if(cfg.rounds>1) t+=' · ROUND '+roundNo+'/'+cfg.rounds+' · WON '+roundsWon;
   else t+=' · '+(effBots()+1)+' PLAYERS';
   mb.textContent=t;
@@ -8157,6 +8659,7 @@ function bindInput(){
       else startReload();
     }
     if(act==='rotate' && player.slot>=6){ buildRot=(buildRot+1)%4; blip(820,.04,.09,'triangle'); }
+    if(act==='clip'){ clipSave(); return; }
     if(act==='chat') openChat('all');
     if(act==='teamChat') openChat('team');
     if(act==='accept' && pendingInvite){
@@ -8473,6 +8976,7 @@ function updatePlayer(dt){
   const headPos=V(player.pos.x+Math.sin(player.bob*.5)*.035*bobA,
                   player.pos.y+EYE+Math.sin(player.bob)*.045*bobA,
                   player.pos.z);
+  if(kcPlay){ if(updateKillcam(dt)) return; }
   const sk=shakeOffset(dt);
   if(sk){ headPos.x+=sk.x; headPos.y+=sk.y; }
   placeCamera(headPos, dt);
@@ -8656,7 +9160,7 @@ function checkNetWin(){
 function checkWin(){
   if(ended) return;
   const cfg=modeCfg();
-  if(cfg.arena==='box') return;         // box fight is scored by rounds
+  if(cfg.arena==='box'||cfg.arena==='ball') return;   // these keep their own score
   const rem=[...remotePlayers.values()].filter(r=>r.alive).length;
   const n=bots.filter(b=>b.alive).length+rem;
   if(spectating){
@@ -8958,6 +9462,11 @@ function giveLoadout(kind){
     player.inv[2]=wep('rifle');
     player.inv[3]={type:'heal',kind:'shieldsm',count:5};
     player.mats=999; player.shield=100;
+  } else if(kind==='ball'){
+    player.inv[0]=wep('smg');
+    player.inv[1]=wep('shotgun');
+    player.inv[2]={type:'heal',kind:'shieldsm',count:4};
+    player.mats=500; player.shield=50;
   } else if(kind==='train'){
     player.inv[0]=wep('rifle');
     player.inv[1]=wep('smg');
@@ -8980,6 +9489,11 @@ function giveLoadout(kind){
 }
 function arenaSpawn(i){
   const cfg=modeCfg();
+  if(cfg.arena==='ball'){
+    const side=(i%2===0)?-1:1;
+    const x=side*(30+((i/2|0)%3)*6), z=((i%4)-1.5)*9;
+    return V(x, groundH(x,z)+0.4, z);
+  }
   if(cfg.arena==='training'){
     const x=(i===0?0:(i-2.5)*7), z=(i===0?-8:30);
     return V(x, groundH(x,z)+0.4, z);
@@ -9127,6 +9641,8 @@ function resetGame(){
   trainStats.shots=trainStats.hits=trainStats.heads=trainStats.targets=0;
   trainStats.streak=trainStats.best=0; trainStats.t=0; trainAggro=false;
   const th=document.getElementById('trainhud'); if(th) th.style.display='none';
+  kcBuf.length=0; stopKillcam(); lastHitBy='';
+  ballScore.me=0; ballScore.them=0; ball.mesh=null; ballMsgT=0;
   boxScore.me=0; boxScore.them=0; roundPhase=''; roundT=0; roundLock=false;
   boxIdx=0; boxBarrier=null; barrierCol=null;
   showRoundText('');
@@ -9692,7 +10208,8 @@ function tick(){
     voiceSync(dt);
     voiceUpdatePositions();
     if((waterTick&63)===0) paintChat();
-    updateCoach(dt); updateElim(dt); updateCrosshair(); trainTick(dt);
+    updateCoach(dt); updateElim(dt); updateCrosshair(); trainTick(dt); clipTick(dt); kcSample(dt);
+    updateBall(dt);
     cheatTick(dt);
     updateEsp(dt);
     updateWallMarks();
@@ -9769,7 +10286,8 @@ function start(){
     'Press G on your own wall to cut a doorway or a window into it.',
     'Headshots do double, and the shotgun hits hardest inside seven metres.',
     'Listen. Footsteps and gunfire are positional — you can hear where people are.',
-    'The circle moves before it closes. The minimap shows where it is going.'
+    'The circle moves before it closes. The minimap shows where it is going.',
+    'Press F9 at any time to save the last 30 seconds as a video file.'
   ];
   const lt=document.getElementById('loadtip');
   if(lt) lt.textContent=LOADTIPS[Math.floor(Math.random()*LOADTIPS.length)];
@@ -9778,6 +10296,7 @@ function start(){
 }
 function buildAndLaunch(){
   resetGame();
+  clipStart();
   document.getElementById('loading').classList.add('hidden');
   document.getElementById('hud').classList.remove('hidden');
   running=true; paused=false;

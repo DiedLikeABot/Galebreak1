@@ -269,6 +269,7 @@ wss.on('connection', (ws) => {
 
   send(ws, { type:'config', server:'galebreak-2', accounts:true,
              persistent: acctPersistent,
+             codeCount: Object.keys(REDEEM_CODES).length,
              googleClientId: GOOGLE_CLIENT_ID || null,
              youtube: YOUTUBE_CHANNEL_ID || null });
 
@@ -331,12 +332,14 @@ wss.on('connection', (ws) => {
     }
 
     if (m.type === 'redeem') {
-      if (!p.acct) return send(ws, { type:'reward', ok:false, error:'Sign in first.' });
+      if (!p.acct) return send(ws, { type:'reward', ok:false,
+        error:'You are not signed in. Open the ACCOUNT tab and sign in first.' });
       p.redeemTries = (p.redeemTries || 0) + 1;
       if (p.redeemTries > 20) return send(ws, { type:'reward', ok:false, error:'Too many attempts.' });
       const code = String(m.code || '').trim().toUpperCase();
       const reward = REDEEM_CODES[code];
-      if (!reward) return send(ws, { type:'reward', ok:false, error:'That code is not valid.' });
+      if (!reward) return send(ws, { type:'reward', ok:false, known:Object.keys(REDEEM_CODES).length,
+        error:'That code is not valid on this server.' });
       grant(p.acct, reward);
       console.log('redeemed', code, 'for', p.acct.user);
       return send(ws, Object.assign({ type:'reward', ok:true }, reward));
