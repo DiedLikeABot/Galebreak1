@@ -258,6 +258,18 @@
   .friend b{color:#fff;min-width:120px}
   .friend span{color:#8ea4bd;letter-spacing:2px;flex:1}
   .fbtn{margin:0;padding:6px 12px;font-size:10px}
+  .turnhint{display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:1px;
+    color:#7f9ab8;margin:-6px 0 14px}
+  .svcgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:14px 0}
+  .svc{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);
+    border-left:3px solid var(--sc);border-radius:0 5px 5px 0;padding:12px 14px}
+  .svc.on{background:rgba(255,255,255,.08);border-color:var(--sc)}
+  .svc b{display:block;color:var(--sc);font-size:14px;letter-spacing:1px;margin-bottom:5px}
+  .svc p{font-size:11.5px;line-height:1.5;color:#9db2c9;margin:0 0 9px}
+  .svcna{font-size:10px;letter-spacing:1.5px;color:#64748b}
+  .vmeter{display:inline-block;width:110px;height:7px;background:rgba(255,255,255,.12);
+    border-radius:4px;overflow:hidden;vertical-align:middle;margin-left:6px}
+  .vmeter i{display:block;height:100%;background:linear-gradient(90deg,#4ade80,#ffd873,#ff5c5c)}
   .pickrow{display:flex;gap:6px;flex-wrap:wrap}
   .pickrow .oppbtn{padding:7px 12px;font-size:10px;letter-spacing:1.5px}
   .buyline{font-size:12px;color:#9db2c9;margin-top:12px;min-height:18px}
@@ -302,6 +314,28 @@
   #killcam b{display:block;font-size:11px;letter-spacing:5px;color:#ff8a5c}
   #killcam i{display:block;font-size:34px;letter-spacing:2px;color:#fff;font-style:normal;margin:4px 0}
   #killcam small{display:block;font-size:10px;letter-spacing:4px;color:#8ea4bd}
+  #chatstream{position:absolute;right:22px;bottom:150px;width:320px;display:none;
+    font-size:12.5px;line-height:1.45;text-shadow:0 2px 4px #000;pointer-events:none}
+  #chatstream .smsg{margin-bottom:3px;color:#dfe8f2}
+  #votebox{position:absolute;left:50%;top:16%;transform:translateX(-50%);display:none;
+    width:360px;background:rgba(4,8,16,.82);border:1px solid rgba(255,216,115,.4);
+    border-radius:6px;padding:12px 14px;pointer-events:none}
+  #votebox b{display:block;font-size:13px;letter-spacing:1px;color:#ffd873;margin-bottom:8px}
+  #votebox .vrow{position:relative;display:flex;align-items:center;gap:8px;margin-bottom:5px;
+    font-size:12px;color:#dfe8f2}
+  #votebox .vrow span{flex:1;z-index:1}
+  #votebox .vrow i{z-index:1;font-style:normal;color:#9db2c9}
+  #votebox .vrow em{position:absolute;left:0;top:0;bottom:0;background:rgba(255,216,115,.22);
+    border-radius:3px}
+  #votebox small{display:block;margin-top:6px;font-size:10px;letter-spacing:2px;color:#8ea4bd}
+  #crhud{position:absolute;right:22px;top:210px;display:none;min-width:230px;
+    background:rgba(4,8,16,.74);border:1px solid rgba(255,255,255,.14);border-radius:6px;
+    padding:12px 14px;font-size:12px;line-height:1.55;color:#cfe0f0;pointer-events:none}
+  #crhud b{display:block;font-size:10px;letter-spacing:3px;color:#7bd88f;margin-bottom:7px}
+  #crhud div{display:flex;justify-content:space-between;gap:12px}
+  #crhud span{color:#8ea4bd}
+  #crhud i{display:block;margin-top:8px;font-size:10px;letter-spacing:.5px;color:#64748b;font-style:normal}
+  #crhud em{display:block;margin-top:6px;color:#ffd873;font-style:normal;font-size:11px}
   #trainhud{position:absolute;right:22px;top:210px;display:none;min-width:190px;
     background:rgba(4,8,16,.72);border:1px solid rgba(255,255,255,.14);border-radius:6px;
     padding:12px 14px;font-size:12px;line-height:1.55;color:#cfe0f0;pointer-events:none}
@@ -499,6 +533,9 @@
   <div id="voiceind"><i></i>TALKING</div>
   <div id="coach"></div>
   <div id="trainhud"></div>
+  <div id="crhud"></div>
+  <div id="chatstream"></div>
+  <div id="votebox"></div>
   <div id="clipflash">● CLIP SAVED</div>
   <div id="killcam"></div>
   <div id="elimbanner"></div>
@@ -532,6 +569,7 @@
       <button class="lnavbtn" data-tab="locker">LOCKER</button>
       <button class="lnavbtn" data-tab="shop">ITEM SHOP</button>
       <button class="lnavbtn" data-tab="maps">MAPS</button>
+      <button class="lnavbtn" data-tab="stream">STREAM</button>
       <button class="lnavbtn" data-tab="unlock">UNLOCK</button>
       <button class="lnavbtn" data-tab="friends">FRIENDS</button>
       <button class="lnavbtn" data-tab="account">ACCOUNT</button>
@@ -572,6 +610,7 @@
       <button class="modebtn" data-mode="boxfight"><b>BOX FIGHT</b><span>1v1 vs a real player · five boxes · first to 10</span></button>
       <button class="modebtn" data-mode="insane"><b>INSANE</b><span>100 players · merciless aim · storm that never waits</span></button>
       <button class="modebtn" data-mode="galeball"><b>GALEBALL</b><span>shoot the ball into their goal · build to block · first to 5</span></button>
+      <button class="modebtn" data-mode="creative"><b>CREATIVE</b><span>build your own map · fly · props · share a code</span></button>
       <button class="modebtn" data-mode="training"><b>TRAINING</b><span>aim range · build zone · edit course · no pressure</span></button>
     </div>
     <button id="startBtn">PLAY</button>
@@ -682,6 +721,9 @@ const MODES={
   galeball  :{ label:'GALEBALL',       short:'gb', players:8, bots:3, skill:1.2, storm:1,
                playR:150, arena:'ball', bus:false, phases:'box', rounds:1,
                loadout:'ball', respawn:true, target:5 },
+  creative  :{ label:'CREATIVE',       short:'cr', players:16, bots:0, skill:1, storm:1,
+               playR:260, arena:'creative', bus:false, phases:'box', rounds:1,
+               loadout:'creative' },
   training  :{ label:'TRAINING',       short:'tr', players:1, bots:0, skill:1, storm:1,
                playR:150, arena:'training', bus:false, phases:'box', rounds:1,
                loadout:'train', respawn:true },
@@ -1242,17 +1284,40 @@ function exportMap(){
     p.mask.forEach((on,i)=>{ if(on) mask|=(1<<i); });
     out.push([t,p.ix,p.iy,p.iz,p.dir,mask].join('.'));
   }
-  if(!out.length) return '';
-  const body='GB1|'+out.join(',');
+  // props carry their own section so older codes still load
+  const props=[];
+  for(const m of creative.placed){
+    const u=m.userData.prop;
+    if(!u) continue;
+    const pi=PROPS.findIndex(x=>x.id===u.id);
+    if(pi<0) continue;
+    props.push([pi, Math.round(u.x*2)/2, Math.round(u.y*2)/2, Math.round(u.z*2)/2,
+                Math.round((u.rot||0)*100)/100].join('.'));
+  }
+  if(!out.length && !props.length) return '';
+  const body='GB2|'+out.join(',')+'|'+props.join(',');
   try{ return btoa(body).replace(/=+$/,''); }catch(e){ return ''; }
+}
+function clearProps(){
+  for(const m of creative.placed){
+    if(m.parent) scene.remove(m);
+    const h=hittables.indexOf(m); if(h>=0) hittables.splice(h,1);
+    if(m.userData.box){ const c=colliders.indexOf(m.userData.box); if(c>=0) colliders.splice(c,1); }
+  }
+  creative.placed.length=0;
+  rebuildColGrid();
 }
 function importMap(code){
   let body;
   try{ body=atob(String(code||'').trim()); }catch(e){ return 'That code is not readable.'; }
-  if(body.indexOf('GB1|')!==0) return 'That is not a GALEBREAK map code.';
-  const rows=body.slice(4).split(',').filter(Boolean);
-  if(!rows.length) return 'That code has nothing in it.';
+  const v2=body.indexOf('GB2|')===0;
+  if(!v2 && body.indexOf('GB1|')!==0) return 'That is not a GALEBREAK map code.';
+  const sections=body.slice(4).split('|');
+  const rows=(sections[0]||'').split(',').filter(Boolean);
+  const propRows=v2?((sections[1]||'').split(',').filter(Boolean)):[];
+  if(!rows.length && !propRows.length) return 'That code has nothing in it.';
   clearPlayerBuilds();
+  clearProps();
   let made=0;
   for(const r of rows){
     const f=r.split('.').map(Number);
@@ -1271,9 +1336,34 @@ function importMap(code){
     made++;
     if(made>900) break;                 // a sane ceiling on a pasted code
   }
+  for(const r of propRows){
+    const f=r.split('.').map(Number);
+    if(f.length<5||f.some(n=>!isFinite(n))) continue;
+    const pr=PROPS[f[0]];
+    if(!pr) continue;
+    const m=box(pr.w,pr.h,pr.d, f[1], f[2]+pr.h/2, f[3], creativeMat(pr.mat));
+    m.rotation.set(pr.tilt||0, f[4], 0);
+    m.userData.prop={ id:pr.id, x:f[1], y:f[2], z:f[3], rot:f[4] };
+    m.userData.harvest=null;
+    creative.placed.push(m);
+    made++;
+    if(made>1400) break;
+  }
   rebuildColGrid();
-  return made?('Loaded '+made+' pieces.'):'Nothing in that code could be placed.';
+  return made?('Loaded '+made+' objects.'):'Nothing in that code could be placed.';
 }
+
+/* ---- named saves, kept with your profile ---- */
+function savedMaps(){ if(!profile.maps) profile.maps={}; return profile.maps; }
+function saveMapAs(name){
+  const code=exportMap();
+  if(!code) return 'Build something first.';
+  name=(name||'').trim().slice(0,24)||('Map '+(Object.keys(savedMaps()).length+1));
+  savedMaps()[name]={ code, at:Date.now(), parts:creative.placed.length+PIECES.size };
+  saveProfile();
+  return 'Saved as "'+name+'".';
+}
+function deleteMap(name){ delete savedMaps()[name]; saveProfile(); }
 let mapMsg='';
 function copyMapCode(){
   const code=exportMap();
@@ -2037,20 +2127,36 @@ function closeChat(send){
 
 /* ---------- voice ---------- */
 const voice={ on:false, talking:false, stream:null, peers:new Map(),
-              gainNodes:new Map(), state:new Map(), heard:new Map() };
+              gainNodes:new Map(), state:new Map(), heard:new Map(),
+              meter:null, device:'' };
 function voiceStatusLine(){
   if(S.voiceMode==='off') return 'Voice chat is off.';
   if(S.voiceWho==='none') return 'Voice chat is on, but set to talk with no one.';
   if(!voice.on) return 'Microphone not started — pick a mode to allow it.';
-  if(!netConnected) return 'Microphone ready — connect on the PARTY screen to talk to anyone.';
+  const lvl=Math.round(micLevel()*100);
+  const mic='Mic: '+(voice.device||'default')+
+    ' <span class="vmeter"><i style="width:'+lvl+'%"></i></span>';
+  if(!netConnected) return mic+'<br>Connect on the PARTY screen to talk to anyone.';
   const n=remotePlayers.size;
-  if(!n) return 'Microphone ready — nobody else is in your room yet.';
-  let live=0;
-  for(const st of voice.state.values()) if(st==='connected') live++;
-  return 'Microphone on · '+live+' of '+n+' voice '+(live===1?'link':'links')+' connected'+
-         (voice.heard.size?' · receiving audio from '+voice.heard.size:'');
+  if(!n) return mic+'<br>Nobody else is here yet. The meter should move when you speak.';
+  let live=0, trying=0;
+  for(const st of voice.state.values()){
+    if(st==='connected'||st==='completed') live++;
+    else if(st==='checking'||st==='new') trying++;
+  }
+  let line=mic+'<br>'+live+' of '+n+' voice '+(live===1?'link':'links')+' connected';
+  if(trying) line+=' · '+trying+' connecting';
+  if(voice.heard.size) line+=' · hearing '+voice.heard.size;
+  if(!live && n && !turnAvailable)
+    line+='<br><b>No link yet.</b> Without a TURN relay, voice fails when both players '+
+          'are behind strict routers. Set TURN_URL on the server to fix it for everyone.';
+  return line;
 }
-const RTC_CFG={ iceServers:[{urls:'stun:stun.l.google.com:19302'}] };
+/* The server tells us which ICE servers to use, so a TURN relay can be added
+   without touching the client. Until it does, we fall back to plain STUN. */
+let RTC_CFG={ iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']}],
+              iceCandidatePoolSize:2 };
+let turnAvailable=false;
 
 async function applyVoiceMode(){
   if(!voiceWanted()){ voiceDisable(); return; }
@@ -2060,14 +2166,40 @@ async function applyVoiceMode(){
   else voiceTalk(false);
   voiceSync(0);
 }
+function startMicMeter(){
+  try{
+    const ac=audio();
+    const src=ac.createMediaStreamSource(voice.stream);
+    const an=ac.createAnalyser();
+    an.fftSize=512; an.smoothingTimeConstant=0.75;
+    src.connect(an);
+    voice.meter={an,buf:new Uint8Array(an.frequencyBinCount),level:0,peak:0};
+  }catch(e){}
+}
+function micLevel(){
+  const m=voice.meter;
+  if(!m) return 0;
+  m.an.getByteTimeDomainData(m.buf);
+  let sum=0;
+  for(let i=0;i<m.buf.length;i++){ const v=(m.buf[i]-128)/128; sum+=v*v; }
+  const rms=Math.sqrt(sum/m.buf.length);
+  m.level=Math.max(rms, m.level*0.86);
+  return Math.min(1, m.level*4.2);
+}
 async function voiceEnable(){
   if(voice.stream) return true;
   try{
     voice.stream=await navigator.mediaDevices.getUserMedia({
-      audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+      audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,
+             channelCount:1, sampleRate:48000}});
     const openMic=S.voiceMode==='open';
     voice.stream.getAudioTracks().forEach(t=>t.enabled=openMic);
     voice.on=true;
+    startMicMeter();
+    try{
+      const dev=voice.stream.getAudioTracks()[0];
+      voice.device=dev?(dev.label||'default microphone'):'microphone';
+    }catch(e){ voice.device='microphone'; }
     toast(openMic ? 'Microphone on — your mic is <u>always live</u>'
                   : 'Microphone ready — hold <u>'+prettyKey(S.keys.talk)+'</u> to talk');
     if(openMic) voiceTalk(true);
@@ -2117,12 +2249,41 @@ function voiceConnect(id,initiator){
   if(!voiceAllowed(id)) return;
   if(!voice.on||voice.peers.has(id)||id===netId||!netId) return;
   // deterministic caller, otherwise two simultaneous offers cancel each other out
-  if(initiator && !(netId<id)) initiator=false;
+  const polite = !(netId<id);
+  if(initiator && polite) initiator=false;
   const pc=new RTCPeerConnection(RTC_CFG);
+  pc.__polite=polite;
+  pc.__making=false;
+  pc.__ignore=false;
+  pc.__retries=0;
   voice.peers.set(id,pc);
   if(voice.stream) voice.stream.getTracks().forEach(t=>pc.addTrack(t,voice.stream));
   pc.onicecandidate=e=>{ if(e.candidate) netSend({type:'rtc',to:id,data:{ice:e.candidate}}); };
   pc.ontrack=e=>attachVoice(id,e.streams[0]);
+  // if either side adds or drops a track later, renegotiate rather than go silent
+  pc.onnegotiationneeded=async()=>{
+    try{
+      pc.__making=true;
+      await pc.setLocalDescription();
+      netSend({type:'rtc',to:id,data:{sdp:pc.localDescription}});
+    }catch(e){}
+    finally{ pc.__making=false; }
+  };
+  pc.oniceconnectionstatechange=()=>{
+    voice.state.set(id,pc.iceConnectionState);
+    if(pc.iceConnectionState==='failed' && pc.__retries<3){
+      // a failed path is often recoverable: ask for fresh candidates
+      pc.__retries++;
+      try{ pc.restartIce(); }catch(e){}
+      if(!polite){
+        pc.createOffer({iceRestart:true})
+          .then(o=>pc.setLocalDescription(o))
+          .then(()=>netSend({type:'rtc',to:id,data:{sdp:pc.localDescription}}))
+          .catch(()=>{});
+      }
+    }
+    if(lobbyTab==='friends') renderLobbyPanel();
+  };
   pc.onconnectionstatechange=()=>{
     voice.state.set(id,pc.connectionState);
     if(pc.connectionState==='failed'||pc.connectionState==='closed'){
@@ -2157,20 +2318,31 @@ function attachVoice(id,stream){
     const a=new Audio(); a.srcObject=stream; a.muted=true; a.play().catch(()=>{});
   }catch(e){}
 }
-function voiceHandleRTC(m){
+/* The perfect negotiation pattern: when both sides offer at once, the polite
+   peer rolls back and accepts, the impolite one ignores. Without this, a
+   simultaneous offer leaves the call half-open and silent. */
+async function voiceHandleRTC(m){
   if(!voice.on||!voiceAllowed(m.from)) return;
-  let pc=voice.peers.get(m.from)||voiceConnect(m.from,false);
+  let pc=voice.peers.get(m.from);
+  if(!pc){ voiceConnect(m.from,false); pc=voice.peers.get(m.from); }
   if(!pc) return;
   const d=m.data||{};
-  if(d.sdp){
-    pc.setRemoteDescription(d.sdp).then(()=>{
-      if(d.sdp.type==='offer')
-        return pc.createAnswer().then(a=>pc.setLocalDescription(a))
-          .then(()=>netSend({type:'rtc',to:m.from,data:{sdp:pc.localDescription}}));
-    }).catch(()=>{});
-  } else if(d.ice){
-    pc.addIceCandidate(d.ice).catch(()=>{});
-  }
+  try{
+    if(d.sdp){
+      const offerCollision = d.sdp.type==='offer' &&
+        (pc.__making || pc.signalingState!=='stable');
+      pc.__ignore = !pc.__polite && offerCollision;
+      if(pc.__ignore) return;
+      await pc.setRemoteDescription(d.sdp);
+      if(d.sdp.type==='offer'){
+        await pc.setLocalDescription();
+        netSend({type:'rtc',to:m.from,data:{sdp:pc.localDescription}});
+      }
+    } else if(d.ice){
+      try{ await pc.addIceCandidate(d.ice); }
+      catch(err){ if(!pc.__ignore) throw err; }
+    }
+  }catch(e){}
 }
 function voiceTalk(on){
   if(!voice.on||!voice.stream) return;
@@ -2307,6 +2479,15 @@ function quickPlay(){
            name:netName, party:netParty||null, skin:profile.equipped.skin});
   return true;
 }
+setInterval(()=>{
+  try{
+    if(voice.on && lobbyTab==='friends' &&
+       !document.getElementById('menu').classList.contains('hidden')){
+      const b=document.querySelector('.vmeter i');
+      if(b) b.style.width=Math.round(micLevel()*100)+'%';
+    }
+  }catch(e){}
+},90);
 function updateOnlineChip(){
   const chip=document.getElementById('onlinechip');
   if(!chip) return;
@@ -2410,7 +2591,8 @@ function makeRemotePlayer(id,name,skinId){
   const tag=nameSprite(name);
   g.add(tag);
   const parts=f.meshes.slice();
-  const r={id,name,g,torso:f.parts.torso,head:f.parts.head,gun,
+  const r={id,name,g,torso:f.parts.torso,head:f.parts.head,gun,face:f.parts.face,
+           shL:f.parts.shL,shR:f.parts.shR,hips:f.parts.hips,
            legL:f.parts.legL,legR:f.parts.legR,armL:f.parts.armL,armR:f.parts.armR,
            parts,tag,party:null,cheats:[],mateState:null,skinId:skinId||'recruit',
            isRemote:true,state:'ground',
@@ -2588,6 +2770,10 @@ function handleNet(m){
     serverHasAccounts=!!m.accounts;
     serverVersion=m.server||'';
     ytChannel=m.youtube||null;
+    if(Array.isArray(m.ice)&&m.ice.length){
+      RTC_CFG={ iceServers:m.ice, iceCandidatePoolSize:2 };
+      turnAvailable=!!m.turn;
+    }
     serverPersistent=m.persistent!==false;
     serverCodeCount=(m.codeCount===undefined)?null:m.codeCount;
     if(!account) setTimeout(googleSilentSignIn,400);
@@ -4158,8 +4344,8 @@ function buildTerrain(){
   // close-range detail normals, faded out with distance so the ground has grain underfoot
   mat.onBeforeCompile=(sh)=>{
     sh.uniforms.uDetail={value:detailNrm};
-    sh.uniforms.uDetailScale={value:1.35};
-    sh.uniforms.uDetailStrength={value:1.15};
+    sh.uniforms.uDetailScale={value:2.6};
+    sh.uniforms.uDetailStrength={value:1.55};
     sh.vertexShader='varying vec3 vWPosD;\n'+sh.vertexShader.replace(
       '#include <begin_vertex>',
       '#include <begin_vertex>\n  vWPosD=(modelMatrix*vec4(transformed,1.0)).xyz;');
@@ -4170,13 +4356,21 @@ function buildTerrain(){
     ].join('\n')+'\n'+sh.fragmentShader.replace(
       '#include <normal_fragment_maps>',
       ['#include <normal_fragment_maps>',
-       'float dFade = 1.0 - smoothstep(14.0, 70.0, length(vWPosD - cameraPosition));',
-       'if(dFade > 0.01){',
-       '  vec3 dn1 = texture2D(uDetail, vWPosD.xz*uDetailScale).xyz*2.0-1.0;',
-       '  vec3 dn2 = texture2D(uDetail, vWPosD.xz*uDetailScale*0.23).xyz*2.0-1.0;',
-       '  vec3 dn = dn1*0.65 + dn2*0.35;',
-       '  normal = normalize(normal + vec3(dn.x, 0.0, dn.y)*uDetailStrength*dFade);',
-       '}'].join('\n'));
+       'float dCam = length(vWPosD - cameraPosition);',
+       'float fNear = 1.0 - smoothstep(2.0, 11.0, dCam);',
+       'float fMid  = 1.0 - smoothstep(10.0, 46.0, dCam);',
+       'float fFar  = 1.0 - smoothstep(40.0, 150.0, dCam);',
+       'vec3 dn = vec3(0.0);',
+       'if(fNear > 0.01) dn += (texture2D(uDetail, vWPosD.xz*uDetailScale*3.1).xyz*2.0-1.0)*0.55*fNear;',
+       'if(fMid  > 0.01) dn += (texture2D(uDetail, vWPosD.xz*uDetailScale).xyz*2.0-1.0)*0.70*fMid;',
+       'if(fFar  > 0.01) dn += (texture2D(uDetail, vWPosD.xz*uDetailScale*0.19).xyz*2.0-1.0)*0.45*fFar;',
+       'normal = normalize(normal + vec3(dn.x, 0.0, dn.y)*uDetailStrength);',
+       'float patch = texture2D(uDetail, vWPosD.xz*0.013).x;',
+       'float patch2 = texture2D(uDetail, vWPosD.xz*0.047).y;',
+       'float wear = smoothstep(0.42, 0.78, patch*0.7 + patch2*0.3);',
+       'diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb*vec3(1.22,1.04,0.78), wear*0.55);',
+       'diffuseColor.rgb *= 0.90 + patch2*0.20;'
+      ].join('\n'));
   };
 
   terrain=new THREE.Mesh(geo,mat);
@@ -5341,6 +5535,7 @@ function buildWorld(){
     buildArenaFloor();
     buildWater();
     if(arena==='box') buildArenaBox();
+    else if(arena==='creative') buildArenaCreative();
     else if(arena==='ball') buildArenaBall();
     else if(arena==='training') buildArenaTraining();
     else buildArenaZone();
@@ -5453,7 +5648,7 @@ function buildWorld(){
 
 /* ================= ground cover ================= */
 let grass=null;
-const GRASS_SIDE=37, GRASS_N=GRASS_SIDE*GRASS_SIDE, GRASS_STEP=2.4;
+const GRASS_SIDE=74, GRASS_N=GRASS_SIDE*GRASS_SIDE, GRASS_STEP=1.15;
 const grassDummy=new THREE.Object3D();
 const grassCol=new THREE.Color();
 let grassAnchor=new THREE.Vector3(1e9,0,1e9);
@@ -5475,13 +5670,58 @@ function grassTex(){
   }
   return new THREE.CanvasTexture(c);
 }
+/* A flat quad reads as a sticker. Real grass is a tapered blade that bends,
+   so each one is a four-segment strip, narrowing to a point and curving over
+   at the tip, and three of them are crossed into a tuft. */
+function grassBladeGeometry(){
+  const SEG=4, H=.62, W=.085;
+  const pos=[], uv=[], idx=[];
+  const blade=(rotY,lean,wobble)=>{
+    const base=pos.length/3;
+    const c=Math.cos(rotY), s2=Math.sin(rotY);
+    for(let i=0;i<=SEG;i++){
+      const t=i/SEG;
+      const w=W*(1-t*0.88);                       // taper to a point
+      const y=H*t;
+      const bend=lean*t*t;                        // curve over toward the tip
+      const side=Math.sin(t*3.1)*wobble*0.03;
+      for(const sx of [-1,1]){
+        const lx=sx*w+side, lz=bend;
+        pos.push(lx*c-lz*s2, y, lx*s2+lz*c);
+        uv.push((sx+1)/2, t);
+      }
+    }
+    for(let i=0;i<SEG;i++){
+      const a=base+i*2;
+      idx.push(a,a+1,a+2, a+1,a+3,a+2);
+    }
+  };
+  blade(0, .16, 1);
+  blade(2.1, .22, -1);
+  blade(4.2, .12, .5);
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
 function buildGrass(){
-  const geo=new THREE.PlaneGeometry(1.05,.52);
-  geo.translate(0,.26,0);
+  const geo=grassBladeGeometry();
   const mat=new THREE.MeshStandardMaterial({
-    map:grassTex(), transparent:true, alphaTest:.42,
-    side:THREE.DoubleSide, roughness:1, depthWrite:true, vertexColors:true
+    side:THREE.DoubleSide, roughness:.94, metalness:0, vertexColors:true,
+    envMapIntensity:.35
   });
+  // darken toward the root, the way light fails to reach the bottom of a tuft
+  mat.onBeforeCompile=sh=>{
+    sh.vertexShader=sh.vertexShader
+      .replace('#include <common>','#include <common>\nvarying float vBladeT;')
+      .replace('#include <begin_vertex>','#include <begin_vertex>\n  vBladeT = uv.y;');
+    sh.fragmentShader=sh.fragmentShader
+      .replace('#include <common>','#include <common>\nvarying float vBladeT;')
+      .replace('#include <color_fragment>',
+        '#include <color_fragment>\n  diffuseColor.rgb *= mix(0.42, 1.12, vBladeT);');
+  };
   addWind(mat,0.075,0.6);
   grass=new THREE.InstancedMesh(geo,mat,GRASS_N);
   grass.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -5512,15 +5752,18 @@ function refreshGrass(){
         grassDummy.position.set(0,-9999,0);
         grassDummy.scale.set(.001,.001,.001);
       } else {
-        grassDummy.position.set(px,gh-.05,pz);
+        grassDummy.position.set(px,gh-.03,pz);
         const lush=clamp(damp*1.5-.1,0,1)*clamp(1-sl*1.4,0,1);
-        const sc=(.55+h2*.45)*(.8+lush*.45);
-        grassDummy.scale.set(sc,sc*(.7+h1*.5)*(.85+lush*.35),sc);
+        const sc=(.62+h2*.55)*(.82+lush*.5);
+        grassDummy.scale.set(sc,sc*(.72+h1*.72)*(.8+lush*.5),sc);
         if(grass.setColorAt){
+          // every tuft is a slightly different plant, and dry patches go yellow
+          const dry=clamp(1-lush,0,1);
+          const v=(h1*.5+h2*.5);
           grassCol.setRGB(
-            .62+(1-lush)*.42+h2*.16,
-            .95-(1-lush)*.22+h1*.10,
-            .55+(1-lush)*.18);
+            .20+dry*.46+v*.16,
+            .40+(1-dry)*.30-v*.06,
+            .13+dry*.10+v*.05);
           grass.setColorAt(i,grassCol);
         }
       }
@@ -6185,6 +6428,46 @@ function closeCheats(){
 let lobbyScene=null, lobbyCam=null, lobbyChar=null, lobbyParts=null;
 let lobbyEmote=null, lobbyEmoteT=0, lobbyT=0, lobbyMates=[];
 
+/* In the locker the character becomes a turntable: drag to spin, wheel to
+   zoom, and it keeps turning for a moment after you let go. Left alone it
+   drifts back to a slow idle rotation. */
+const turn={ yaw:0, vel:0, dragging:false, lastX:0, lastY:0,
+             pitch:0, zoom:0, idle:0, active:false };
+function turnActive(){
+  return lobbyTab==='locker' &&
+         !document.getElementById('menu').classList.contains('hidden');
+}
+function bindTurntable(){
+  const el=renderer.domElement;
+  el.addEventListener('pointerdown',e=>{
+    if(!turnActive()) return;
+    turn.dragging=true; turn.lastX=e.clientX; turn.lastY=e.clientY;
+    turn.vel=0; turn.idle=0;
+    el.setPointerCapture&&el.setPointerCapture(e.pointerId);
+  });
+  el.addEventListener('pointermove',e=>{
+    if(!turn.dragging||!turnActive()) return;
+    const dx=e.clientX-turn.lastX, dy=e.clientY-turn.lastY;
+    turn.lastX=e.clientX; turn.lastY=e.clientY;
+    turn.yaw-=dx*0.0115;
+    turn.vel=-dx*0.0115;
+    turn.pitch=clamp(turn.pitch+dy*0.004,-0.32,0.42);
+  });
+  const stop=e=>{
+    if(!turn.dragging) return;
+    turn.dragging=false; turn.idle=0;
+    try{ el.releasePointerCapture&&el.releasePointerCapture(e.pointerId); }catch(err){}
+  };
+  el.addEventListener('pointerup',stop);
+  el.addEventListener('pointercancel',stop);
+  el.addEventListener('pointerleave',stop);
+  el.addEventListener('wheel',e=>{
+    if(!turnActive()) return;
+    e.preventDefault();
+    turn.zoom=clamp(turn.zoom+Math.sign(e.deltaY)*0.25,-2.0,2.4);
+  },{passive:false});
+}
+
 function buildLobbyStage(){
   lobbyScene=new THREE.Scene();
   lobbyScene.fog=null;
@@ -6240,7 +6523,12 @@ function refreshLobbyChar(){
   if(lobbyChar) lobbyScene.remove(lobbyChar);
   lobbyMates.forEach(m=>lobbyScene.remove(m.group));
   lobbyMates=[];
-  const f=makeFighter();
+  let f;
+  try{ f=makeFighter(); }
+  catch(err){
+    console.error('character build failed:',err);
+    f=makeFighter({detail:false});          // fall back to a body with no face
+  }
   f.group.traverse(o=>{ if(o.isMesh) o.castShadow=true; });
   const pk=makePickaxe();
   pk.rotation.set(0,0,-.2); pk.position.set(0,-.05,0);
@@ -6272,12 +6560,37 @@ function updateLobby(dt){
   lobbyT+=dt;
   lobbyCam.aspect=innerWidth/innerHeight;
   lobbyCam.updateProjectionMatrix();
-  const orbit=Math.sin(lobbyT*.16)*.28;
-  lobbyCam.position.set(2.05+Math.sin(orbit)*.5, 1.72, 4.25+Math.cos(orbit)*.35);
-  lobbyCam.lookAt(0.62,1.12,0);
+  if(turnActive()){
+    // locker: the character fills more of the frame and faces the panel
+    if(!turn.dragging){
+      turn.vel*=Math.pow(0.0016,dt);               // spin down after a flick
+      turn.yaw+=turn.vel;
+      turn.idle+=dt;
+      if(turn.idle>2.6) turn.yaw-=dt*0.18;         // idle drift
+      turn.pitch+=(0-turn.pitch)*Math.min(1,dt*1.1);
+    }
+    const dist=4.5+turn.zoom;
+    lobbyCam.position.set(
+      0.30+Math.sin(turn.pitch*0.5)*0.25,
+      1.30+turn.pitch*1.6,
+      dist);
+    lobbyCam.lookAt(0.30,1.02,0);
+    if(lobbyChar){
+      lobbyChar.rotation.y=turn.yaw;
+      lobbyChar.position.x=0.30;
+    }
+  } else {
+    const orbit=Math.sin(lobbyT*.16)*.28;
+    lobbyCam.position.set(2.05+Math.sin(orbit)*.5, 1.72, 4.25+Math.cos(orbit)*.35);
+    lobbyCam.lookAt(0.62,1.12,0);
+    if(lobbyChar){
+      lobbyChar.rotation.y=-0.42+Math.sin(lobbyT*.25)*.10;
+      lobbyChar.position.x=0;
+    }
+  }
 
+  // posing, breathing and emotes run whichever view you are in
   if(lobbyChar){
-    lobbyChar.rotation.y=-0.42+Math.sin(lobbyT*.25)*.10;
     if(lobbyEmote){
       lobbyEmoteT+=dt;
       const e=poseEmote(lobbyEmote,lobbyEmoteT,lobbyParts);
@@ -6296,8 +6609,13 @@ function updateLobby(dt){
       lobbyParts.legR.rotation.set(-.05,0,0);
       if(lobbyParts.legL.knee) lobbyParts.legL.knee.rotation.x=.10;
       if(lobbyParts.legR.knee) lobbyParts.legR.knee.rotation.x=.16;
-      lobbyParts.head.rotation.y=Math.sin(lobbyT*.4)*.22;
-      lobbyParts.head.rotation.x=Math.sin(lobbyT*.31)*.07;
+      if(turnActive()){
+        lobbyParts.head.rotation.y=Math.sin(lobbyT*.5)*.05;
+        lobbyParts.head.rotation.x=Math.sin(lobbyT*.4)*.025;
+      } else {
+        lobbyParts.head.rotation.y=Math.sin(lobbyT*.4)*.22;
+        lobbyParts.head.rotation.x=Math.sin(lobbyT*.31)*.07;
+      }
     }
   }
   lobbyMates.forEach((m,i)=>{
@@ -6497,6 +6815,9 @@ function renderLobbyPanel(){
   } else if(lobbyTab==='locker'){
     const cats=['skin','pack','pick','glider','emote'];
     el.innerHTML='<div class="ptitle">LOCKER</div>'+
+      '<div class="turnhint">Drag the character to turn them · wheel to zoom'+
+        ' · <button class="ghost small" id="turnReset" style="margin:0;padding:4px 10px;'+
+        'font-size:10px">RESET</button></div>'+
       '<div class="slotrow">'+cats.map(c=>
         '<button class="cslot'+(lockerCat===c?' on':'')+'" data-lcat="'+c+'">'+
         '<span class="ct">'+CAT_LABEL[c].toUpperCase()+'</span>'+
@@ -6551,26 +6872,79 @@ function renderLobbyPanel(){
           : !serverHasAccounts
             ? 'This server has no account system. Replace <i>server.js</i> with the current one and restart it.'
             : (googleClientId?'':'Google sign in is not set up on this server — use a username.')))+'</div>';
+  } else if(lobbyTab==='stream'){
+    const svc=[
+      ['twitch','Twitch','#a970ff','Works now. Reads your chat live over an anonymous '+
+        'connection — no login, no key, nothing to approve.'],
+      ['youtube','YouTube','#ff4e45','Needs a Data API key on your server and an active '+
+        'broadcast. Set YOUTUBE_API_KEY and the server will poll your live chat.'],
+      ['kick','Kick','#53fc18','No public chat API. It can be wired through your own '+
+        'server if you have a relay, but nothing here can do it on its own.'],
+      ['tiktok','TikTok','#ff0050','Live chat needs a signed connection that only a '+
+        'server library can make. Not possible from a browser.']
+    ];
+    el.innerHTML='<div class="ptitle">STREAM</div>'+
+      '<div class="psub">This links your <b>chat</b> to the game, so viewers can see what '+
+        'you see and vote on what happens. It does not broadcast video — going live still '+
+        'means OBS, because browsers cannot speak RTMP.</div>'+
+      '<div class="svcgrid">'+
+        svc.map(([id,name,col,note])=>
+          '<div class="svc'+(stream.service===id?' on':'')+'" style="--sc:'+col+'">'+
+            '<b>'+name+'</b><p>'+note+'</p>'+
+            (id==='twitch'
+              ? (stream.service==='twitch'&&stream.on
+                  ? '<button class="ghost small" id="svcOff">DISCONNECT</button>'
+                  : '<button class="ghost small" data-svc="twitch">CONNECT</button>')
+              : '<span class="svcna">'+(id==='youtube'?'server setup required':'not available')+'</span>')+
+          '</div>').join('')+
+      '</div>'+
+      '<div class="prow"><label>Twitch channel</label>'+
+        '<input id="twChan" maxlength="30" placeholder="your channel name" value="'+
+          (stream.channel||'')+'"></div>'+
+      '<div class="setgroup">Overlay and viewer commands</div>'+
+      '<div class="prow"><label>Chat on screen</label>'+
+        '<button class="sw'+(stream.overlay?' on':'')+'" id="ovToggle"></button>'+
+        '<span class="hintsm">last eight messages, bottom right</span></div>'+
+      '<div class="psub" style="font-size:12px">Viewers can type <b>!stats</b> for your record, '+
+        'and <b>1</b>, <b>2</b> or <b>3</b> during a vote. Start one below and it appears on '+
+        'stream with a live tally.</div>'+
+      '<div class="menubtns" style="margin:10px 0 4px">'+
+        '<button class="ghost small" id="voteDrop">VOTE: WHERE TO DROP</button>'+
+        '<button class="ghost small" id="voteMode">VOTE: NEXT MODE</button>'+
+      '</div>'+
+      '<div class="buyline'+(stream.on?' good':'')+'">'+(stream.status||'Not connected.')+'</div>';
   } else if(lobbyTab==='maps'){
     const code=exportMap();
-    el.innerHTML='<div class="ptitle">MAP CODES</div>'+
-      '<div class="psub">Anything you build in Training or a Box Fight can be packed into a '+
-        'code. Send it to a friend and they load the same arena, piece for piece.</div>'+
-      '<div class="setgroup">Your current build</div>'+
-      '<div class="codebox"><span>'+(code?PIECES.size+' PIECES':'NOTHING BUILT YET')+'</span>'+
-        '<b style="font-size:13px;letter-spacing:1px;word-break:break-all;text-align:left">'+
-          (code?code.slice(0,120)+(code.length>120?'…':''):'—')+'</b>'+
+    const list=savedMaps();
+    const names=Object.keys(list).sort((x,y)=>list[y].at-list[x].at);
+    el.innerHTML='<div class="ptitle">MAPS</div>'+
+      '<div class="psub">Anything you build — pieces and props — packs into a code. '+
+        'Save it here, or send the code to a friend and they load the same map.</div>'+
+      '<div class="setgroup">Current build</div>'+
+      '<div class="codebox"><span>'+(code?(creative.placed.length+PIECES.size)+' OBJECTS':'NOTHING BUILT')+'</span>'+
+        '<b style="font-size:12px;letter-spacing:0;word-break:break-all;text-align:left">'+
+          (code?code.slice(0,90)+(code.length>90?'…':''):'—')+'</b>'+
         (code?'<button class="ghost small" id="copyMap">COPY</button>':'')+'</div>'+
+      '<div class="prow"><label>Save as</label>'+
+        '<input id="mapName" maxlength="24" placeholder="name this map">'+
+        '<button class="ghost small" id="saveMapBtn" style="margin:0">SAVE</button></div>'+
       '<div class="setgroup">Load a code</div>'+
       '<div class="prow"><label>Code</label>'+
         '<textarea id="mapIn" rows="2" placeholder="paste a map code" '+
           'style="flex:1;background:rgba(4,8,16,.6);border:1px solid rgba(255,255,255,.18);'+
           'border-radius:4px;color:#fff;font-family:inherit;font-size:12px;padding:8px"></textarea>'+
         '<button class="ghost small" id="loadMap" style="margin:0">LOAD</button></div>'+
-      '<div class="psub">Loading replaces whatever you have built. Start a Training match '+
-        'first, then come back here and paste.</div>'+
-      '<div class="buyline'+(/Loaded|copied/.test(mapMsg)?' good':'')+'">'+
-        (mapMsg||(running?'':'Not in a match — codes load into the arena you are playing.'))+'</div>';
+      '<div class="setgroup">Your maps</div>'+
+      (names.length
+        ? names.map(n=>'<div class="friend on"><i></i><b>'+n+'</b>'+
+            '<span>'+(list[n].parts||0)+' objects</span>'+
+            '<button class="ghost small fbtn" data-loadmap="'+n+'">LOAD</button>'+
+            '<button class="ghost small fbtn" data-copymap="'+n+'">COPY</button>'+
+            '<button class="ghost small fbtn" data-delmap="'+n+'">DELETE</button></div>').join('')
+        : '<div class="psub">Nothing saved yet. Start a CREATIVE match and build something.</div>')+
+      '<div class="buyline'+(/Loaded|Saved|copied/.test(mapMsg)?' good':'')+'">'+
+        (mapMsg||(running?'Loading replaces what is already built.'
+                         :'Start a match to load a map into it.'))+'</div>';
   } else if(lobbyTab==='unlock'){
     const got=owns('skin','subscriber');
     el.innerHTML='<div class="ptitle">SUBSCRIBER OUTFIT</div>'+
@@ -6649,8 +7023,68 @@ function renderLobbyPanel(){
 }
 function bindPanel(){
   if(lobbyTab==='account') mountGoogleButton();
+  const tr=document.getElementById('turnReset');
+  if(tr) tr.addEventListener('click',()=>{
+    uiClick(); turn.yaw=0; turn.vel=0; turn.pitch=0; turn.zoom=0; turn.idle=0;
+  });
   const cm=document.getElementById('copyMap');
   if(cm) cm.addEventListener('click',()=>{ uiClick(); copyMapCode(); });
+  document.querySelectorAll('[data-svc]').forEach(b=>b.addEventListener('click',()=>{
+    uiClick();
+    twitchConnect(document.getElementById('twChan').value);
+  }));
+  const so=document.getElementById('svcOff');
+  if(so) so.addEventListener('click',()=>{ uiClick(); streamDisconnect(); });
+  const tc=document.getElementById('twChan');
+  if(tc) tc.addEventListener('keydown',e=>{
+    e.stopPropagation();
+    if(e.key==='Enter') twitchConnect(tc.value);
+  });
+  const ov=document.getElementById('ovToggle');
+  if(ov) ov.addEventListener('click',()=>{
+    uiClick(); stream.overlay=!stream.overlay;
+    ov.classList.toggle('on',stream.overlay); paintStreamOverlay();
+  });
+  const vd=document.getElementById('voteDrop');
+  if(vd) vd.addEventListener('click',()=>{
+    uiClick();
+    startVote('Where should we drop?',['Kettle Hollow','Saltpine Docks','Anywhere quiet'],40);
+  });
+  const vm2=document.getElementById('voteMode');
+  if(vm2) vm2.addEventListener('click',()=>{
+    uiClick();
+    startVote('What next?',['Battle Royale','Box Fight','Zone Wars'],40);
+  });
+  const sm=document.getElementById('saveMapBtn');
+  if(sm) sm.addEventListener('click',()=>{
+    uiClick();
+    mapMsg=saveMapAs(document.getElementById('mapName').value);
+    renderLobbyPanel();
+  });
+  const mn=document.getElementById('mapName');
+  if(mn) mn.addEventListener('keydown',e=>{
+    e.stopPropagation();
+    if(e.key==='Enter') document.getElementById('saveMapBtn').click();
+  });
+  document.querySelectorAll('[data-loadmap]').forEach(b=>b.addEventListener('click',()=>{
+    uiClick();
+    const rec=savedMaps()[b.dataset.loadmap];
+    mapMsg = !rec ? 'That map is gone.'
+           : running ? importMap(rec.code)
+           : 'Start a match first, then load it.';
+    renderLobbyPanel();
+  }));
+  document.querySelectorAll('[data-copymap]').forEach(b=>b.addEventListener('click',()=>{
+    uiClick();
+    const rec=savedMaps()[b.dataset.copymap];
+    if(!rec) return;
+    try{ navigator.clipboard.writeText(rec.code); mapMsg='Code copied.'; }
+    catch(e){ mapMsg=rec.code; }
+    renderLobbyPanel();
+  }));
+  document.querySelectorAll('[data-delmap]').forEach(b=>b.addEventListener('click',()=>{
+    uiClick(); deleteMap(b.dataset.delmap); mapMsg='Deleted.'; renderLobbyPanel();
+  }));
   const lm=document.getElementById('loadMap');
   if(lm) lm.addEventListener('click',()=>{
     uiClick();
@@ -6776,7 +7210,9 @@ function refreshCosmetics(){
   if(camera && glider){
     const vis=glider.visible;
     if(glider.parent) glider.parent.remove(glider);
-    glider=makeGliderMesh(); glider.visible=vis; camera.add(glider);
+    glider=makeGliderMesh(); glider.visible=vis;
+    glider.traverse(o=>{ if(o.isMesh) o.castShadow=true; });
+    scene.add(glider);
   }
   if(avParts) avParts.current=null;
   updateWallet();
@@ -6975,7 +7411,7 @@ function findItem(cat,id){ return (CATALOG[cat]||[]).find(x=>x.id===id) || CATAL
 /* ================= profile ================= */
 const DEFAULT_PROFILE={
   coins:800, xp:0, matches:0, wins:0, kills:0,
-  friendCode:null, friends:[], customItems:{}, aimBest:0,
+  friendCode:null, friends:[], customItems:{}, aimBest:0, maps:{},
   owned:{ skin:['recruit','dustline'], pack:['none','daypack'], pick:['standard'],
           glider:['standard'], emote:['wave','bounce','clap'] },
   equipped:{ skin:'recruit', pack:'daypack', pick:'standard', glider:'standard', emote:'wave' }
@@ -7020,68 +7456,260 @@ function makeLimb2(upLen,loLen,rTop,rMid,rBot,mat,seg){
   return g;
 }
 
+let _fabricTex=null;
+function fabricTexture(){
+  if(_fabricTex) return _fabricTex;
+  const S2=128, c=document.createElement('canvas');
+  c.width=c.height=S2;
+  const x=c.getContext('2d');
+  const img=x.createImageData(S2,S2);
+  for(let j=0;j<S2;j++) for(let i=0;i<S2;i++){
+    // a plain weave: alternating warp and weft, plus a little fibre noise
+    const warp=Math.sin(i*Math.PI/2)*0.5+0.5;
+    const weft=Math.sin(j*Math.PI/2)*0.5+0.5;
+    const over=((i+j)>>1)%2 ? warp : weft;
+    const fibre=(Math.sin(i*7.3+j*3.1)*0.5+0.5)*0.18;
+    const h=over*0.82+fibre;
+    const k=(j*S2+i)*4;
+    img.data[k]=128+(h-0.5)*90;
+    img.data[k+1]=128+(h-0.5)*90;
+    img.data[k+2]=255;
+    img.data[k+3]=255;
+  }
+  x.putImageData(img,0,0);
+  _fabricTex=new THREE.CanvasTexture(c);
+  _fabricTex.wrapS=_fabricTex.wrapT=THREE.RepeatWrapping;
+  _fabricTex.repeat.set(5,5);
+  return _fabricTex;
+}
 function makeFighter(opt){
   opt=opt||{};
   const detail=opt.detail!==false;
-  const seg=opt.lowpoly?9:14;
+  const seg=opt.lowpoly?9:18;
   const skin=findItem('skin', opt.skin||profile.equipped.skin);
+  /* Two builds. Which one an outfit uses is part of the outfit, and if it
+     does not say, it comes from a hash of the id, so the same outfit is
+     always the same person on every machine. */
+  let fem;
+  if(opt.sex) fem=(opt.sex==='f');
+  else if(skin.sex) fem=(skin.sex==='f');
+  else {
+    let hsh=0;
+    const sid=String(skin.id||'recruit');
+    for(let i=0;i<sid.length;i++) hsh=(hsh*31+sid.charCodeAt(i))>>>0;
+    fem=(hsh%2)===1;
+  }
   const pack=findItem('pack', opt.pack||profile.equipped.pack);
   const g=new THREE.Group();
+  /* Cloth, skin and hard kit catch light in completely different ways, and
+     giving them one shared material is the main reason stylised characters
+     look like toys. Each surface gets its own response. */
+  const clothTex=fabricTexture();
   const mats={
-    pri : new THREE.MeshStandardMaterial({color:skin.pri, roughness:.72}),
-    sec : new THREE.MeshStandardMaterial({color:skin.sec, roughness:.85}),
-    tone: new THREE.MeshStandardMaterial({color:skin.tone,roughness:.82}),
-    acc : new THREE.MeshStandardMaterial({color:skin.acc, roughness:.55, metalness:.25}),
-    dark: new THREE.MeshStandardMaterial({color:0x14181f, roughness:.6})
+    // woven cloth: rough, no specular punch, a faint weave in the normal
+    pri : new THREE.MeshStandardMaterial({color:skin.pri, roughness:.93, metalness:0,
+            normalMap:clothTex, normalScale:new THREE.Vector2(.35,.35), envMapIntensity:.45}),
+    sec : new THREE.MeshStandardMaterial({color:skin.sec, roughness:.97, metalness:0,
+            normalMap:clothTex, normalScale:new THREE.Vector2(.28,.28), envMapIntensity:.4}),
+    // skin: softer falloff, slight sheen, warm in the shadows
+    tone: new THREE.MeshStandardMaterial({color:skin.tone, roughness:.56, metalness:0,
+            envMapIntensity:.7}),
+    // webbing, buckles and plate: the only thing here that should glint
+    acc : new THREE.MeshStandardMaterial({color:skin.acc, roughness:.38, metalness:.55,
+            envMapIntensity:1.1}),
+    dark: new THREE.MeshStandardMaterial({color:0x14181f, roughness:.52, metalness:.2,
+            envMapIntensity:.8})
+  };
+  // warm the skin where it turns away from the light, the way thin flesh does
+  mats.tone.onBeforeCompile=sh=>{
+    sh.fragmentShader=sh.fragmentShader.replace(
+      '#include <lights_fragment_end>',
+      ['#include <lights_fragment_end>',
+       'float wrap = 1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0);',
+       'reflectedLight.indirectDiffuse += diffuseColor.rgb * vec3(0.16,0.045,0.03) * wrap;'
+      ].join('\n'));
   };
   const add=(m)=>{ m.castShadow=true; g.add(m); return m; };
 
   /* ---- torso: a lathed profile, flattened front to back like a ribcage ---- */
-  const prof=[[.215,0],[.252,.09],[.232,.24],[.198,.38],[.212,.50],[.262,.62],
-              [.278,.70],[.252,.77],[.140,.82]];
+  // waist, chest and shoulder taper all shift between the two builds
+  const prof = fem
+    ? [[.222,0],[.254,.09],[.228,.24],[.186,.38],[.206,.50],[.240,.62],
+       [.248,.70],[.228,.77],[.132,.82]]
+    : [[.215,0],[.252,.09],[.232,.24],[.198,.38],[.212,.50],[.262,.62],
+       [.282,.70],[.256,.77],[.140,.82]];
   const torsoGeo=new THREE.LatheGeometry(prof.map(p=>new THREE.Vector2(p[0],p[1])),seg+4);
   const torso=add(new THREE.Mesh(torsoGeo,mats.pri));
   torso.position.y=.98; torso.scale.z=.70;
 
-  const hips=add(new THREE.Mesh(new THREE.SphereGeometry(.225,seg,8),mats.sec));
-  hips.position.y=1.00; hips.scale.set(1,.62,.80);
+  const hips=add(new THREE.Mesh(new THREE.SphereGeometry(fem?.238:.225,seg,8),mats.sec));
+  hips.position.y=1.00; hips.scale.set(1,.62,fem?.86:.80);
 
   // shoulders and collar
-  const shL=add(new THREE.Mesh(new THREE.SphereGeometry(.118,seg,9),mats.pri));
-  shL.position.set(-.205,1.655,0); shL.scale.set(1,.92,1);
-  const shR=add(new THREE.Mesh(new THREE.SphereGeometry(.118,seg,9),mats.pri));
-  shR.position.set(.205,1.655,0); shR.scale.set(1,.92,1);
+  const SHX=fem?.188:.208, SHR=fem?.106:.120;
+  const shL=add(new THREE.Mesh(new THREE.SphereGeometry(SHR,seg,9),mats.pri));
+  shL.position.set(-SHX,1.655,0); shL.scale.set(1,.92,1);
+  const shR=add(new THREE.Mesh(new THREE.SphereGeometry(SHR,seg,9),mats.pri));
+  shR.position.set(SHX,1.655,0); shR.scale.set(1,.92,1);
   const collar=add(new THREE.Mesh(new THREE.CylinderGeometry(.128,.162,.075,seg),mats.sec));
   collar.position.y=1.700; collar.scale.z=.78;
 
-  const neck=add(new THREE.Mesh(new THREE.CylinderGeometry(.062,.080,.115,seg),mats.tone));
+  const neck=add(new THREE.Mesh(new THREE.CylinderGeometry(
+    fem?.054:.064, fem?.070:.082, .115, seg),mats.tone));
   neck.position.y=1.740;
 
   /* ---- head ---- */
-  const head=add(new THREE.Mesh(new THREE.SphereGeometry(.108,seg+4,seg+2),mats.tone));
-  head.position.y=1.862; head.scale.set(.96,1.22,1.04);
+  /* ---- head and face ----
+     The skull is built from parts rather than one ball: cranium, cheekbones,
+     a jaw that can open, and a brow ridge whose heaviness depends on the
+     build. Everything that moves is kept on the parts object so expressions
+     can drive it later. */
+  const F={};                                   // face parts, for expressions
+  const HY=1.862;                               // head centre height
+  const head=add(new THREE.Mesh(new THREE.SphereGeometry(.108,seg+6,seg+4),mats.tone));
+  head.position.y=HY;
+  head.scale.set(.96*(fem?.965:1.0), 1.22, 1.04);
+
   if(detail){
-    const jaw=add(new THREE.Mesh(new THREE.SphereGeometry(.086,seg,8),mats.tone));
-    jaw.position.set(0,1.812,.014); jaw.scale.set(.95,.70,1.02);
-    const brow=add(new THREE.Mesh(new THREE.BoxGeometry(.152,.026,.040),mats.tone));
-    brow.position.set(0,1.888,-.092);
-    const nose=add(new THREE.Mesh(new THREE.ConeGeometry(.026,.052,6),mats.tone));
-    nose.position.set(0,1.856,-.110); nose.rotation.x=-1.9;
-    const eyeGeo=new THREE.SphereGeometry(.021,8,6);
-    [-.042,.042].forEach(ex=>{
-      const e=add(new THREE.Mesh(eyeGeo,mats.dark));
-      e.position.set(ex,1.874,-.088); e.scale.set(1,.85,.6);
+    const skinMat=mats.tone;
+    const put=(m,x,y,z)=>{ m.position.set(x,y,z); return add(m); };
+
+    // cranium shaping: a flatter back and a fuller forehead
+    const occ=put(new THREE.Mesh(new THREE.SphereGeometry(.098,seg,10),skinMat),0,HY-.012,.030);
+    occ.scale.set(.96,1.02,.86);
+
+    // cheekbones, higher and sharper on the lighter build
+    [-1,1].forEach(sx=>{
+      const ch=put(new THREE.Mesh(new THREE.SphereGeometry(fem?.040:.044,10,8),skinMat),
+        sx*.062, HY-.018, -.058);
+      ch.scale.set(.9,fem?.62:.70,.78);
     });
-    const mouth=add(new THREE.Mesh(new THREE.BoxGeometry(.046,.010,.018),mats.dark));
-    mouth.position.set(0,1.812,-.095);
-    const earGeo=new THREE.SphereGeometry(.028,7,6);
-    [-.106,.106].forEach(ex=>{
-      const e=add(new THREE.Mesh(earGeo,mats.tone));
-      e.position.set(ex,1.858,.004); e.scale.set(.42,1,.8);
+
+    // jaw, hinged so it can open
+    const jaw=new THREE.Group();
+    jaw.position.set(0,HY+.018,.020);
+    g.add(jaw);
+    const jawM=new THREE.Mesh(new THREE.SphereGeometry(fem?.079:.088,seg,10),skinMat);
+    jawM.position.set(0,-.040,-.006);
+    jawM.scale.set(fem?.93:1.0, fem?.66:.72, 1.02);
+    jawM.castShadow=true; jaw.add(jawM);
+    const chin=new THREE.Mesh(new THREE.SphereGeometry(fem?.032:.038,10,8),skinMat);
+    chin.position.set(0,-.070,-.058);
+    chin.scale.set(fem?.86:1.0,.72,.80);
+    chin.castShadow=true; jaw.add(chin);
+    F.jaw=jaw;
+
+    // brow ridge: pronounced on the heavier build, barely there on the other
+    const brow=put(new THREE.Mesh(new THREE.BoxGeometry(.150,fem?.016:.026,.044),skinMat),
+      0,HY+.026,-.090);
+    brow.rotation.x=-.12;
+
+    // eyebrows, which are what an expression actually reads from
+    F.browL=put(new THREE.Mesh(new THREE.BoxGeometry(.050,.009,.012),mats.dark),
+      -.043,HY+.040,-.104);
+    F.browR=put(new THREE.Mesh(new THREE.BoxGeometry(.050,.009,.012),mats.dark),
+       .043,HY+.040,-.104);
+    F.browL.rotation.z=.12; F.browR.rotation.z=-.12;
+    F.browL.userData.y0=F.browL.position.y;
+    F.browR.userData.y0=F.browR.position.y;
+
+    // eyes: a white, a coloured iris and a pupil, set into a socket
+    const eyeW=new THREE.MeshStandardMaterial({color:0xf2f0ec,roughness:.26});
+    const iris=new THREE.MeshStandardMaterial({color:skin.eyes||0x4b6a4f,roughness:.2,
+      metalness:.05});
+    const pupil=new THREE.MeshStandardMaterial({color:0x07090c,roughness:.15});
+    [[-.042,'L'],[.042,'R']].forEach(([ex,side])=>{
+      const socket=put(new THREE.Mesh(new THREE.SphereGeometry(.030,10,8),mats.dark),
+        ex,HY+.012,-.086);
+      socket.scale.set(1,.72,.5);
+      socket.material=new THREE.MeshStandardMaterial({color:0x2a1f1c,roughness:.9});
+      const ball=put(new THREE.Mesh(new THREE.SphereGeometry(.0205,12,10),eyeW),
+        ex,HY+.012,-.090);
+      const ir=put(new THREE.Mesh(new THREE.SphereGeometry(.0092,10,8),iris),
+        ex,HY+.012,-.1055);
+      ir.scale.set(1,1,.5);
+      const pu=put(new THREE.Mesh(new THREE.SphereGeometry(.0042,8,6),pupil),
+        ex,HY+.012,-.1085);
+      pu.scale.set(1,1,.5);
+      // the lid is a cap that rotates down over the eye to blink
+      const lid=new THREE.Group();
+      lid.position.set(ex,HY+.012,-.090);
+      g.add(lid);
+      const lidM=new THREE.Mesh(new THREE.SphereGeometry(.0225,12,8,0,6.283,0,1.25),skinMat);
+      lidM.rotation.x=-1.25;
+      lidM.castShadow=true;
+      lid.add(lidM);
+      F['lid'+side]=lid;
+      F['eye'+side]=ball;
+      F['iris'+side]=ir;
+      F['pupil'+side]=pu;
     });
+
+    // nose: bridge, tip and nostrils
+    const bridge=put(new THREE.Mesh(new THREE.BoxGeometry(fem?.020:.024,.052,.026),skinMat),
+      0,HY+.012,-.100);
+    bridge.rotation.x=.16;
+    const tip=put(new THREE.Mesh(new THREE.SphereGeometry(fem?.019:.022,10,8),skinMat),
+      0,HY-.020,-.110);
+    tip.scale.set(1,.86,1.1);
+    [-1,1].forEach(sx=>{
+      const nos=put(new THREE.Mesh(new THREE.SphereGeometry(.009,8,6),mats.dark),
+        sx*.014,HY-.028,-.104);
+      nos.scale.set(.8,.7,.8);
+    });
+
+    // lips, as two cushions around a dark line, so the mouth has form
+    const lipMat=new THREE.MeshStandardMaterial({
+      color:new THREE.Color(skin.tone).lerp(new THREE.Color(0xa3524b),fem?.52:.34),
+      roughness:.5});
+    F.lipU=put(new THREE.Mesh(new THREE.SphereGeometry(fem?.027:.029,12,7),lipMat),
+      0,HY-.046,-.096);
+    F.lipU.scale.set(1.5,fem?.36:.30,.56);
+    F.lipU.userData.y0=F.lipU.position.y;
+    const mouthLine=put(new THREE.Mesh(new THREE.BoxGeometry(.046,.005,.012),mats.dark),
+      0,HY-.052,-.100);
+    F.mouthLine=mouthLine;
+    const lipL=new THREE.Mesh(new THREE.SphereGeometry(fem?.026:.028,12,7),lipMat);
+    lipL.position.set(0,-.078,-.100);
+    lipL.scale.set(1.45,fem?.40:.34,.56);
+    lipL.castShadow=true;
+    jaw.add(lipL);
+    F.lipL=lipL;
+
+    // ears with a lobe
+    [-1,1].forEach(sx=>{
+      const ear=put(new THREE.Mesh(new THREE.SphereGeometry(.027,9,8),skinMat),
+        sx*.104,HY-.002,.004);
+      ear.scale.set(.40,1.05,.78);
+      ear.rotation.y=sx*.25;
+      const lobe=put(new THREE.Mesh(new THREE.SphereGeometry(.013,7,6),skinMat),
+        sx*.103,HY-.030,.008);
+      lobe.scale.set(.5,.9,.8);
+      const canal=put(new THREE.Mesh(new THREE.SphereGeometry(.011,7,6),mats.dark),
+        sx*.098,HY-.002,.000);
+      canal.scale.set(.35,.8,.6);
+    });
+
+    // hair, in a style that suits the build
     if(skin.head==='none'||skin.head==='visor'){
-      const hair=add(new THREE.Mesh(new THREE.SphereGeometry(.114,seg,9,0,6.283,0,1.35),mats.sec));
-      hair.position.set(0,1.868,.010); hair.scale.set(1,1.14,1.06);
+      const hairMat=mats.sec;
+      const cap=put(new THREE.Mesh(
+        new THREE.SphereGeometry(.116,seg,10,0,6.283,0,fem?1.5:1.30),hairMat),
+        0,HY+.008,.012);
+      cap.scale.set(1,fem?1.18:1.12,1.07);
+      if(fem){
+        // a gathered tail at the back
+        const tail=put(new THREE.Mesh(new THREE.SphereGeometry(.052,10,9),hairMat),
+          0,HY-.040,.112);
+        tail.scale.set(.8,1.5,.9);
+        const band=put(new THREE.Mesh(new THREE.TorusGeometry(.040,.010,6,14),mats.acc),
+          0,HY+.010,.108);
+        band.rotation.y=Math.PI/2;
+      } else {
+        const back=put(new THREE.Mesh(new THREE.SphereGeometry(.100,seg,9,0,6.283,0,1.0),hairMat),
+          0,HY-.004,.030);
+        back.scale.set(1,.9,1.0);
+      }
     }
   }
 
@@ -7134,10 +7762,12 @@ function makeFighter(opt){
   }
 
   /* ---- limbs ---- */
-  const legL=makeLimb2(.50,.47,.094,.070,.058,mats.sec,seg); legL.position.set(-.098,1.01,0);
-  const legR=makeLimb2(.50,.47,.094,.070,.058,mats.sec,seg); legR.position.set(.098,1.01,0);
-  const armL=makeLimb2(.355,.325,.072,.054,.045,mats.pri,seg); armL.position.set(-.212,1.638,0);
-  const armR=makeLimb2(.355,.325,.072,.054,.045,mats.pri,seg); armR.position.set(.212,1.638,0);
+  const LR=fem?.088:.094, LR2=fem?.066:.070, AR=fem?.064:.074;
+  const LX=fem?.106:.098;
+  const legL=makeLimb2(.50,.47,LR,LR2,.056,mats.sec,seg); legL.position.set(-LX,1.01,0);
+  const legR=makeLimb2(.50,.47,LR,LR2,.056,mats.sec,seg); legR.position.set(LX,1.01,0);
+  const armL=makeLimb2(.355,.325,AR,.050,.042,mats.pri,seg); armL.position.set(-SHX-.006,1.638,0);
+  const armR=makeLimb2(.355,.325,AR,.050,.042,mats.pri,seg); armR.position.set(SHX+.006,1.638,0);
 
   const bootGeo=new THREE.BoxGeometry(.115,.085,.215);
   [legL,legR].forEach(l=>{
@@ -7193,7 +7823,14 @@ function makeFighter(opt){
   const held=new THREE.Group(); held.position.set(.245,1.285,-.20); g.add(held);
   const meshes=[];
   g.traverse(o=>{ if(o.isMesh) meshes.push(o); });
-  return {group:g, parts:{legL,legR,armL,armR,held,head,torso,chest:torso,hips,mats}, meshes, skin};
+  torso.userData.y0=torso.position.y;
+  shL.userData.y0=shL.position.y;
+  shR.userData.y0=shR.position.y;
+  g.scale.setScalar(fem?0.975:1.0);
+  torso.userData.y0=torso.position.y;
+  return {group:g, parts:{legL,legR,armL,armR,held,head,torso,chest:torso,hips,shL,shR,mats,
+                          face:F, fem},
+          meshes, skin};
 }
 
 function makePickaxe(id){
@@ -7394,6 +8031,404 @@ function makeGliderMesh(id){
   return g;
 }
 
+/* hands on the risers, legs trailing */
+function poseGlide(P){
+  if(!P) return;
+  P.armL.rotation.set(-2.5, 0, 0.35);
+  P.armR.rotation.set(-2.5, 0, -0.35);
+  if(P.armL.knee) P.armL.knee.rotation.x=0.3;
+  if(P.armR.knee) P.armR.knee.rotation.x=0.3;
+  P.legL.rotation.set(0.22, 0, 0.07);
+  P.legR.rotation.set(0.22, 0, -0.07);
+  if(P.legL.knee) P.legL.knee.rotation.x=0.18;
+  if(P.legR.knee) P.legR.knee.rotation.x=0.18;
+}
+/* spread eagle on the way down, with a slow flutter */
+function poseDive(P,t){
+  if(!P) return;
+  const f=Math.sin(t*4)*0.08;
+  P.armL.rotation.set(-1.9+f, 0, 1.15);
+  P.armR.rotation.set(-1.9-f, 0, -1.15);
+  if(P.armL.knee) P.armL.knee.rotation.x=0.9;
+  if(P.armR.knee) P.armR.knee.rotation.x=0.9;
+  P.legL.rotation.set(0.5-f, 0, 0.32);
+  P.legR.rotation.set(0.5+f, 0, -0.32);
+  if(P.legL.knee) P.legL.knee.rotation.x=0.75;
+  if(P.legR.knee) P.legR.knee.rotation.x=0.75;
+}
+
+/* ================= streaming =================
+   What a browser can and cannot do here is worth being precise about.
+
+   It CANNOT push video to Twitch or YouTube. Those take RTMP, which is a raw
+   TCP protocol with no browser API. Going live needs OBS, or a server that
+   transcodes WebRTC into RTMP. Nothing in this file can change that.
+
+   It CAN read your live chat and react to it, which is the part that makes a
+   stream feel connected to the game. Twitch allows an anonymous read-only
+   IRC connection over WebSocket with no key and no login, so that one works
+   out of the box. The others need credentials or a relay, and the panel says
+   so rather than pretending. */
+const stream={ on:false, service:'', channel:'', sock:null, msgs:[], viewers:null,
+               status:'', votes:null, voteT:0, retry:0, overlay:true };
+
+function streamLog(from,text,colour){
+  stream.msgs.push({from,text,colour:colour||'#9fd4ff',t:performance.now()});
+  if(stream.msgs.length>80) stream.msgs.shift();
+  paintStreamOverlay();
+}
+function paintStreamOverlay(){
+  const el=document.getElementById('chatstream');
+  if(!el) return;
+  if(!stream.on||!stream.overlay){ el.style.display='none'; return; }
+  const now=performance.now();
+  const rows=stream.msgs.filter(m=>now-m.t<26000).slice(-8);
+  el.style.display=rows.length?'block':'none';
+  el.innerHTML=rows.map(m=>
+    '<div class="smsg"><b style="color:'+m.colour+'">'+esc(m.from)+'</b> '+esc(m.text)+'</div>'
+  ).join('');
+}
+function esc(t){ return String(t).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+
+/* ---- Twitch: anonymous IRC over WebSocket, no credentials needed ---- */
+function twitchConnect(channel){
+  twitchClose();
+  channel=String(channel||'').trim().toLowerCase().replace(/^#/,'').replace(/[^a-z0-9_]/g,'');
+  if(!channel){ stream.status='Enter your Twitch channel name.'; renderLobbyPanel(); return; }
+  stream.service='twitch'; stream.channel=channel;
+  stream.status='Connecting to Twitch chat…';
+  renderLobbyPanel();
+  let sock;
+  try{ sock=new WebSocket('wss://irc-ws.chat.twitch.tv:443'); }
+  catch(e){ stream.status='Could not open a connection to Twitch.'; renderLobbyPanel(); return; }
+  stream.sock=sock;
+  sock.onopen=()=>{
+    // justinfan is Twitch's documented anonymous read-only login
+    sock.send('CAP REQ :twitch.tv/tags twitch.tv/commands');
+    sock.send('PASS SCHMOOPIIE');
+    sock.send('NICK justinfan'+Math.floor(Math.random()*90000+10000));
+    sock.send('JOIN #'+channel);
+    stream.on=true; stream.retry=0;
+    stream.status='Reading chat in #'+channel+'.';
+    streamLog('GALEBREAK','connected to #'+channel,'#7bd88f');
+    renderLobbyPanel();
+  };
+  sock.onmessage=ev=>{
+    for(const raw of String(ev.data).split('\r\n')){
+      if(!raw) continue;
+      if(raw.startsWith('PING')){ sock.send('PONG :tmi.twitch.tv'); continue; }
+      const m=raw.match(/^(?:@([^ ]*) )?:([^!]+)!.* PRIVMSG #[^ ]+ :(.*)$/);
+      if(!m) continue;
+      const tags={};
+      (m[1]||'').split(';').forEach(kv=>{ const i=kv.indexOf('='); if(i>0) tags[kv.slice(0,i)]=kv.slice(i+1); });
+      const name=tags['display-name']||m[2];
+      const colour=tags.color||'#9fd4ff';
+      const text=m[3];
+      streamLog(name,text,colour);
+      handleStreamCommand(name,text);
+    }
+  };
+  sock.onclose=()=>{
+    if(stream.service!=='twitch') return;
+    stream.on=false;
+    stream.status='Twitch chat disconnected.';
+    renderLobbyPanel();
+    // come back on its own, backing off so we never hammer them
+    if(stream.retry<6){
+      const wait=Math.min(30000, 1500*Math.pow(2,stream.retry++));
+      setTimeout(()=>{ if(stream.service==='twitch') twitchConnect(stream.channel); },wait);
+    }
+  };
+  sock.onerror=()=>{ stream.status='Twitch chat connection failed.'; renderLobbyPanel(); };
+}
+function twitchClose(){
+  if(stream.sock){ try{ stream.sock.onclose=null; stream.sock.close(); }catch(e){} }
+  stream.sock=null; stream.on=false;
+}
+function streamDisconnect(){
+  stream.service=''; stream.channel='';
+  twitchClose();
+  stream.status='Disconnected.';
+  stream.msgs.length=0;
+  paintStreamOverlay();
+  renderLobbyPanel();
+}
+
+/* ---- viewers can affect the match ---- */
+function startVote(question,options,secs){
+  stream.votes={ q:question, opts:options, tally:options.map(()=>0), voted:new Set(),
+                 left:secs||30 };
+  streamLog('GALEBREAK', question+' — type '+options.map((o,i)=>(i+1)+' for '+o).join(', '), '#ffd873');
+}
+function handleStreamCommand(name,text){
+  const t=text.trim().toLowerCase();
+  if(stream.votes){
+    const n=parseInt(t,10);
+    if(n>=1 && n<=stream.votes.opts.length && !stream.votes.voted.has(name)){
+      stream.votes.voted.add(name);
+      stream.votes.tally[n-1]++;
+    }
+  }
+  if(t==='!drop' && phase==='bus'){
+    streamLog('GALEBREAK','chat says drop','#ffd873');
+  }
+  if(t==='!stats'){
+    streamLog('GALEBREAK', netName+' — level '+levelOf()+', '+profile.wins+' wins, '+
+      profile.kills+' eliminations','#7bd88f');
+  }
+}
+function updateStream(dt){
+  if(stream.votes){
+    stream.votes.left-=dt;
+    const el=document.getElementById('votebox');
+    if(el){
+      const v=stream.votes, total=Math.max(1,v.tally.reduce((a,b)=>a+b,0));
+      el.style.display='block';
+      el.innerHTML='<b>'+esc(v.q)+'</b>'+
+        v.opts.map((o,i)=>'<div class="vrow"><span>'+(i+1)+' '+esc(o)+'</span>'+
+          '<em style="width:'+Math.round(v.tally[i]/total*100)+'%"></em>'+
+          '<i>'+v.tally[i]+'</i></div>').join('')+
+        '<small>'+Math.ceil(Math.max(0,v.votes_left||v.left))+'s</small>';
+    }
+    if(stream.votes.left<=0){
+      const v=stream.votes;
+      const win=v.tally.indexOf(Math.max(...v.tally));
+      streamLog('GALEBREAK','chat chose '+v.opts[win],'#ffd873');
+      toast('Chat chose <u>'+v.opts[win]+'</u>');
+      stream.votes=null;
+      const el2=document.getElementById('votebox');
+      if(el2) el2.style.display='none';
+    }
+  }
+  if((waterTick&31)===0) paintStreamOverlay();
+}
+/* ================= creative =================
+   A flat plate, unlimited materials, a fly camera and a palette of props.
+   Everything placed is recorded in an undo stack and serialised into the
+   same map code the build pieces use, so a whole arena travels as a string. */
+const PROPS=[
+  { id:'crate',  name:'Crate',        w:1.6, h:1.6, d:1.6,  mat:'built' },
+  { id:'barrel', name:'Barrel',       w:1.1, h:1.7, d:1.1,  mat:'frame', round:true },
+  { id:'block',  name:'Block',        w:4,   h:2,   d:4,    mat:'shell' },
+  { id:'pillar', name:'Pillar',       w:1.2, h:8,   d:1.2,  mat:'frame' },
+  { id:'wallL',  name:'Long wall',    w:12,  h:5,   d:0.6,  mat:'shell' },
+  { id:'ramp',   name:'Slope',        w:5,   h:0.5, d:8,    mat:'deck', tilt:-0.42 },
+  { id:'plat',   name:'Platform',     w:10,  h:0.6, d:10,   mat:'deck' },
+  { id:'tower',  name:'Tower',        w:6,   h:14,  d:6,    mat:'shell' },
+  { id:'goal',   name:'Goal frame',   w:8,   h:6,   d:0.6,  mat:'trim' },
+  { id:'spawn',  name:'Spawn pad',    w:3,   h:0.3, d:3,    mat:'gold', spawn:true }
+];
+let creative={ on:false, fly:false, propIdx:0, undo:[], placed:[], grid:2,
+               rot:0, lastSave:'', msg:'' };
+
+function creativeMat(key){
+  if(!BOXMAT.shell) boxMaterials();
+  return ({ built:MAT.built, frame:BOXMAT.frame, shell:BOXMAT.shell,
+            deck:BOXMAT.deck, trim:BOXMAT.trim, gold:BOXMAT.gold })[key]||BOXMAT.shell;
+}
+function buildArenaCreative(){
+  boxMaterials();
+  teamPads.length=0;
+  creative.placed.length=0; creative.undo.length=0;
+  boxOffX=0; boxOffZ=0;
+  const cy=groundH(0,0);
+  // a generous plate with a grid you can actually align to
+  bSolid(420,.8,420, 0, cy-.4, 0, BOXMAT.deck);
+  for(let i=-26;i<=26;i++){
+    const o=i*8;
+    bDeco(420,.05,.08, 0, cy+.04, o, i%5===0?BOXMAT.trim:BOXMAT.frame);
+    bDeco(.08,.05,420, o, cy+.04, 0, i%5===0?BOXMAT.trim:BOXMAT.frame);
+  }
+  bDeco(420,.06,.3, 0, cy+.05, 0, BOXMAT.gold);
+  bDeco(.3,.06,420, 0, cy+.05, 0, BOXMAT.gold);
+  signBoard('CREATIVE', 0, cy+9, -30, '#ffd873', 20);
+}
+
+function propGhost(){
+  const pr=PROPS[creative.propIdx];
+  const t=creativeAim();
+  if(!creative.ghost){
+    creative.ghost=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),
+      new THREE.MeshBasicMaterial({color:0x7bd88f,transparent:true,opacity:.34,depthWrite:false}));
+    creative.ghost.frustumCulled=false;
+    scene.add(creative.ghost);
+  }
+  const gh=creative.ghost;
+  gh.visible = creative.on && !creative.buildMode;
+  if(!gh.visible) return;
+  gh.scale.set(pr.w,pr.h,pr.d);
+  gh.position.set(t.x, t.y+pr.h/2, t.z);
+  gh.rotation.set(pr.tilt||0, creative.rot, 0);
+}
+function creativeAim(){
+  const o=camera.getWorldPosition(new THREE.Vector3());
+  const d=camera.getWorldDirection(new THREE.Vector3());
+  const hits=new THREE.Raycaster(o,d,.5,90).intersectObjects(hittables,false);
+  const pt=hits.length?hits[0].point.clone():o.clone().add(d.clone().multiplyScalar(18));
+  const g=creative.grid;
+  return { x:Math.round(pt.x/g)*g, y:Math.round(pt.y/g*2)/2*g/g*1, z:Math.round(pt.z/g)*g,
+           raw:pt };
+}
+function placeProp(){
+  const pr=PROPS[creative.propIdx];
+  const t=creativeAim();
+  const y=Math.round(t.raw.y/0.5)*0.5;
+  const m=box(pr.w,pr.h,pr.d, t.x, y+pr.h/2, t.z, creativeMat(pr.mat));
+  m.rotation.set(pr.tilt||0, creative.rot, 0);
+  m.userData.prop={ id:pr.id, x:t.x, y:y, z:t.z, rot:creative.rot };
+  m.userData.harvest=null;
+  creative.placed.push(m);
+  creative.undo.push({type:'prop',mesh:m});
+  if(creative.undo.length>120) creative.undo.shift();
+  buildSound(player.pos);
+}
+function creativeUndo(){
+  const last=creative.undo.pop();
+  if(!last){ toast('Nothing to undo'); return; }
+  if(last.type==='prop'){
+    const i=creative.placed.indexOf(last.mesh);
+    if(i>=0) creative.placed.splice(i,1);
+    if(last.mesh.parent) scene.remove(last.mesh);
+    const h=hittables.indexOf(last.mesh); if(h>=0) hittables.splice(h,1);
+    if(last.mesh.userData.box){
+      const c=colliders.indexOf(last.mesh.userData.box);
+      if(c>=0) colliders.splice(c,1);
+    }
+    rebuildColGrid();
+  } else if(last.type==='piece' && last.piece){
+    removePiece(last.piece);
+  }
+  blip(300,.06,.1,'sine');
+}
+function creativeDelete(){
+  const o=camera.getWorldPosition(new THREE.Vector3());
+  const d=camera.getWorldDirection(new THREE.Vector3());
+  const hits=new THREE.Raycaster(o,d,.5,40).intersectObjects(hittables,false);
+  for(const h of hits){
+    if(h.object.userData.piece){ removePiece(h.object.userData.piece); blip(260,.07,.1,'sawtooth'); return; }
+    if(h.object.userData.prop){
+      const i=creative.placed.indexOf(h.object);
+      if(i>=0) creative.placed.splice(i,1);
+      if(h.object.parent) scene.remove(h.object);
+      const hi=hittables.indexOf(h.object); if(hi>=0) hittables.splice(hi,1);
+      if(h.object.userData.box){
+        const c=colliders.indexOf(h.object.userData.box);
+        if(c>=0) colliders.splice(c,1);
+      }
+      rebuildColGrid();
+      blip(260,.07,.1,'sawtooth');
+      return;
+    }
+  }
+}
+function creativeTick(dt){
+  if(modeCfg().arena!=='creative') return;
+  creative.on=true;
+  player.mats=999;
+  propGhost();
+  const el=document.getElementById('crhud');
+  if(!el) return;
+  const pr=PROPS[creative.propIdx];
+  el.style.display='block';
+  el.innerHTML=
+    '<b>CREATIVE</b>'+
+    '<div><span>mode</span>'+(creative.buildMode?'pieces':'props')+'</div>'+
+    '<div><span>holding</span>'+(creative.buildMode?'wall / ramp / floor / cone':pr.name)+'</div>'+
+    '<div><span>grid</span>'+creative.grid+'m</div>'+
+    '<div><span>placed</span>'+(creative.placed.length+PIECES.size)+'</div>'+
+    '<div><span>fly</span>'+(creative.fly?'on':'off')+'</div>'+
+    '<i>TAB props/pieces · [ ] cycle · R rotate · G grid · F fly<br>'+
+    'X delete · Z undo · MAPS tab to save or load</i>'+
+    (creative.msg?'<em>'+creative.msg+'</em>':'');
+}
+/* ================= expressions =================
+   Blinking is the single cheapest thing that stops a face looking dead, so
+   it runs on everyone. Brows, jaw and eye direction are driven by what the
+   character is actually doing: hurt, aiming, shouting, or just breathing. */
+const EXPR_SET={
+  neutral:{ brow:0,    browTilt:0,    jaw:0,    squint:0,   lip:0 },
+  focus  :{ brow:-.006,browTilt:.10,  jaw:0,    squint:.35, lip:.2 },
+  hurt   :{ brow:.004, browTilt:-.22, jaw:.09,  squint:.70, lip:.5 },
+  shout  :{ brow:.009, browTilt:-.08, jaw:.16,  squint:.25, lip:.8 },
+  happy  :{ brow:.007, browTilt:.04,  jaw:.03,  squint:.45, lip:.6 },
+  dead   :{ brow:0,    browTilt:0,    jaw:.05,  squint:1,   lip:.3 }
+};
+function faceState(P){
+  if(!P||!P.face) return null;
+  const f=P.face;
+  if(!f.st) f.st={ blink:1.4+Math.random()*3, closing:0, cur:'neutral',
+                   mix:{brow:0,browTilt:0,jaw:0,squint:0,lip:0},
+                   look:{x:0,y:0}, lookT:0, hold:0 };
+  return f.st;
+}
+function setExpression(P,name,hold){
+  const st=faceState(P);
+  if(!st) return;
+  st.cur=name;
+  st.hold=hold||0.9;
+}
+function updateFace(P,dt){
+  const f=P&&P.face;
+  const st=faceState(P);
+  if(!st||!f.lidL) return;
+
+  // hold an expression for a moment, then settle back
+  if(st.hold>0){ st.hold-=dt; if(st.hold<=0) st.cur='neutral'; }
+  const want=EXPR_SET[st.cur]||EXPR_SET.neutral;
+  for(const k in st.mix) st.mix[k]+=(want[k]-st.mix[k])*Math.min(1,dt*7);
+
+  // blink: fast down, slower up, with a random gap between
+  st.blink-=dt;
+  if(st.blink<=0 && st.closing<=0){ st.closing=0.16; st.blink=2.2+Math.random()*4; }
+  let lidClose=st.mix.squint*0.55;
+  if(st.closing>0){
+    st.closing-=dt;
+    const t=1-(st.closing/0.16);
+    lidClose=Math.max(lidClose, Math.sin(t*Math.PI));
+  }
+  if(st.cur==='dead') lidClose=1;
+  f.lidL.rotation.x=lidClose*1.35;
+  f.lidR.rotation.x=lidClose*1.35;
+
+  // eyes drift, then flick somewhere new
+  st.lookT-=dt;
+  if(st.lookT<=0){
+    st.lookT=0.8+Math.random()*2.6;
+    st.look.x=(Math.random()*2-1)*0.22;
+    st.look.y=(Math.random()*2-1)*0.12;
+  }
+  [['irisL','pupilL','eyeL'],['irisR','pupilR','eyeR']].forEach(([ir,pu,ey])=>{
+    if(!f[ir]||!f[ey]) return;
+    const bx=f[ey].position.x, by=f[ey].position.y;
+    f[ir].position.x=bx+st.look.x*0.010;
+    f[ir].position.y=by+st.look.y*0.008;
+    if(f[pu]){ f[pu].position.x=bx+st.look.x*0.011; f[pu].position.y=by+st.look.y*0.009; }
+  });
+
+  if(f.browL){
+    f.browL.position.y=f.browL.userData.y0+st.mix.brow;
+    f.browR.position.y=f.browR.userData.y0+st.mix.brow;
+    f.browL.rotation.z= .12+st.mix.browTilt;
+    f.browR.rotation.z=-.12-st.mix.browTilt;
+  }
+  if(f.jaw) f.jaw.rotation.x=st.mix.jaw;
+  if(f.lipU) f.lipU.position.y=f.lipU.userData.y0-st.mix.lip*0.004;
+}
+function updateFaces(dt){
+  if(avParts) updateFace(avParts,dt);
+  // only the ones close enough to read are worth animating
+  const cam=camera.getWorldPosition(new THREE.Vector3());
+  for(const b of bots){
+    if(!b.alive||!b.face) continue;
+    if(b.pos.distanceToSquared(cam)>900) continue;
+    updateFace(b,dt);
+  }
+  for(const r of remotePlayers.values()){
+    if(!r.alive||!r.face) continue;
+    if(r.pos.distanceToSquared(cam)>900) continue;
+    updateFace(r,dt);
+  }
+}
 /* ================= player avatar (third person) ================= */
 let avatar=null, avParts=null;
 function buildAvatar(){
@@ -7451,7 +8486,8 @@ function buildViewModels(){
   if(glider && glider.parent) glider.parent.remove(glider);
   glider=makeGliderMesh();
   glider.visible=false;
-  camera.add(glider);
+  glider.traverse(o=>{ if(o.isMesh) o.castShadow=true; });
+  scene.add(glider);
 }
 
 function refreshViewGun(){
@@ -7510,8 +8546,10 @@ function spawnBot(name,jumpAt){
 
   g.position.copy(bus.start); scene.add(g);
 
-  const bot={ name,g,torso:f.parts.torso,head:f.parts.head,
+  const bot={ name,g,torso:f.parts.torso,head:f.parts.head, face:f.parts.face,
+    shL:f.parts.shL, shR:f.parts.shR, hips:f.parts.hips,
     legL:f.parts.legL, legR:f.parts.legR, armL:f.parts.armL, armR:f.parts.armR, chute,
+    phaseOff:RNG()*6.283,
     pos:bus.start.clone(), vel:new THREE.Vector3(),
     hp:100, shield:rnd(0,100)|0, alive:true,
     state:'bus', jumpAt:jumpAt, land:new THREE.Vector3(),
@@ -7849,6 +8887,10 @@ function updateBots(dt){
     b.g.rotation.z=0;
     poseWalk(b, b.moving?Math.sin(b.step):0, b.moving?Math.cos(b.step):0,
              !!(b.weapon&&b.enemy));
+    if(!b.moving && b.torso){
+      const bt=performance.now()/1000+(b.phaseOff||0);
+      b.torso.rotation.x=Math.sin(bt*1.4)*0.012;
+    }
     b.g.position.y += Math.abs(Math.sin(b.step))*0.035*(b.moving?1:0);
 
     if(storm.armed && toC>storm.r){
@@ -7869,11 +8911,43 @@ function updateBots(dt){
 }
 
 /* one walk pose used by the player, the bots and everyone on the network */
+/* Real walking is not two legs swinging. The hips drop onto the loaded leg,
+   the torso counter-rotates against the arms, the shoulders roll, and the
+   head holds steady while everything beneath it moves. Those four things do
+   most of the work of making a figure look alive. */
 function poseWalk(P,sw,cw,aiming){
-  P.legL.rotation.x=sw*.62;
-  P.legR.rotation.x=-sw*.62;
-  if(P.legL.knee) P.legL.knee.rotation.x=Math.max(0,-sw)*1.05+.05;
-  if(P.legR.knee) P.legR.knee.rotation.x=Math.max(0, sw)*1.05+.05;
+  const gait=Math.min(1,Math.abs(sw)+Math.abs(cw));
+
+  // legs, with the knee only bending on the back swing
+  P.legL.rotation.x=sw*.68;
+  P.legR.rotation.x=-sw*.68;
+  P.legL.rotation.z= .03+sw*.04;
+  P.legR.rotation.z=-.03-sw*.04;
+  if(P.legL.knee) P.legL.knee.rotation.x=Math.max(0,-sw)*1.18+.06;
+  if(P.legR.knee) P.legR.knee.rotation.x=Math.max(0, sw)*1.18+.06;
+
+  // hips: drop onto whichever leg is carrying the weight, and sway with it
+  if(P.hips){
+    P.hips.rotation.z=cw*.085*gait;
+    P.hips.rotation.y=-sw*.10*gait;
+    P.hips.position.x=cw*.035*gait;
+  }
+  // torso counter-rotates against the legs, and leans into the stride
+  if(P.torso){
+    P.torso.rotation.y=sw*.13*gait;
+    P.torso.rotation.z=-cw*.045*gait;
+    P.torso.rotation.x=gait*.06;
+  }
+  // shoulders roll with the swing
+  if(P.shL) P.shL.position.y=(P.shL.userData.y0||P.shL.position.y)-Math.max(0,sw)*.02*gait;
+  if(P.shR) P.shR.position.y=(P.shR.userData.y0||P.shR.position.y)-Math.max(0,-sw)*.02*gait;
+
+  // the head stays level while the body moves under it
+  if(P.head){
+    P.head.rotation.z=-cw*.03*gait;
+    P.head.rotation.y=-sw*.05*gait;
+  }
+
   if(!P.armL) return;
   if(aiming){
     P.armL.rotation.set(-1.32,0,.34);
@@ -7881,15 +8955,17 @@ function poseWalk(P,sw,cw,aiming){
     if(P.armL.knee) P.armL.knee.rotation.x=-.62;
     if(P.armR.knee) P.armR.knee.rotation.x=-.28;
   } else {
-    P.armL.rotation.set(-sw*.48,0,.10);
-    P.armR.rotation.set( sw*.48,0,-.10);
-    const bend=.24+Math.max(0,sw)*.35;
-    if(P.armL.knee) P.armL.knee.rotation.x=-bend;
-    if(P.armR.knee) P.armR.knee.rotation.x=-(.24+Math.max(0,-sw)*.35);
+    // arms swing opposite the legs, with a little outward splay under load
+    P.armL.rotation.set(-sw*.56,0,.12+Math.abs(sw)*.05);
+    P.armR.rotation.set( sw*.56,0,-.12-Math.abs(sw)*.05);
+    if(P.armL.knee) P.armL.knee.rotation.x=-(.26+Math.max(0,sw)*.42);
+    if(P.armR.knee) P.armR.knee.rotation.x=-(.26+Math.max(0,-sw)*.42);
   }
 }
 
+
 function killBot(bot,by){
+  if(bot && bot.face) setExpression(bot,'dead',999);
   if(!bot.alive) return;
   if(netConnected&&netHost) netSend({type:'botkill', i:bots.indexOf(bot), by:(by==='you'?netName:by)});
   bot.alive=false; scene.remove(bot.g);
@@ -7909,6 +8985,8 @@ function killBot(bot,by){
   }
   if(by==='you'){
     player.kills++; feed('You',bot.name); killSound(); updateModeBadge(); showElim(bot.name);
+    setExpression(avParts,'happy',1.6);
+    if(bot.face) setExpression(bot,'dead',999);
     if(modeCfg().arena==='box'){ boxAwardRound(true); return; }
   }
   else feed(by==='the storm'?'The storm':by,bot.name);
@@ -7942,6 +9020,7 @@ function shoot(){
   gunShot(g.kind,null);
 
   if(!cheats.steady) player.kick += g.kind==='sniper'?.075:(g.kind==='shotgun'?.055:.017);
+  setExpression(avParts,'focus',.5);
   addShake(g.kind==='sniper'?.42:(g.kind==='shotgun'?.34:.10));
 
   const origin=camera.getWorldPosition(new THREE.Vector3());
@@ -8134,6 +9213,7 @@ function hurtPlayer(amount, from, byName){
   const f=document.getElementById('dmgflash');
   f.style.opacity=.85; setTimeout(()=>f.style.opacity=0,90);
   if(from){ addCue(from,'dmg'); hurtSound(shieldHit,amount+s); addShake(.35); }
+  setExpression(avParts,'hurt',1.1);
   syncHUD();
   if(player.hp<=0){
     player.hp=0;
@@ -9017,6 +10097,18 @@ function bindInput(){
     }
     if(act==='rotate' && player.slot>=6){ buildRot=(buildRot+1)%4; blip(820,.04,.09,'triangle'); }
     if(act==='clip'){ clipSave(); return; }
+    if(modeCfg().arena==='creative'){
+      if(e.code==='Tab'){ e.preventDefault(); creative.buildMode=!creative.buildMode;
+        setSlot(creative.buildMode?6:0,true); uiClick(); return; }
+      if(e.code==='BracketLeft'){ creative.propIdx=(creative.propIdx+PROPS.length-1)%PROPS.length; blip(620,.04,.07,'sine'); return; }
+      if(e.code==='BracketRight'){ creative.propIdx=(creative.propIdx+1)%PROPS.length; blip(700,.04,.07,'sine'); return; }
+      if(e.code==='KeyG'&&!editing){ creative.grid=creative.grid===1?2:(creative.grid===2?4:1);
+        toast('Grid '+creative.grid+'m'); return; }
+      if(e.code==='KeyZ'){ creativeUndo(); return; }
+      if(e.code==='KeyX'){ creativeDelete(); return; }
+      if(e.code==='KeyF'){ creative.fly=!creative.fly; toast(creative.fly?'Fly on':'Fly off'); return; }
+      if(act==='rotate'){ creative.rot=(creative.rot+Math.PI/4)%(Math.PI*2); return; }
+    }
     if(act==='chat') openChat('all');
     if(act==='teamChat') openChat('team');
     if(act==='accept' && pendingInvite){
@@ -9185,6 +10277,7 @@ function fallbackLook(dt){
 function fireOnce(){
   if(myEmote) stopEmote();
   if(editing){ editToggle(); return; }
+  if(modeCfg().arena==='creative' && !creative.buildMode){ placeProp(); return; }
   if(roundLock) return;
   if(player.fireCd>0||ended||spectating||respawnT>0) return;
   if(player.slot===0){ swing(); return; }
@@ -9218,6 +10311,27 @@ function updateBus(dt){
 function updateAir(dt){
   const gliding=player.pos.y<GLIDE_ALT;
   glider.visible=gliding;
+  if(gliding){
+    // hang it above the player and let it bank with the steering
+    glider.position.set(player.pos.x, player.pos.y, player.pos.z);
+    glider.rotation.set(0, yaw+Math.PI, 0);
+    glider.rotation.z = -(player.lean||0)*0.5;
+    glider.rotation.x = 0.12;
+  }
+
+  // the body is drawn during the drop as well, posed under the canopy
+  if(avatar && !spectating){
+    avatar.visible=true;
+    avatar.position.set(player.pos.x,player.pos.y,player.pos.z);
+    avatar.rotation.y=yaw+Math.PI;
+    avatar.rotation.z=-(player.lean||0)*0.35;
+    if(avParts){
+      avParts.held.visible=false;
+      if(gliding) poseGlide(avParts);
+      else poseDive(avParts, performance.now()/1000);
+      avParts.head.rotation.x=clamp(pitch*.5,-.5,.5);
+    }
+  }
 
   const fwd=V(-Math.sin(yaw),0,-Math.cos(yaw)), right=V(Math.cos(yaw),0,-Math.sin(yaw));
   let mv=V(0,0,0);
@@ -9225,6 +10339,10 @@ function updateAir(dt){
   if(down('back'))    mv.sub(fwd);
   if(down('right'))   mv.add(right);
   if(down('left'))    mv.sub(right);
+
+  // how hard you are steering sideways, smoothed, so the canopy banks into it
+  const steer=(down('right')?1:0)-(down('left')?1:0);
+  player.lean=(player.lean||0)+((steer)-(player.lean||0))*Math.min(1,dt*5);
   const hspd=gliding?19:34;
   if(mv.lengthSq()>0) mv.normalize().multiplyScalar(hspd);
 
@@ -9241,10 +10359,11 @@ function updateAir(dt){
   const d=Math.hypot(player.pos.x,player.pos.z);
   if(d>PLAY_R-3){ player.pos.x*=(PLAY_R-3)/d; player.pos.z*=(PLAY_R-3)/d; }
 
-  camera.position.set(player.pos.x,player.pos.y+EYE,player.pos.z);
+  placeCamera(V(player.pos.x,player.pos.y+EYE,player.pos.z), dt);
 
   if(landed){
     phase='ground'; glider.visible=false; player.grounded=true;
+    if(avParts){ avParts.held.visible=true; }
     if(!(netConnected && !netHost) && modeCfg().phases!=='box'){
       storm.armed=true; storm.timer=PH()[0].wait/effStorm();
     }
@@ -9301,10 +10420,30 @@ function updatePlayer(dt){
   if(down('back'))    mv.sub(fwd);
   if(down('right'))   mv.add(right);
   if(down('left'))    mv.sub(right);
+  if(modeCfg().arena==='creative' && creative.fly){
+    const f2=V(-Math.sin(yaw),0,-Math.cos(yaw)), r2=V(Math.cos(yaw),0,-Math.sin(yaw));
+    const fv=V(0,0,0);
+    if(down('forward')) fv.add(f2);
+    if(down('back'))    fv.sub(f2);
+    if(down('right'))   fv.add(r2);
+    if(down('left'))    fv.sub(r2);
+    if(down('jump'))    fv.y+=1;
+    if(down('sprint'))  fv.y-=1;
+    const fs=down('sprint')&&down('jump')?30:17;
+    if(fv.lengthSq()>0) player.pos.addScaledVector(fv.normalize(),fs*dt);
+    player.vel.set(0,0,0);
+    player.grounded=false;
+  }
   const sprint = S.toggleSprint ? sprintLatch : down('sprint');
   const speed=(sprint?9.6:6.1)*(1-player.aim*.42)*(cheats.speed?2.5:1);
-  if(mv.lengthSq()>0){ mv.normalize().multiplyScalar(speed); player.bob+=dt*(sprint?13:9); }
-  else player.bob+=dt*1.5;
+  if(mv.lengthSq()>0){
+    mv.normalize().multiplyScalar(speed);
+    // a pace tied to ground speed: the foot is planted for the time it takes
+    // the body to travel one stride, so it does not slide
+    const stride=sprint?2.45:1.95;
+    player.bob+=dt*(speed/stride)*Math.PI;
+  }
+  else player.bob+=dt*1.1;
 
   // footstep rhythm
   if(player.grounded && mv.lengthSq()>0){
@@ -9366,8 +10505,19 @@ function updatePlayer(dt){
       } else {
         avatar.rotation.z=0;
         avParts.held.visible=true;
-        const sw=(mv.lengthSq()>0)?Math.sin(player.bob*1.0):0;
-        poseWalk(avParts, sw, Math.cos(player.bob), !!heldGun());
+        const moving=mv.lengthSq()>0;
+        const sw=moving?Math.sin(player.bob):0;
+        const cwv=moving?Math.cos(player.bob):0;
+        poseWalk(avParts, sw, cwv, !!heldGun());
+        if(!moving && avParts.torso){
+          // breathing, and a slow drift of weight from one foot to the other
+          const t=performance.now()/1000;
+          const br=Math.sin(t*1.5)*0.012;
+          avParts.torso.rotation.x=br;
+          avParts.torso.position.y=(avParts.torso.userData.y0||avParts.torso.position.y)+br*0.5;
+          if(avParts.hips) avParts.hips.rotation.z=Math.sin(t*0.42)*0.02;
+          avatar.rotation.z=Math.sin(t*0.37)*0.006;
+        }
         avParts.head.rotation.x=clamp(pitch*.55,-.5,.5);
         avParts.held.rotation.x=clamp(-pitch,-1,1);
         avatarHeld();
@@ -9834,6 +10984,9 @@ function giveLoadout(kind){
     // a sport, not a firefight: the pickaxe and a pile of materials
     player.inv=[null,null,null,null,null];
     player.mats=500; player.shield=100; player.hp=100;
+  } else if(kind==='creative'){
+    player.inv=[null,null,null,null,null];
+    player.mats=999; player.shield=100; player.hp=100;
   } else if(kind==='train'){
     player.inv[0]=wep('rifle');
     player.inv[1]=wep('smg');
@@ -9856,6 +11009,9 @@ function giveLoadout(kind){
 }
 function arenaSpawn(i){
   const cfg=modeCfg();
+  if(cfg.arena==='creative'){
+    return V(0, groundH(0,0)+0.4, 14);
+  }
   if(cfg.arena==='ball'){
     const side=(i%2===0)?-1:1;
     const x=side*(30+((i/2|0)%3)*6), z=((i%4)-1.5)*9;
@@ -10012,6 +11168,10 @@ function resetGame(){
   trainStats.streak=trainStats.best=0; trainStats.t=0; trainAggro=false;
   challenge={on:false,t:0,hits:0};
   const th=document.getElementById('trainhud'); if(th) th.style.display='none';
+  const ch=document.getElementById('crhud'); if(ch) ch.style.display='none';
+  creative.on=false; creative.buildMode=false; creative.fly=false;
+  creative.placed.length=0; creative.undo.length=0; creative.rot=0;
+  if(creative.ghost){ scene.remove(creative.ghost); creative.ghost=null; }
   kcBuf.length=0; stopKillcam(); lastHitBy='';
   ballScore.me=0; ballScore.them=0; ballMsgT=0;
   boxScore.me=0; boxScore.them=0; roundPhase=''; roundT=0; roundLock=false;
@@ -10513,6 +11673,8 @@ function tick(){
   if(menuOpen && document.pointerLockElement && document.exitPointerLock && !lockBusy){
     document.exitPointerLock();
   }
+  if(renderer && turnActive())
+    renderer.domElement.style.cursor = turn.dragging ? 'grabbing' : 'grab';
   const lobbyVisible = !document.getElementById('menu').classList.contains('hidden');
   if(lobbyVisible && !running){
     updateLobby(rawDt);
@@ -10580,6 +11742,7 @@ function tick(){
     voiceUpdatePositions();
     if((waterTick&63)===0) paintChat();
     updateCoach(dt); updateElim(dt); updateCrosshair(); trainTick(dt); clipTick(dt); kcSample(dt);
+    updateFaces(dt); creativeTick(dt); updateStream(dt);
     updateBall(dt);
     cheatTick(dt);
     updateEsp(dt);
@@ -10638,6 +11801,7 @@ function init(){
   sizeCues();
 
   bindInput();
+  bindTurntable();
   initPost();
   applySettings();
   updateMenuKeys();

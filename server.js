@@ -75,6 +75,28 @@ function validName(u){ return /^[A-Za-z0-9_.-]{3,16}$/.test(String(u || '')); }
    The browser sends us a signed token; we check the signature against Google's
    published keys, and that it was issued for this client and has not expired.
    Nothing is trusted just because the browser said so. */
+/* ===================== VOICE RELAY =====================
+   STUN alone fails whenever both players are behind a symmetric NAT, which
+   is most home routers paired with most phone networks. A TURN server
+   relays the audio when a direct path cannot be found. Set these and voice
+   works everywhere; leave them unset and it works only sometimes. */
+/* YouTube live chat, if you give the server an API key. Twitch needs nothing
+   and is handled entirely in the browser; Kick and TikTok have no usable
+   public chat endpoint, so they are not offered rather than offered broken. */
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || '';
+
+const TURN_URL  = process.env.TURN_URL  || '';
+const TURN_USER = process.env.TURN_USER || '';
+const TURN_PASS = process.env.TURN_PASS || '';
+function iceServers(){
+  const list=[{ urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302'] }];
+  if(TURN_URL){
+    list.push({ urls:TURN_URL.split(',').map(u=>u.trim()).filter(Boolean),
+                username:TURN_USER, credential:TURN_PASS });
+  }
+  return list;
+}
+
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID ||
   '914423154502-mvm7kckhmu1gcgutv3quutej92pnvpf5.apps.googleusercontent.com';
 
@@ -269,6 +291,9 @@ wss.on('connection', (ws) => {
 
   send(ws, { type:'config', server:'galebreak-2', accounts:true,
              persistent: acctPersistent,
+             ice: iceServers(),
+             turn: !!TURN_URL,
+             ytChat: !!YOUTUBE_API_KEY,
              codeCount: Object.keys(REDEEM_CODES).length,
              googleClientId: GOOGLE_CLIENT_ID || null,
              youtube: YOUTUBE_CHANNEL_ID || null });
@@ -540,6 +565,8 @@ server.listen(PORT, () => {
   console.log(`  version galebreak-2 · accounts on · google sign in ${GOOGLE_CLIENT_ID?'configured':'not configured'}`);
   console.log(`  subscriber check ${YOUTUBE_CHANNEL_ID?'configured':'off'} · redeem codes: ${Object.keys(REDEEM_CODES).join(', ')}`);
   console.log(`  accounts file: ${ACCT_FILE}`);
+  console.log(`  voice relay: ${TURN_URL ? 'TURN configured' : 'STUN only — voice will fail behind strict NATs'}`);
+  console.log(`  youtube chat: ${YOUTUBE_API_KEY ? 'key set' : 'not configured (Twitch needs no key)'}`);
   if (!acctPersistent) {
     console.log('  WARNING: that path is not a persistent disk. On a host that');
     console.log('  resets its filesystem, accounts will be lost on every restart.');
