@@ -682,7 +682,7 @@ const MODES={
   galeball  :{ label:'GALEBALL',       short:'gb', players:8, bots:3, skill:1.2, storm:1,
                playR:150, arena:'ball', bus:false, phases:'box', rounds:1,
                loadout:'ball', respawn:true, target:5 },
-  training  :{ label:'TRAINING',       short:'tr', players:1, bots:4, skill:1, storm:1,
+  training  :{ label:'TRAINING',       short:'tr', players:1, bots:0, skill:1, storm:1,
                playR:150, arena:'training', bus:false, phases:'box', rounds:1,
                loadout:'train', respawn:true },
   boxfight  :{ label:'BOX FIGHT',     short:'bx', players:2, bots:1, skill:1.55, storm:1,
@@ -4844,14 +4844,9 @@ function updateTeamPads(dt){
   if(modeCfg().arena==='training'){
     if(on.t>=0.6){
       on.t=0;
-      if(on.team.indexOf('FIGHT')>=0){
-        trainAggro=!trainAggro;
-        for(const b of bots) if(b.alive) b.weapon=trainAggro?'smg':null;
-        padPrompt='Dummies are now <u>'+(trainAggro?'fighting back':'passive')+'</u>';
-      } else {
-        clearPlayerBuilds();
-        padPrompt='Builds <u>cleared</u>';
-      }
+      if(on.team.indexOf('CHALLENGE')>=0){ startChallenge(); padPrompt='<u>Go</u>'; }
+      else if(on.team.indexOf('DUMMIES')>=0){ padPrompt='<u>'+spawnDummies()+'</u>'; }
+      else { clearPlayerBuilds(); padPrompt='Builds <u>cleared</u>'; }
       pickupSound();
     } else padPrompt='Hold · <u>'+on.team+'</u>';
     return;
@@ -5058,75 +5053,140 @@ function buildArenaTraining(){
   boxMaterials();
   teamPads.length=0; targets.length=0;
   const cy=groundH(0,0);
-  const pad=(w,d,x,z,mat)=>bSolid(w,.6,d,x,cy-.3,z,mat||BOXMAT.deck);
   boxOffX=0; boxOffZ=0;
+  const pad=(w,d,x,z,mat)=>bSolid(w,.6,d,x,cy-.3,z,mat||BOXMAT.deck);
 
-  // ---- aim range, three distance bands ----
-  pad(70,16,0,-26);
-  signBoard('AIM RANGE',0,cy+6.4,-16,'#ffd873',11);
-  [[15,0xffd873],[34,0xff9a4d],[62,0xff5c5c]].forEach(([dist,col],row)=>{
-    for(let i=0;i<5;i++){
-      const x=(i-2)*8.5, z=-26-dist;
-      const post=bSolid(.45,3.2,.45,x,cy+1.6,z,BOXMAT.frame);
-      const t=new THREE.Mesh(new THREE.CylinderGeometry(1.15,1.15,.3,20),
-        new THREE.MeshStandardMaterial({color:col,roughness:.5,
-          emissive:new THREE.Color(col).multiplyScalar(.25)}));
-      t.rotation.x=Math.PI/2;
-      t.position.set(x,cy+3.6,z);
-      t.castShadow=true;
-      t.userData.target=true; t.userData.home=t.position.clone(); t.userData.down=0;
-      scene.add(t); hittables.push(t);
-      targets.push(t);
-      const ring=new THREE.Mesh(new THREE.TorusGeometry(1.15,.10,8,22),
-        new THREE.MeshBasicMaterial({color:0xffffff}));
-      ring.position.copy(t.position); scene.add(ring);
-      t.userData.ring=ring;
-    }
-    signBoard(dist+'m',-26,cy+4.2,-26-dist,'#'+col.toString(16).padStart(6,'0'),5);
-  });
+  /* ---- aim range: three rows that train three different things ---- */
+  pad(92,96,0,-54);
+  signBoard('AIM RANGE',0,cy+7.4,-12,'#ffd873',14);
 
-  // ---- build zone, clear and gridded ----
-  pad(56,56,0,42);
-  signBoard('BUILD ZONE',0,cy+6.4,16,'#9fd4ff',11);
+  const addTarget=(x,y,z,rad,col,mode,span)=>{
+    const t=new THREE.Mesh(new THREE.CylinderGeometry(rad,rad,.35,22),
+      new THREE.MeshStandardMaterial({color:col,roughness:.45,
+        emissive:new THREE.Color(col).multiplyScalar(.3)}));
+    t.rotation.x=Math.PI/2;
+    t.position.set(x,y,z);
+    t.castShadow=true;
+    t.userData.target=true;
+    t.userData.home=t.position.clone();
+    t.userData.down=0;
+    t.userData.mode=mode||'static';
+    t.userData.span=span||0;
+    t.userData.phase=Math.random()*6.283;
+    t.userData.rad=rad;
+    scene.add(t); hittables.push(t); targets.push(t);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(rad,.09,8,24),
+      new THREE.MeshBasicMaterial({color:0xffffff}));
+    ring.position.copy(t.position); scene.add(ring);
+    t.userData.ring=ring;
+    const bull=new THREE.Mesh(new THREE.CylinderGeometry(rad*.32,rad*.32,.4,14),
+      new THREE.MeshStandardMaterial({color:0xffffff,emissive:0x555555}));
+    bull.rotation.x=Math.PI/2; bull.position.copy(t.position);
+    scene.add(bull); t.userData.bull=bull;
+    return t;
+  };
+
+  // close static row, chest height, for consistency
+  for(let i=0;i<5;i++){
+    const x=(i-2)*7;
+    bSolid(.5,3.4,.5,x,cy+1.7,-24,BOXMAT.frame);
+    addTarget(x,cy+3.5,-24,1.35,0xffd873,'static');
+  }
+  signBoard('12m · STATIC',-30,cy+4.4,-24,'#ffd873',8);
+
+  // mid row that strafes, for tracking
+  for(let i=0;i<4;i++){
+    const x=(i-1.5)*11;
+    addTarget(x,cy+3.8,-42,1.15,0xff9a4d,'strafe',7);
+  }
+  signBoard('30m · MOVING',-34,cy+5.2,-42,'#ff9a4d',9);
+
+  // far row that bobs and is small, for flicks
+  for(let i=0;i<3;i++){
+    const x=(i-1)*15;
+    addTarget(x,cy+4.4,-66,.85,0xff5c5c,'bob',2.2);
+  }
+  signBoard('54m · SMALL',-38,cy+6,-66,'#ff5c5c',9);
+
+  // a backboard so misses are visible instead of vanishing
+  bSolid(92,10,.8,0,cy+5,-74,BOXMAT.shell);
+
+  /* ---- build zone ---- */
+  pad(60,60,74,0);
+  signBoard('BUILD ZONE',74,cy+7.4,-28,'#9fd4ff',12);
   for(let i=-7;i<=7;i++){
-    bDeco(56,.04,.09,0,cy+.33,42+i*4,BOXMAT.trim);
-    bDeco(.09,.04,56,i*4,cy+.33,42,BOXMAT.trim);
+    bDeco(60,.04,.09,74,cy+.33,i*4,BOXMAT.trim);
+    bDeco(.09,.04,60,74+i*4,cy+.33,0,BOXMAT.trim);
   }
 
-  // ---- edit course: pieces already placed to practise on ----
-  pad(30,20,-52,10);
-  signBoard('EDIT COURSE',-52,cy+6.4,0,'#6ee7a8',9);
-  for(let i=0;i<4;i++){
-    const ix=Math.floor((-52+(i-1.5)*CELL*1.4)/CELL), iz=Math.floor(10/CELL);
-    const key=pieceKey('wall',ix,0,iz,2);
-    if(PIECES.has(key)) continue;
-    const pc={key,type:'wall',ix,iy:0,iz,dir:2,mask:new Array(9).fill(true),meshes:[],boxes:[]};
+  /* ---- edit course: eight pieces to practise cuts on ---- */
+  pad(46,26,-74,0);
+  signBoard('EDIT COURSE',-74,cy+7.4,-14,'#6ee7a8',12);
+  const course=[
+    ['wall',2],['wall',2],['wall',2],['wall',2],
+    ['ramp',0],['ramp',0],['floor',0],['cone',0]
+  ];
+  course.forEach(([type,dir],i)=>{
+    const col=i%4, row=(i/4)|0;
+    const wx=-74+(col-1.5)*CELL*1.6, wz=-6+row*CELL*2.4;
+    const ix=Math.round(wx/CELL), iz=Math.round(wz/CELL);
+    const key=pieceKey(type,ix,0,iz,dir);
+    if(PIECES.has(key)) return;
+    const pc={key,type,ix,iy:0,iz,dir,
+              mask:new Array(tileCount(type)).fill(true),meshes:[],boxes:[]};
     PIECES.set(key,pc); builds.push(pc);
     buildPieceMeshes(pc);
-  }
+  });
 
-  // ---- control pads ----
-  addTeamPad(-14,8,'DUMMIES FIGHT BACK',0xd83a3a);
-  addTeamPad( 14,8,'CLEAR MY BUILDS',0x3a7ad8);
-  signBoard('TRAINING',0,cy+8.6,0,'#ffffff',13);
+  /* ---- pads ---- */
+  addTeamPad(0, -6, 'START 30s CHALLENGE', 0xffd873);
+  addTeamPad(-22, -6, 'SPAWN DUMMIES', 0xd83a3a);
+  addTeamPad( 22, -6, 'CLEAR MY BUILDS', 0x3a7ad8);
+  signBoard('TRAINING',0,cy+9.4,2,'#ffffff',14);
 }
 
+let challenge={on:false,t:0,hits:0};
 function trainTick(dt){
   if(modeCfg().arena!=='training') return;
   trainStats.t+=dt;
   player.mats=999;
   const g=heldGun();
   if(g){ g.ammo=WEAPONS[g.kind].mag; g.res=999; }
-  const now=performance.now()*.004;
+
+  const now=performance.now()/1000;
   for(const t of targets){
     if(t.userData.down>0){
       t.userData.down-=dt;
       if(t.userData.down<=0){
-        t.visible=true; t.userData.ring.visible=true;
+        t.visible=true; t.userData.ring.visible=true; t.userData.bull.visible=true;
       }
     }
-    if(t.visible) t.userData.ring.rotation.z=now+t.position.x;
+    if(!t.visible) continue;
+    const h=t.userData;
+    let x=h.home.x, y=h.home.y;
+    if(h.mode==='strafe') x=h.home.x+Math.sin(now*0.9+h.phase)*h.span;
+    if(h.mode==='bob')    y=h.home.y+Math.sin(now*1.35+h.phase)*h.span;
+    t.position.set(x,y,h.home.z);
+    h.ring.position.copy(t.position);
+    h.bull.position.copy(t.position);
+    h.ring.rotation.z=now*0.8+h.phase;
   }
+
+  if(challenge.on){
+    challenge.t-=dt;
+    if(challenge.t<=0){
+      challenge.on=false;
+      const best=Math.max(profile.aimBest||0, challenge.hits);
+      const isBest=challenge.hits>(profile.aimBest||0);
+      profile.aimBest=best; saveProfile();
+      showRoundText(challenge.hits+' HITS', isBest?'NEW BEST':'BEST IS '+best);
+      setTimeout(()=>showRoundText(''),3000);
+      blip(isBest?1100:520,.16,.24,'triangle');
+    } else {
+      showRoundText(Math.ceil(challenge.t)+'s', challenge.hits+' HITS');
+    }
+  }
+
   const el=document.getElementById('trainhud');
   if(el){
     const acc=trainStats.shots?Math.round(trainStats.hits/trainStats.shots*100):0;
@@ -5135,22 +5195,53 @@ function trainTick(dt){
       '<b>TRAINING</b>'+
       '<div><span>targets</span>'+trainStats.targets+'</div>'+
       '<div><span>accuracy</span>'+acc+'%</div>'+
-      '<div><span>headshots</span>'+trainStats.heads+'</div>'+
       '<div><span>streak</span>'+trainStats.streak+' (best '+trainStats.best+')</div>'+
-      '<div><span>dummies</span>'+(trainAggro?'fighting back':'passive')+'</div>'+
-      '<i>walk onto a pad to change things</i>';
+      '<div><span>30s best</span>'+(profile.aimBest||0)+'</div>'+
+      '<div><span>dummies</span>'+(bots.filter(b=>b.alive).length||'none')+'</div>'+
+      '<i>pads: challenge · dummies · clear builds</i>';
   }
 }
+function startChallenge(){
+  challenge={on:true,t:30,hits:0};
+  trainStats.streak=0;
+  for(const t of targets){
+    t.visible=true; t.userData.ring.visible=true; t.userData.bull.visible=true; t.userData.down=0;
+  }
+  blip(900,.1,.16,'triangle');
+}
+function spawnDummies(){
+  if(bots.filter(b=>b.alive).length>=4){
+    for(const b of bots){ if(b.g.parent) scene.remove(b.g); }
+    for(let i=hittables.length-1;i>=0;i--) if(hittables[i].userData.bot) hittables.splice(i,1);
+    bots.length=0;
+    refreshAlive();
+    return 'Dummies cleared';
+  }
+  const names=BOT_NAMES.slice().sort(()=>RNG()-.5);
+  for(let i=0;i<4;i++){
+    const b=spawnBot(names[i%names.length],0);
+    const x=(i-1.5)*8, z=-16;
+    b.state='ground'; b.pos.set(x,groundH(x,z),z); b.g.position.copy(b.pos);
+    b.weapon=trainAggro?'smg':null;
+    setBotVisible(b,true);
+  }
+  refreshAlive();
+  return 'Four dummies spawned';
+}
+
 function hitTarget(obj){
   if(!obj.userData.target||!obj.visible) return;
-  obj.visible=false; obj.userData.ring.visible=false;
-  obj.userData.down=1.1;
+  obj.visible=false;
+  obj.userData.ring.visible=false;
+  obj.userData.bull.visible=false;
+  obj.userData.down=challenge.on?0.55:1.1;
+  if(challenge.on) challenge.hits++;
   trainStats.targets++;
   trainStats.streak++;
   trainStats.best=Math.max(trainStats.best,trainStats.streak);
   hitmarker();
   blip(1200,.05,.1,'triangle');
-  floatDamage(obj.userData.home.clone(),100,false);
+  floatDamage(obj.position.clone(),100,false);
 }
 
 function buildArenaBox(){
@@ -6884,7 +6975,7 @@ function findItem(cat,id){ return (CATALOG[cat]||[]).find(x=>x.id===id) || CATAL
 /* ================= profile ================= */
 const DEFAULT_PROFILE={
   coins:800, xp:0, matches:0, wins:0, kills:0,
-  friendCode:null, friends:[], customItems:{},
+  friendCode:null, friends:[], customItems:{}, aimBest:0,
   owned:{ skin:['recruit','dustline'], pack:['none','daypack'], pick:['standard'],
           glider:['standard'], emote:['wave','bounce','clap'] },
   equipped:{ skin:'recruit', pack:'daypack', pick:'standard', glider:'standard', emote:'wave' }
@@ -9609,7 +9700,7 @@ function arenaSpawn(i){
     return V(x, groundH(x,z)+0.4, z);
   }
   if(cfg.arena==='training'){
-    const x=(i===0?0:(i-2.5)*7), z=(i===0?-8:30);
+    const x=(i===0?0:(i-1.5)*8), z=(i===0?2:-16);
     return V(x, groundH(x,z)+0.4, z);
   }
   if(cfg.arena==='box'){
@@ -9728,6 +9819,7 @@ function resetGame(){
 
   scene.add(camera);
   ball.mesh=null; ball.goalA=null; ball.goalB=null;
+  endEdit(); PIECES.clear(); builds.length=0;
   buildWorld(); buildStorm(); buildViewModels(); buildBus();
 
   player.pos.copy(bus.start); player.vel.set(0,0,0);
@@ -9752,10 +9844,11 @@ function resetGame(){
   ambientKill=rnd(35,55);
 
   phase='bus'; ended=false; winPending=false; toastTimer=0; sprintLatch=false;
-  endEdit(); PIECES.clear(); builds.length=0; ghostGroup=null; buildRot=0;
+  endEdit(); ghostGroup=null; buildRot=0;
   hideCoach(); elimT=0; shake=0;
   trainStats.shots=trainStats.hits=trainStats.heads=trainStats.targets=0;
   trainStats.streak=trainStats.best=0; trainStats.t=0; trainAggro=false;
+  challenge={on:false,t:0,hits:0};
   const th=document.getElementById('trainhud'); if(th) th.style.display='none';
   kcBuf.length=0; stopKillcam(); lastHitBy='';
   ballScore.me=0; ballScore.them=0; ballMsgT=0;
@@ -9767,7 +9860,7 @@ function resetGame(){
   if(emotePrevTP!==null){ S.thirdPerson=emotePrevTP; emotePrevTP=null; }
   myEmote=null; emoteWheel=false;
   document.getElementById('emotewheel').style.display='none';
-  timeScale=1; slowmoT=0; currentPOI=''; builds.length=0;
+  timeScale=1; slowmoT=0; currentPOI='';
   buildAvatar();
   document.getElementById('spectate').style.display='none';
   document.getElementById('poi').style.opacity=0;
