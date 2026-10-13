@@ -7223,22 +7223,173 @@ function makePickaxe(id){
   return g;
 }
 
+/* ================= gliders =================
+   Each canopy is built from real parts: cells and seams on the ram-air wing,
+   gores and a vent on the round one, spars and rigging on the deltas. The
+   lines are drawn individually from riser to anchor point so the whole thing
+   hangs together the way a canopy actually does. */
+function gliderLine(from,to,mat,thick){
+  const dir=to.clone().sub(from);
+  const len=dir.length();
+  const geo=new THREE.CylinderGeometry(thick||.012,thick||.012,len,4);
+  const m=new THREE.Mesh(geo,mat);
+  m.position.copy(from).addScaledVector(dir,.5);
+  m.quaternion.setFromUnitVectors(V(0,1,0), dir.normalize());
+  return m;
+}
 function makeGliderMesh(id){
   const d=findItem('glider', id||profile.equipped.glider);
   const g=new THREE.Group();
-  const m=new THREE.MeshStandardMaterial({color:d.col,roughness:.85,side:THREE.DoubleSide});
+  const col=new THREE.Color(d.col);
+  const dark=col.clone().multiplyScalar(.62);
+  const light=col.clone().lerp(new THREE.Color(0xffffff),.34);
+
+  const fabric=new THREE.MeshStandardMaterial({color:col,roughness:.72,metalness:.02,
+    side:THREE.DoubleSide,envMapIntensity:.7});
+  const fabric2=new THREE.MeshStandardMaterial({color:light,roughness:.74,metalness:.02,
+    side:THREE.DoubleSide,envMapIntensity:.7});
+  const seam=new THREE.MeshStandardMaterial({color:dark,roughness:.8,side:THREE.DoubleSide});
+  const frame=new THREE.MeshStandardMaterial({color:0x1b2230,roughness:.42,metalness:.65});
+  const cord=new THREE.MeshStandardMaterial({color:0xe6e9ee,roughness:.9});
+  const add=o=>{ o.castShadow=true; g.add(o); return o; };
+
   if(d.shape==='cone'){
-    const c=new THREE.Mesh(new THREE.ConeGeometry(2.6,1.4,10,1,true),m);
-    c.rotation.x=Math.PI; c.position.set(0,2.6,.4); g.add(c);
+    /* ---- ram-air canopy: seven inflated cells with a curved span ---- */
+    const CELLS=7, span=5.4, chord=2.1, arc=1.0;
+    for(let i=0;i<CELLS;i++){
+      const t=(i/(CELLS-1))-0.5;
+      const x=t*span;
+      const dropY=-Math.pow(t*2,2)*arc;
+      const w=span/CELLS*0.94;
+      const h=0.52*(1-Math.abs(t)*0.34);
+      const cell=add(new THREE.Mesh(new THREE.CylinderGeometry(h,h*0.72,chord,10,1,false,0,Math.PI),
+        i%2?fabric:fabric2));
+      cell.rotation.x=Math.PI/2;
+      cell.rotation.z=Math.PI;
+      cell.scale.x=w/(h*2);
+      cell.position.set(x, 3.05+dropY, .25);
+      cell.rotation.y=-t*0.5;
+      // the rib between cells
+      if(i<CELLS-1){
+        const rib=add(new THREE.Mesh(new THREE.BoxGeometry(.04,h*1.5,chord*.98),seam));
+        rib.position.set(x+span/CELLS/2, 3.05+dropY-h*.2, .25);
+      }
+    }
+    // leading edge openings
+    const le=add(new THREE.Mesh(new THREE.TorusGeometry(span*.52,.075,6,26,Math.PI),seam));
+    le.rotation.set(Math.PI/2,0,Math.PI);
+    le.position.set(0,3.05,-.78);
+    le.scale.y=0.36;
+    // risers and lines
+    [-1,1].forEach(sx=>{
+      const riser=add(new THREE.Mesh(new THREE.BoxGeometry(.07,.52,.07),frame));
+      riser.position.set(sx*.34,1.72,.1);
+      for(let i=0;i<CELLS;i++){
+        const t=(i/(CELLS-1))-0.5;
+        if(Math.sign(t||sx)!==sx && t!==0) continue;
+        const x=t*span, dropY=-Math.pow(t*2,2)*arc;
+        add(gliderLine(V(sx*.34,1.98,.1), V(x,3.05+dropY-.3,-.45), cord));
+        add(gliderLine(V(sx*.34,1.98,.1), V(x,3.05+dropY-.3, .95), cord,.010));
+      }
+    });
+
   } else if(d.shape==='kite'){
-    const c=new THREE.Mesh(new THREE.ConeGeometry(2.4,1.5,4,1,true),m);
-    c.rotation.x=Math.PI; c.rotation.y=Math.PI/4; c.position.set(0,2.6,.4); g.add(c);
+    /* ---- round canopy: eight gores, a vent, a flared skirt ---- */
+    const GORES=10, rad=2.75;
+    const profile=[];
+    for(let i=0;i<=8;i++){
+      const u=i/8;
+      profile.push(new THREE.Vector2(Math.sin(u*Math.PI*0.52)*rad, Math.cos(u*Math.PI*0.52)*rad*0.74));
+    }
+    const dome=add(new THREE.Mesh(new THREE.LatheGeometry(profile,GORES*2),fabric));
+    dome.position.set(0,2.62,.25);
+    // alternating gore panels for a sewn look
+    for(let i=0;i<GORES;i++){
+      if(i%2) continue;
+      const a0=(i/GORES)*Math.PI*2;
+      const gore=add(new THREE.Mesh(new THREE.LatheGeometry(profile,2,a0,Math.PI*2/GORES),fabric2));
+      gore.position.set(0,2.625,.25);
+    }
+    for(let i=0;i<GORES;i++){
+      const a0=(i/GORES)*Math.PI*2;
+      const st=add(new THREE.Mesh(new THREE.LatheGeometry(
+        profile.map(p=>new THREE.Vector2(p.x*1.004,p.y*1.004)),2,a0,0.035),seam));
+      st.position.set(0,2.63,.25);
+    }
+    // apex vent
+    const vent=add(new THREE.Mesh(new THREE.TorusGeometry(.42,.09,8,20),seam));
+    vent.rotation.x=Math.PI/2;
+    vent.position.set(0,2.62+rad*0.74,.25);
+    // skirt hem
+    const hem=add(new THREE.Mesh(new THREE.TorusGeometry(rad,.07,7,30),seam));
+    hem.rotation.x=Math.PI/2;
+    hem.position.set(0,2.62,.25);
+    // rigging
+    for(let i=0;i<GORES;i++){
+      const a0=(i/GORES)*Math.PI*2;
+      const px=Math.cos(a0)*rad, pz=Math.sin(a0)*rad+.25;
+      add(gliderLine(V(px*.12,1.85,.1), V(px,2.62,pz), cord));
+    }
+    [-1,1].forEach(sx=>{
+      const riser=add(new THREE.Mesh(new THREE.BoxGeometry(.07,.5,.07),frame));
+      riser.position.set(sx*.3,1.7,.1);
+    });
+
   } else {
-    const wing=new THREE.Mesh(new THREE.ConeGeometry(2.7,1.0,3,1,true),m);
-    wing.rotation.x=Math.PI; wing.position.set(0,2.5,.4); g.add(wing);
-    const spine=new THREE.Mesh(new THREE.BoxGeometry(.09,.09,3.2),
-      new THREE.MeshStandardMaterial({color:0x1c2230,roughness:.6}));
-    spine.position.set(0,2.55,.4); g.add(spine);
+    /* ---- rigid delta: swept sail, spars, kingpost and control bar ---- */
+    const span=6.2, root=2.6, sweep=1.5;
+    const sail=new THREE.BufferGeometry();
+    const verts=new Float32Array([
+       0,0,-root*0.62,   -span/2,-.42, sweep,   0,0, root*0.38,
+       0,0,-root*0.62,    0,0, root*0.38,        span/2,-.42, sweep
+    ]);
+    sail.setAttribute('position',new THREE.BufferAttribute(verts,3));
+    sail.computeVertexNormals();
+    const wing=add(new THREE.Mesh(sail,fabric));
+    wing.position.set(0,3.0,.3);
+
+    // undersurface in the lighter tone, so it reads from below
+    const under=add(new THREE.Mesh(sail.clone(),fabric2));
+    under.position.set(0,2.97,.3);
+
+    // leading edges, keel and cross tube
+    [-1,1].forEach(sx=>{
+      const le=add(new THREE.Mesh(new THREE.CylinderGeometry(.055,.045,
+        Math.hypot(span/2,root*0.62+sweep),8),frame));
+      le.position.set(sx*span/4, 2.9, .3+(sweep-root*0.62)/2);
+      le.rotation.z=sx*Math.atan2(span/2,root*0.62+sweep);
+      le.rotation.x=Math.PI/2;
+      le.rotation.order='ZYX';
+      // battens
+      for(let b2=1;b2<=3;b2++){
+        const t=b2/4;
+        const bat=add(new THREE.Mesh(new THREE.BoxGeometry(.03,.03,root*0.7*(1-t*0.45)),seam));
+        bat.position.set(sx*span/2*t, 3.0-t*.34, .3+sweep*t*0.5);
+      }
+    });
+    const keel=add(new THREE.Mesh(new THREE.CylinderGeometry(.06,.05,root+sweep*0.9,8),frame));
+    keel.rotation.x=Math.PI/2;
+    keel.position.set(0,3.0,.3+sweep*0.1);
+    const cross=add(new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,span*0.82,8),frame));
+    cross.rotation.z=Math.PI/2;
+    cross.position.set(0,2.86,.3+sweep*0.42);
+
+    // kingpost above, control bar below, rigged to both
+    const kp=add(new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.75,7),frame));
+    kp.position.set(0,3.38,.3);
+    const barY=2.0;
+    [-1,1].forEach(sx=>{
+      const up=add(new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,1.12,7),frame));
+      up.position.set(sx*.62,barY+.52,.45);
+      up.rotation.z=sx*0.22;
+    });
+    const bar=add(new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,1.3,8),frame));
+    bar.rotation.z=Math.PI/2;
+    bar.position.set(0,barY,.45);
+    [-1,1].forEach(sx=>{
+      add(gliderLine(V(0,3.74,.3), V(sx*span/2*0.8,2.78,.3+sweep*0.8), cord,.010));
+      add(gliderLine(V(sx*.62,barY+.1,.45), V(sx*span/2*0.8,2.84,.3+sweep*0.8), cord,.010));
+    });
   }
   return g;
 }
@@ -9106,9 +9257,20 @@ function updateAir(dt){
   }
 }
 
+/* Falling and gliding always show the body: there is no point owning a
+   canopy you cannot see. The camera also backs off a little while the glider
+   is open so the whole wing fits in frame. */
+function thirdActive(){
+  if(phase==='air') return true;
+  return S.thirdPerson;
+}
+function airCamBoost(){
+  if(phase!=='air') return 0;
+  return (player.pos.y<GLIDE_ALT) ? 3.0 : 1.2;
+}
 function placeCamera(headPos, dt){
-  if(!S.thirdPerson){ camera.position.copy(headPos); return; }
-  const dist=S.camDist*(1-player.aim*.45);
+  if(!thirdActive()){ camera.position.copy(headPos); return; }
+  const dist=S.camDist*(1-player.aim*.45)+airCamBoost();
   const side=S.camSide*(1-player.aim*.5);
   const dir=V(-Math.sin(yaw),0,-Math.cos(yaw));
   const right=V(Math.cos(yaw),0,-Math.sin(yaw));
@@ -9190,7 +9352,7 @@ function updatePlayer(dt){
 
   // the visible body
   if(avatar){
-    const show = S.thirdPerson && !spectating;
+    const show = thirdActive() && !spectating;
     avatar.visible = show;
     if(show){
       avatar.position.set(player.pos.x,player.pos.y,player.pos.z);
@@ -9212,7 +9374,7 @@ function updatePlayer(dt){
       }
     }
   }
-  if(viewGroup) viewGroup.visible = !S.thirdPerson && !spectating;
+  if(viewGroup) viewGroup.visible = !thirdActive() && !spectating;
 
   player.recoil=Math.max(0,player.recoil-dt*7);
   player.kick += (0-player.kick)*Math.min(1,dt*8);
