@@ -1,0 +1,71 @@
+GALEBREAK — SELLING SPARKS
+==========================
+
+The code is finished and the money never touches this game. The browser asks
+your server for a Stripe Checkout link, Stripe hosts the card form on their
+own page, and Stripe calls your server back afterwards. Sparks are credited
+only from that signed callback, never from anything the player's browser
+claims. A forged callback is rejected, and a repeated one cannot pay twice.
+
+TURNING IT ON
+  Three environment variables on your host:
+
+      STRIPE_SECRET          sk_live_...  or sk_test_... while testing
+      STRIPE_WEBHOOK_SECRET  whsec_...
+      PUBLIC_URL             https://your-game-address
+
+  Then in the Stripe dashboard: Developers -> Webhooks -> add an endpoint at
+
+      https://your-game-address/api/stripe-webhook
+
+  and subscribe it to  checkout.session.completed.  Stripe shows you the
+  signing secret once; that is STRIPE_WEBHOOK_SECRET.
+
+  Use the test keys first. Stripe's test card 4242 4242 4242 4242 with any
+  future expiry and any CVC completes a purchase without real money moving.
+
+  NEVER put STRIPE_SECRET in index.html, in the repo, or anywhere a player
+  can read it. It is the key to your money. Environment variables only.
+
+PRICES
+  Edit SPARK_PACKS near the top of server.js. Amounts are in cents, so 99
+  means $0.99. Set CURRENCY if you are not selling in dollars.
+
+
+BEFORE YOU SWITCH IT ON — THINGS CODE CANNOT SOLVE
+
+  You have to be old enough to hold the account.
+    Stripe requires account holders to be 18. If you are not, this has to be
+    a parent or guardian's account, in their name, with their bank details,
+    and legally it is their business taking the money and their liability.
+    There is no way around this and trying to work around it will get the
+    account frozen with the balance in it.
+
+  Your players may be children.
+    Most of the audience for a Fortnite-like browser game is under 18. Many
+    countries regulate selling virtual currency to minors: clear pricing in
+    real money, no pressure tactics, and refunds when a child spends a
+    parent's card without permission. Expect that last one to happen and
+    decide now that you will simply refund it.
+
+  Chargebacks are not optional.
+    If someone disputes a payment, Stripe takes the money back plus a fee,
+    whether or not you still have it. Keep that in mind before treating
+    revenue as spent.
+
+  Tax exists.
+    Money you take is income and most places want it declared. Digital goods
+    also attract VAT or sales tax in many countries. Stripe Tax can work this
+    out automatically and is worth enabling.
+
+  You need a refund policy and terms, in writing, on the page.
+    Not legal cover for its own sake. It is what you point at when someone
+    asks, and most payment processors require it.
+
+  A quieter option worth considering
+    Cosmetics in this game are already earned by playing. You could ask for
+    support instead of selling currency — Ko-fi, Buy Me a Coffee, YouTube
+    memberships — and give supporters a cosmetic through the code system that
+    already exists. No chargebacks, no tax on virtual goods, no rules about
+    selling to children, and about ten minutes of setup rather than a legal
+    obligation. For a game at this stage that is usually the better trade.

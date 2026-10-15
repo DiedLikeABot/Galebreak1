@@ -69,6 +69,105 @@ function authReply(ws, acct){
 }
 function validName(u){ return /^[A-Za-z0-9_.-]{3,16}$/.test(String(u || '')); }
 
+/* ===================== PAYMENTS =====================
+   Sparks are sold through Stripe Checkout. The browser never sees a card and
+   never sees the secret key: it asks this server for a session, Stripe hosts
+   the payment page, and Stripe calls back here afterwards. Sparks are only
+   credited from that signed callback, never from anything the client says.
+
+   Set these before any of it works:
+     STRIPE_SECRET          sk_live_... or sk_test_...
+     STRIPE_WEBHOOK_SECRET  whsec_...
+     PUBLIC_URL             https://your-game-address  (for the return links)
+
+   Read PAYMENTS.txt before switching this on. There are obligations that
+   come with taking money that are not solved by code. */
+const STRIPE_SECRET = process.env.STRIPE_SECRET || '';
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+const PUBLIC_URL = process.env.PUBLIC_URL || '';
+const paymentsOn = () => !!(STRIPE_SECRET && STRIPE_WEBHOOK_SECRET && PUBLIC_URL);
+
+// price in the smallest currency unit, so 99 is $0.99
+const SPARK_PACKS = [
+  { id:'s1', sparks:1000,  price:99,   label:'Handful of sparks' },
+  { id:'s2', sparks:2800,  price:299,  label:'Pouch of sparks',  bonus:'12% extra' },
+  { id:'s3', sparks:6200,  price:599,  label:'Crate of sparks',  bonus:'24% extra' },
+  { id:'s4', sparks:13500, price:1199, label:'Vault of sparks',  bonus:'35% extra' }
+];
+const CURRENCY = process.env.CURRENCY || 'usd';
+
+function stripeForm(obj, prefix, out){
+  out = out || [];
+  for (const k in obj) {
+    const key = prefix ? prefix + '[' + k + ']' : k;
+    const v = obj[k];
+    if (v && typeof v === 'object') stripeForm(v, key, out);
+    else out.push(encodeURIComponent(key) + '=' + encodeURIComponent(v));
+  }
+  return out;
+}
+async function stripeCall(path, body){
+  const res = await fetch('https://api.stripe.com/v1/' + path, {
+    method:'POST',
+    headers:{ 'Authorization':'Bearer ' + STRIPE_SECRET,
+              'Content-Type':'application/x-www-form-urlencoded' },
+    body: stripeForm(body).join('&')
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error((json.error && json.error.message) || ('Stripe said ' + res.status));
+  return json;
+}
+async function createCheckout(acct, packId){
+  const pack = SPARK_PACKS.find(p => p.id === packId);
+  if (!pack) throw new Error('Unknown pack.');
+  const session = await stripeCall('checkout/sessions', {
+    mode:'payment',
+    success_url: PUBLIC_URL + '/?paid=1',
+    cancel_url:  PUBLIC_URL + '/?paid=0',
+    client_reference_id: acct.user,
+    'line_items[0][quantity]': 1,
+    'line_items[0][price_data][currency]': CURRENCY,
+    'line_items[0][price_data][unit_amount]': pack.price,
+    'line_items[0][price_data][product_data][name]':
+      pack.sparks.toLocaleString() + ' sparks — GALEBREAK',
+    'metadata[user]': acct.user,
+    'metadata[pack]': pack.id,
+    'metadata[sparks]': String(pack.sparks)
+  });
+  return session.url;
+}
+/* Stripe signs every webhook. An unsigned or mis-signed call is somebody
+   trying to give themselves sparks, so it is rejected outright. */
+function stripeSigValid(raw, header){
+  if (!header) return false;
+  const parts = {};
+  header.split(',').forEach(kv => { const i = kv.indexOf('='); if (i>0) parts[kv.slice(0,i)] = kv.slice(i+1); });
+  if (!parts.t || !parts.v1) return false;
+  // reject anything older than five minutes, so a captured call cannot be replayed
+  if (Math.abs(Date.now()/1000 - Number(parts.t)) > 300) return false;
+  const expect = crypto.createHmac('sha256', STRIPE_WEBHOOK_SECRET)
+                       .update(parts.t + '.' + raw).digest('hex');
+  const a = Buffer.from(expect), b = Buffer.from(parts.v1);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+const paidSessions = new Set();        // so a repeated webhook cannot double-credit
+function creditSparks(user, sparks, sessionId){
+  if (paidSessions.has(sessionId)) return false;
+  paidSessions.add(sessionId);
+  const a = accounts[String(user).toLowerCase()];
+  if (!a) return false;
+  a.profile = a.profile || {};
+  a.profile.coins = (a.profile.coins || 0) + sparks;
+  a.purchases = (a.purchases || 0) + 1;
+  acctDirty = true;
+  console.log('credited', sparks, 'sparks to', a.user);
+  // tell them straight away if they are still connected
+  for (const r of rooms.values())
+    for (const p of r.values())
+      if (p.acct === a) send(p.ws, { type:'sparks', coins:a.profile.coins, added:sparks });
+  return true;
+}
+
 /* ===================== GOOGLE SIGN IN =====================
    Paste the OAuth client ID from Google Cloud below, or set GOOGLE_CLIENT_ID
    in the environment. Without it the button simply does not appear.
@@ -249,6 +348,29 @@ function publicPlayer(p){
 
 const server = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://localhost');
+  // Stripe calls this when a payment completes
+  if(req.method === 'POST' && u.pathname === '/api/stripe-webhook'){
+    let raw = '';
+    req.on('data', c => { raw += c; if (raw.length > 1e6) req.destroy(); });
+    req.on('end', () => {
+      if(!paymentsOn()){ res.writeHead(503); return res.end('payments off'); }
+      if(!stripeSigValid(raw, req.headers['stripe-signature'])){
+        console.log('rejected a webhook with a bad signature');
+        res.writeHead(400); return res.end('bad signature');
+      }
+      let ev;
+      try { ev = JSON.parse(raw); } catch(e){ res.writeHead(400); return res.end('bad json'); }
+      if(ev.type === 'checkout.session.completed'){
+        const o = ev.data.object;
+        const sparks = Number((o.metadata && o.metadata.sparks) || 0);
+        const user = (o.metadata && o.metadata.user) || o.client_reference_id;
+        if(sparks > 0 && user) creditSparks(user, sparks, o.id);
+      }
+      res.writeHead(200); res.end('ok');
+    });
+    return;
+  }
+
   if(u.pathname === '/health' || u.pathname === '/status'){
     const list = [];
     for(const [name, r] of rooms) list.push({ room:name, players:r.size, cap:capFor(name) });
@@ -295,6 +417,9 @@ wss.on('connection', (ws) => {
              turn: !!TURN_URL,
              ytChat: !!YOUTUBE_API_KEY,
              codeCount: Object.keys(REDEEM_CODES).length,
+             payments: paymentsOn(),
+             packs: paymentsOn() ? SPARK_PACKS : null,
+             currency: CURRENCY,
              googleClientId: GOOGLE_CLIENT_ID || null,
              youtube: YOUTUBE_CHANNEL_ID || null });
 
@@ -353,6 +478,42 @@ wss.on('connection', (ws) => {
       }).catch(err => {
         send(ws, { type:'auth', ok:false, error: 'Google sign in failed: ' + err.message });
       });
+      return;
+    }
+
+    if (m.type === 'rename') {
+      if (!p.acct) return send(ws, { type:'rename', ok:false, error:'Sign in first.' });
+      const want = String(m.name || '').trim();
+      if (!validName(want))
+        return send(ws, { type:'rename', ok:false, error:'3 to 16 letters, numbers, _ . or -' });
+      const key = want.toLowerCase(), oldKey = p.acct.user.toLowerCase();
+      if (key !== oldKey && accounts[key])
+        return send(ws, { type:'rename', ok:false, error:'That name is taken.' });
+      const since = Date.now() - (p.acct.renamedAt || 0);
+      if (p.acct.renamedAt && since < 86400000)
+        return send(ws, { type:'rename', ok:false,
+          error:'You can change your name again in ' +
+                Math.ceil((86400000 - since)/3600000) + ' hours.' });
+      const acct = p.acct;
+      delete accounts[oldKey];
+      acct.user = want;
+      acct.renamedAt = Date.now();
+      accounts[key] = acct;
+      acctDirty = true;
+      p.name = want;
+      broadcast(rooms.get(p.room) || new Map(), { type:'player_name', id:p.id, name:want });
+      console.log('rename', oldKey, '->', want);
+      return send(ws, { type:'rename', ok:true, user:want });
+    }
+
+    if (m.type === 'buy') {
+      if (!p.acct) return send(ws, { type:'buy', ok:false, error:'Sign in first.' });
+      if (!paymentsOn())
+        return send(ws, { type:'buy', ok:false,
+          error:'Buying sparks is not set up on this server.' });
+      createCheckout(p.acct, String(m.pack || ''))
+        .then(url => send(ws, { type:'buy', ok:true, url }))
+        .catch(e => send(ws, { type:'buy', ok:false, error:e.message }));
       return;
     }
 
@@ -564,6 +725,7 @@ server.listen(PORT, () => {
   console.log(`GALEBREAK server running: http://localhost:${PORT}`);
   console.log(`  version galebreak-2 · accounts on · google sign in ${GOOGLE_CLIENT_ID?'configured':'not configured'}`);
   console.log(`  subscriber check ${YOUTUBE_CHANNEL_ID?'configured':'off'} · redeem codes: ${Object.keys(REDEEM_CODES).join(', ')}`);
+  console.log(`  payments ${paymentsOn()?'configured':'off'}`);
   console.log(`  accounts file: ${ACCT_FILE}`);
   console.log(`  voice relay: ${TURN_URL ? 'TURN configured' : 'STUN only — voice will fail behind strict NATs'}`);
   console.log(`  youtube chat: ${YOUTUBE_API_KEY ? 'key set' : 'not configured (Twitch needs no key)'}`);

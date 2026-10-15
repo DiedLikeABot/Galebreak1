@@ -263,6 +263,14 @@
   .friend b{color:#fff;min-width:120px}
   .friend span{color:#8ea4bd;letter-spacing:2px;flex:1}
   .fbtn{margin:0;padding:6px 12px;font-size:10px}
+  .packs{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:4px 0 6px}
+  .pack{pointer-events:auto;background:rgba(10,18,30,.72);border:2px solid rgba(255,216,115,.3);
+    border-radius:7px;padding:14px 10px;cursor:pointer;color:#cfe0f0;font-family:inherit;
+    display:flex;flex-direction:column;align-items:center;gap:3px;box-shadow:none}
+  .pack:hover{border-color:#ffd873;transform:none}
+  .pack b{font-size:17px;color:#ffd873;letter-spacing:1px}
+  .pack em{font-size:10px;letter-spacing:1px;color:#7bd88f;font-style:normal;min-height:13px}
+  .pack span{font-size:14px;color:#fff;margin-top:4px}
   .turnhint{display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:1px;
     color:#7f9ab8;margin:-6px 0 14px}
   .svcgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:14px 0}
@@ -2405,6 +2413,40 @@ function ytVerify(){
 
 /* ================= accounts ================= */
 let account=null, authMsg='', authBusy=false, cloudSaveT=0;
+let renameMsg='', buyMsg2='', payPacks=null, payCurrency='usd';
+
+function doRename(){
+  const f=document.getElementById('newName');
+  const want=(f?f.value:'').trim();
+  if(!want){ renameMsg='Type the name you want.'; renderLobbyPanel(); return; }
+  if(!signedIn()){ renameMsg='Sign in first.'; renderLobbyPanel(); return; }
+  renameMsg='Checking…';
+  netSend({type:'rename',name:want});
+  renderLobbyPanel();
+}
+function handleRename(m){
+  if(!m.ok){ renameMsg=m.error||'That did not work.'; renderLobbyPanel(); return; }
+  account.user=m.user;
+  netName=m.user;
+  renameMsg='You are now '+m.user+'.';
+  updateWallet(); renderLobbyPanel();
+  const pn=document.getElementById('playerName');
+  if(pn) pn.value=m.user;
+}
+function buySparks(packId){
+  if(!signedIn()){ buyMsg2='Sign in first — sparks are attached to an account.'; renderLobbyPanel(); return; }
+  buyMsg2='Opening the payment page…';
+  renderLobbyPanel();
+  netSend({type:'buy',pack:packId});
+}
+function handleBuy(m){
+  if(!m.ok){ buyMsg2=m.error||'Could not start the purchase.'; renderLobbyPanel(); return; }
+  // Stripe hosts the card form; we only ever hand over a link to it
+  buyMsg2='Payment page opened in a new tab. Your sparks arrive here the moment it completes.';
+  renderLobbyPanel();
+  try{ window.open(m.url,'_blank','noopener'); }
+  catch(e){ location.href=m.url; }
+}
 let googleClientId=null, gisLoaded=false, gisReady=false;
 let serverHasAccounts=false, authTimer=null, serverVersion='', serverPersistent=true;
 const CLIENT_BUILD='2026-10-05c';
@@ -3341,9 +3383,22 @@ function handleNet(m){
     }
     serverPersistent=m.persistent!==false;
     serverCodeCount=(m.codeCount===undefined)?null:m.codeCount;
+    payPacks=m.packs||null;
+    payCurrency=m.currency||'usd';
     if(!account) setTimeout(googleSilentSignIn,400);
     googleClientId=m.googleClientId||null;
     if(lobbyTab==='account') renderLobbyPanel();
+  } else if(m.type==='rename'){
+    handleRename(m);
+  } else if(m.type==='buy'){
+    handleBuy(m);
+  } else if(m.type==='sparks'){
+    profile.coins=m.coins;
+    saveProfile(); updateWallet();
+    buyMsg2='Thank you — '+m.added.toLocaleString()+' sparks added.';
+    toast('<u>'+m.added.toLocaleString()+'</u> sparks added');
+    blip(900,.14,.2,'triangle');
+    renderLobbyPanel();
   } else if(m.type==='reward'){
     handleReward(m);
   } else if(m.type==='auth'){
@@ -7401,6 +7456,13 @@ function renderLobbyPanel(){
           '<div class="psub" style="margin-top:14px">Your level, sparks, locker and friends are '+
             'stored on the server, so they follow you to any device that can reach it. '+
             'Progress is saved every few seconds while you are connected.</div>'+
+          '<div class="setgroup">Change your name</div>'+
+          '<div class="prow"><label>New name</label>'+
+            '<input id="newName" maxlength="16" placeholder="3-16 characters" value="">'+
+            '<button class="ghost small" id="renameBtn" style="margin:0">CHANGE</button></div>'+
+          '<div class="psub" style="font-size:12px">Your friend code and everything you own '+
+            'stay with you. You can change it once a day.</div>'+
+          '<div class="buyline'+(/You are now/.test(renameMsg)?' good':'')+'">'+renameMsg+'</div>'+
           '<div class="statrow">'+
             '<div><b>'+levelOf()+'</b>level</div>'+
             '<div><b>'+profile.coins+'</b>sparks</div>'+
@@ -7631,7 +7693,22 @@ function renderLobbyPanel(){
         prettyKey(S.keys.chat)+' for everyone · '+prettyKey(S.keys.teamChat)+' for your squad</span></div>';
   } else {
     const sh=dailyShop();
+    const money=(c)=>{
+      const sym={usd:'$',eur:'€',gbp:'£',cad:'C$',aud:'A$'}[payCurrency]||'';
+      return sym+(c/100).toFixed(2);
+    };
     el.innerHTML='<div class="ptitle">ITEM SHOP</div>'+
+      (payPacks&&payPacks.length
+        ? '<div class="setgroup">Sparks</div>'+
+          '<div class="packs">'+payPacks.map(pk=>
+            '<button class="pack" data-pack="'+pk.id+'">'+
+              '<b>◆ '+pk.sparks.toLocaleString()+'</b>'+
+              (pk.bonus?'<em>'+pk.bonus+'</em>':'<em>&nbsp;</em>')+
+              '<span>'+money(pk.price)+'</span></button>').join('')+'</div>'+
+          '<div class="buyline'+(/Thank you/.test(buyMsg2)?' good':'')+'">'+
+            (buyMsg2||'Payment is handled by Stripe. This game never sees your card.')+'</div>'+
+          '<div class="setgroup">Earned</div>'
+        : '')+
       '<div class="buyline'+(buyMsg?' good':'')+'" id="buyLine">'+(buyMsg||
         'Six pieces are made fresh every day and never return. '+rotationLabel()+'.')+'</div>'+
       '<div class="shoprow"><div class="shophead"><b>FEATURED</b><span>'+rotationLabel()+'</span></div>'+
@@ -7643,6 +7720,15 @@ function renderLobbyPanel(){
 }
 function bindPanel(){
   if(lobbyTab==='account') mountGoogleButton();
+  const rnb=document.getElementById('renameBtn');
+  if(rnb) rnb.addEventListener('click',()=>{ uiClick(); doRename(); });
+  const nn=document.getElementById('newName');
+  if(nn) nn.addEventListener('keydown',e=>{
+    e.stopPropagation(); if(e.key==='Enter') doRename();
+  });
+  document.querySelectorAll('[data-pack]').forEach(b=>b.addEventListener('click',()=>{
+    uiClick(); buySparks(b.dataset.pack);
+  }));
   const lg=document.getElementById('liveGo');
   if(lg) lg.addEventListener('click',()=>{
     uiClick();
@@ -12661,6 +12747,11 @@ document.getElementById('againBtn').addEventListener('click',()=>{ clearOverCoun
 document.getElementById('resumeBtn').addEventListener('click',()=>setPaused(false));
 document.getElementById('leaveBtn').addEventListener('click',()=>{ uiClick(); leaveMatch(); });
 document.getElementById('lobbyBtn').addEventListener('click',()=>{ uiClick(); toLobby(); });
+if(location.search.indexOf('paid=1')>=0){
+  history.replaceState(null,'',location.pathname);
+  setTimeout(()=>{ buyMsg2='Payment received — your sparks are on the way.';
+                   setLobbyTab('shop'); },900);
+}
 Promise.resolve()
   .then(loadSettings)
   .then(loadProfile)
