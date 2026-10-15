@@ -9258,8 +9258,10 @@ function creativeTick(dt){
     '<div><span>grid</span>'+creative.grid+'m</div>'+
     '<div><span>placed</span>'+(creative.placed.length+PIECES.size)+'</div>'+
     '<div><span>fly</span>'+(creative.fly?'on':'off')+'</div>'+
-    '<i>TAB props/pieces · [ ] cycle · R rotate · G grid · F fly<br>'+
-    'X delete · Z undo · P play test · MAPS tab to save</i>'+
+    '<i>TAB props or pieces · [ ] cycle · R rotate · J grid size<br>'+
+    'L flight · SPACE up · SHIFT down · X delete · Z undo<br>'+
+    'P play test · Q C F V place wall stairs floor cone · G edit<br>'+
+    'MAPS tab to save and share</i>'+
     (creative.msg?'<em>'+creative.msg+'</em>':'');
 }
 /* ================= expressions =================
@@ -11029,12 +11031,12 @@ function bindInput(){
         setSlot(creative.buildMode?6:0,true); uiClick(); return; }
       if(e.code==='BracketLeft'){ creative.propIdx=(creative.propIdx+PROPS.length-1)%PROPS.length; blip(620,.04,.07,'sine'); return; }
       if(e.code==='BracketRight'){ creative.propIdx=(creative.propIdx+1)%PROPS.length; blip(700,.04,.07,'sine'); return; }
-      if(e.code==='KeyG'&&!editing){ creative.grid=creative.grid===1?2:(creative.grid===2?4:1);
+      if(e.code==='KeyJ'&&!editing){ creative.grid=creative.grid===1?2:(creative.grid===2?4:1);
         toast('Grid '+creative.grid+'m'); return; }
       if(e.code==='KeyZ'){ creativeUndo(); return; }
       if(e.code==='KeyP'){ creativeTest(); return; }
       if(e.code==='KeyX'){ creativeDelete(); return; }
-      if(e.code==='KeyF'){ creative.fly=!creative.fly; toast(creative.fly?'Fly on':'Fly off'); return; }
+      if(e.code==='KeyL'){ creative.fly=!creative.fly; toast(creative.fly?'Flight on':'Flight off'); return; }
       if(act==='rotate'){ creative.rot=(creative.rot+Math.PI/4)%(Math.PI*2); return; }
     }
     if(act==='chat') openChat('all');
