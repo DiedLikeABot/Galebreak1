@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>GALEBREAK</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
@@ -25,6 +28,8 @@
   /* the four arms are placed from the centre point outwards, so the gap can
      grow with your spread instead of the whole box being stretched */
   #cross{position:absolute;left:50%;top:50%;width:0;height:0;opacity:.95}
+  #cross.locked i{background:#ff6a4d!important;box-shadow:0 0 5px rgba(255,106,77,.8)!important}
+  #cross.locked b{background:#ff6a4d!important}
   #cross i{position:absolute;background:#fff;border-radius:1px;
     box-shadow:0 0 2px #000,0 0 4px rgba(0,0,0,.6)}
   #cross b{position:absolute;background:#fff;border-radius:50%;
@@ -175,6 +180,11 @@
   .onchip.live{color:#dbe6f2}
   #onlineToggle{color:#8ea4bd}
   #onlineToggle.on{color:#4ade80}
+  #getSparks{margin-left:10px;width:26px;height:26px;border-radius:50%;border:0;
+    background:#ffd873;color:#1a1403;font-size:17px;font-weight:bold;line-height:1;
+    cursor:pointer;pointer-events:auto;box-shadow:0 2px 8px rgba(255,216,115,.35);
+    display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit}
+  #getSparks:hover{background:#fff0bd;transform:scale(1.1)}
   .coins{display:flex;align-items:center;gap:7px;font-size:18px;font-weight:bold;color:#ffd873;
     background:rgba(4,8,16,.6);padding:7px 14px;border-radius:5px}
   .coins .spark{color:#ffd873;font-size:14px}
@@ -258,6 +268,37 @@
   .friend b{color:#fff;min-width:120px}
   .friend span{color:#8ea4bd;letter-spacing:2px;flex:1}
   .fbtn{margin:0;padding:6px 12px;font-size:10px}
+  .sparkhead{display:flex;align-items:baseline;gap:14px;margin:4px 0 14px;
+    padding-bottom:10px;border-bottom:1px solid rgba(255,216,115,.26)}
+  .sparkhead b{font-size:22px;letter-spacing:5px;color:#ffd873}
+  .sparkhead span{font-size:12px;color:#8ea4bd;letter-spacing:1px}
+  .packs{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px;margin:0 0 10px}
+  .pack{position:relative;pointer-events:auto;cursor:pointer;font-family:inherit;
+    background:linear-gradient(165deg,rgba(255,216,115,.14),rgba(10,18,30,.85));
+    border:2px solid rgba(255,216,115,.34);border-radius:10px;padding:20px 12px 18px;
+    color:#cfe0f0;display:flex;flex-direction:column;align-items:center;gap:4px;
+    box-shadow:none;transition:border-color .12s, background .12s}
+  .pack:hover{border-color:#ffd873;background:linear-gradient(165deg,rgba(255,216,115,.24),rgba(10,18,30,.85))}
+  .pack.best{border-color:#7bd88f}
+  .pack .bestTag{position:absolute;top:-11px;left:50%;transform:translateX(-50%);
+    background:#7bd88f;color:#06130b;font-size:9px;letter-spacing:1.6px;padding:3px 9px;
+    border-radius:3px;white-space:nowrap}
+  .packIcon{font-size:26px;color:#ffd873;line-height:1;margin-bottom:2px}
+  .pack b{font-size:26px;color:#fff;letter-spacing:1px;line-height:1}
+  .pack em{font-size:10px;letter-spacing:1.4px;color:#7bd88f;font-style:normal;min-height:14px}
+  .pack span{font-size:17px;color:#ffd873;margin-top:8px;font-weight:bold}
+  .turnhint{display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:1px;
+    color:#7f9ab8;margin:-6px 0 14px}
+  .svcgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:14px 0}
+  .svc{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);
+    border-left:3px solid var(--sc);border-radius:0 5px 5px 0;padding:12px 14px}
+  .svc.on{background:rgba(255,255,255,.08);border-color:var(--sc)}
+  .svc b{display:block;color:var(--sc);font-size:14px;letter-spacing:1px;margin-bottom:5px}
+  .svc p{font-size:11.5px;line-height:1.5;color:#9db2c9;margin:0 0 9px}
+  .svcna{font-size:10px;letter-spacing:1.5px;color:#64748b}
+  .vmeter{display:inline-block;width:110px;height:7px;background:rgba(255,255,255,.12);
+    border-radius:4px;overflow:hidden;vertical-align:middle;margin-left:6px}
+  .vmeter i{display:block;height:100%;background:linear-gradient(90deg,#4ade80,#ffd873,#ff5c5c)}
   .pickrow{display:flex;gap:6px;flex-wrap:wrap}
   .pickrow .oppbtn{padding:7px 12px;font-size:10px;letter-spacing:1.5px}
   .buyline{font-size:12px;color:#9db2c9;margin-top:12px;min-height:18px}
@@ -278,6 +319,59 @@
     .lbrand{font-size:17px;letter-spacing:3px}
     .xpbar{width:90px}
   }
+
+  /* ---------- touch controls ----------
+     Laid out for thumbs: movement bottom left, look anywhere on the right,
+     actions in reach of the right thumb. Everything sits inside the safe
+     area so nothing hides under a notch or a home bar. */
+  #touch{position:fixed;inset:0;display:none;z-index:40;
+    pointer-events:none;touch-action:none;
+    padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px)
+            env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+  body.touch #touch{display:block}
+  body.touch #cross{transform:translate(-50%,-50%) scale(.85)}
+  #tstick{position:absolute;left:26px;bottom:34px;width:150px;height:150px;
+    border-radius:50%;border:2px solid rgba(255,255,255,.16);
+    background:rgba(8,14,24,.3);pointer-events:auto}
+  #tnub{position:absolute;left:50%;top:50%;width:62px;height:62px;margin:-31px 0 0 -31px;
+    border-radius:50%;background:rgba(255,255,255,.3);
+    border:2px solid rgba(255,255,255,.5);transition:background .1s}
+  #tlook{position:absolute;right:0;top:0;bottom:0;width:58%;pointer-events:auto}
+  .tbtn{position:absolute;pointer-events:auto;border-radius:50%;
+    background:rgba(10,18,30,.56);border:2px solid rgba(255,255,255,.22);
+    color:#e6eef7;font-family:inherit;font-size:11px;letter-spacing:1px;
+    display:flex;align-items:center;justify-content:center;text-align:center;
+    user-select:none;-webkit-user-select:none;line-height:1.1}
+  .tbtn.on{background:rgba(232,56,13,.72);border-color:#ff9a7a}
+  .tbtn:active{background:rgba(232,56,13,.6)}
+  #tfire{right:26px;bottom:40px;width:96px;height:96px;font-size:13px}
+  #tjump{right:140px;bottom:46px;width:74px;height:74px}
+  #taim{right:34px;bottom:152px;width:66px;height:66px}
+  #tuse{right:126px;bottom:150px;width:60px;height:60px;font-size:10px}
+  #tbuild{right:28px;bottom:232px;width:62px;height:62px;font-size:10px}
+  #tswap{right:120px;bottom:226px;width:58px;height:58px;font-size:10px}
+  #tassist{right:206px;bottom:152px;width:56px;height:56px;font-size:9px}
+  #tslots{position:absolute;left:26px;bottom:200px;display:flex;gap:8px;pointer-events:auto}
+  #tslots .tsl{width:48px;height:48px;border-radius:8px;background:rgba(10,18,30,.56);
+    border:2px solid rgba(255,255,255,.2);color:#cfe0f0;font-size:11px;
+    display:flex;align-items:center;justify-content:center;pointer-events:auto}
+  #tslots .tsl.on{border-color:#ff9a7a;background:rgba(232,56,13,.5);color:#fff}
+  #tmenu{position:absolute;left:26px;top:14px;width:46px;height:46px;border-radius:8px;
+    background:rgba(10,18,30,.6);border:2px solid rgba(255,255,255,.2);
+    color:#cfe0f0;font-size:18px;display:flex;align-items:center;justify-content:center;
+    pointer-events:auto}
+  #rotate{position:fixed;inset:0;z-index:90;display:none;background:#070b12;
+    color:#dbe6f2;font-family:inherit;align-items:center;justify-content:center;
+    flex-direction:column;text-align:center;padding:40px}
+  body.portrait #rotate{display:flex}
+  #rotate b{font-size:22px;letter-spacing:4px;margin-bottom:10px}
+  #rotate span{color:#8ea4bd;font-size:14px;line-height:1.6;max-width:320px}
+  @media (max-width:900px){
+    body.touch #hud{font-size:12px}
+    body.touch #map{width:120px;height:120px}
+    body.touch #trainhud,body.touch #crhud{display:none!important}
+    body.touch .lpanel{max-height:62vh;overflow-y:auto}
+  }
   .hidden{display:none!important}
 
   #cheats{justify-content:flex-start;padding:24px}
@@ -294,6 +388,14 @@
     background:rgba(255,255,255,.07);padding:3px 8px;border-radius:3px;min-width:104px;display:inline-block}
   .cheatrow .st{margin-left:auto;font-size:11px;letter-spacing:2px;color:#6f8399}
   .cheatrow .st.on{color:#86efac}
+  #livechat{position:absolute;right:22px;bottom:150px;width:330px;display:none;
+    font-size:13px;line-height:1.45;text-shadow:0 2px 5px #000;pointer-events:none}
+  #livechat .lmsg{margin-bottom:3px;color:#e6eef7;word-wrap:break-word}
+  #livechat .lcheer{margin-top:6px;font-size:11px;letter-spacing:2px;color:#ffd873}
+  #livevote{position:absolute;left:50%;top:120px;transform:translateX(-50%);display:none;
+    background:rgba(4,8,16,.78);border:1px solid rgba(159,212,255,.4);border-radius:6px;
+    padding:9px 16px;font-size:13px;color:#cfe0f0;pointer-events:none;text-align:center}
+  #livevote b{color:#9fd4ff;font-size:16px;display:block}
   #clipflash{position:absolute;left:50%;top:92px;transform:translateX(-50%);display:none;
     background:rgba(232,56,13,.92);color:#fff;font-size:12px;letter-spacing:3px;
     padding:8px 18px;border-radius:4px;transition:opacity .5s;pointer-events:none}
@@ -302,6 +404,28 @@
   #killcam b{display:block;font-size:11px;letter-spacing:5px;color:#ff8a5c}
   #killcam i{display:block;font-size:34px;letter-spacing:2px;color:#fff;font-style:normal;margin:4px 0}
   #killcam small{display:block;font-size:10px;letter-spacing:4px;color:#8ea4bd}
+  #chatstream{position:absolute;right:22px;bottom:150px;width:320px;display:none;
+    font-size:12.5px;line-height:1.45;text-shadow:0 2px 4px #000;pointer-events:none}
+  #chatstream .smsg{margin-bottom:3px;color:#dfe8f2}
+  #votebox{position:absolute;left:50%;top:16%;transform:translateX(-50%);display:none;
+    width:360px;background:rgba(4,8,16,.82);border:1px solid rgba(255,216,115,.4);
+    border-radius:6px;padding:12px 14px;pointer-events:none}
+  #votebox b{display:block;font-size:13px;letter-spacing:1px;color:#ffd873;margin-bottom:8px}
+  #votebox .vrow{position:relative;display:flex;align-items:center;gap:8px;margin-bottom:5px;
+    font-size:12px;color:#dfe8f2}
+  #votebox .vrow span{flex:1;z-index:1}
+  #votebox .vrow i{z-index:1;font-style:normal;color:#9db2c9}
+  #votebox .vrow em{position:absolute;left:0;top:0;bottom:0;background:rgba(255,216,115,.22);
+    border-radius:3px}
+  #votebox small{display:block;margin-top:6px;font-size:10px;letter-spacing:2px;color:#8ea4bd}
+  #crhud{position:absolute;right:22px;top:210px;display:none;min-width:230px;
+    background:rgba(4,8,16,.74);border:1px solid rgba(255,255,255,.14);border-radius:6px;
+    padding:12px 14px;font-size:12px;line-height:1.55;color:#cfe0f0;pointer-events:none}
+  #crhud b{display:block;font-size:10px;letter-spacing:3px;color:#7bd88f;margin-bottom:7px}
+  #crhud div{display:flex;justify-content:space-between;gap:12px}
+  #crhud span{color:#8ea4bd}
+  #crhud i{display:block;margin-top:8px;font-size:10px;letter-spacing:.5px;color:#64748b;font-style:normal}
+  #crhud em{display:block;margin-top:6px;color:#ffd873;font-style:normal;font-size:11px}
   #trainhud{position:absolute;right:22px;top:210px;display:none;min-width:190px;
     background:rgba(4,8,16,.72);border:1px solid rgba(255,255,255,.14);border-radius:6px;
     padding:12px 14px;font-size:12px;line-height:1.55;color:#cfe0f0;pointer-events:none}
@@ -454,6 +578,21 @@
 </head>
 <body>
 
+
+<div id="rotate"><b>TURN YOUR PHONE</b><span>GALEBREAK plays in landscape. Rotate the device and the game will start.</span></div>
+<div id="touch">
+  <div id="tmenu">☰</div>
+  <div id="tstick"><div id="tnub"></div></div>
+  <div id="tlook"></div>
+  <div id="tslots"></div>
+  <div class="tbtn" id="tfire">FIRE</div>
+  <div class="tbtn" id="tjump">JUMP</div>
+  <div class="tbtn" id="taim">AIM</div>
+  <div class="tbtn" id="tuse">PICK<br>UP</div>
+  <div class="tbtn" id="tbuild">BUILD</div>
+  <div class="tbtn" id="tswap">EDIT</div>
+  <div class="tbtn" id="tassist">AUTO<br>ON</div>
+</div>
 <div id="hud" class="hidden">
   <div id="scope"><i></i><i></i></div>
   <canvas id="cues"></canvas>
@@ -499,7 +638,12 @@
   <div id="voiceind"><i></i>TALKING</div>
   <div id="coach"></div>
   <div id="trainhud"></div>
+  <div id="crhud"></div>
+  <div id="chatstream"></div>
+  <div id="votebox"></div>
   <div id="clipflash">● CLIP SAVED</div>
+  <div id="livechat"></div>
+  <div id="livevote"></div>
   <div id="killcam"></div>
   <div id="elimbanner"></div>
   <div id="emotewheel">
@@ -532,6 +676,8 @@
       <button class="lnavbtn" data-tab="locker">LOCKER</button>
       <button class="lnavbtn" data-tab="shop">ITEM SHOP</button>
       <button class="lnavbtn" data-tab="maps">MAPS</button>
+      <button class="lnavbtn" data-tab="stream">STREAM</button>
+      <button class="lnavbtn" data-tab="stream">STREAM</button>
       <button class="lnavbtn" data-tab="unlock">UNLOCK</button>
       <button class="lnavbtn" data-tab="friends">FRIENDS</button>
       <button class="lnavbtn" data-tab="account">ACCOUNT</button>
@@ -547,7 +693,8 @@
       <div id="acctchip" class="onchip"><i></i>guest</div>
       <div id="onlinechip" class="onchip"><i></i>solo</div>
       <button id="onlineToggle" class="lnavbtn on" style="border:0">ONLINE</button>
-      <div class="coins"><span class="spark">◆</span><b id="coinN">0</b></div>
+      <div class="coins" id="coinBox"><span class="spark">◆</span><b id="coinN">0</b>
+        <button id="getSparks" title="Get more sparks">+</button></div>
     </div>
   </div>
 
@@ -572,6 +719,7 @@
       <button class="modebtn" data-mode="boxfight"><b>BOX FIGHT</b><span>1v1 vs a real player · five boxes · first to 10</span></button>
       <button class="modebtn" data-mode="insane"><b>INSANE</b><span>100 players · merciless aim · storm that never waits</span></button>
       <button class="modebtn" data-mode="galeball"><b>GALEBALL</b><span>shoot the ball into their goal · build to block · first to 5</span></button>
+      <button class="modebtn" data-mode="creative"><b>CREATIVE</b><span>build your own map · fly · props · share a code</span></button>
       <button class="modebtn" data-mode="training"><b>TRAINING</b><span>aim range · build zone · edit course · no pressure</span></button>
     </div>
     <button id="startBtn">PLAY</button>
@@ -690,7 +838,10 @@ const MODES={
   galeball  :{ label:'GALEBALL',       short:'gb', players:8, bots:3, skill:1.2, storm:1,
                playR:150, arena:'ball', bus:false, phases:'box', rounds:1,
                loadout:'ball', respawn:true, target:5 },
-  training  :{ label:'TRAINING',       short:'tr', players:1, bots:4, skill:1, storm:1,
+  creative  :{ label:'CREATIVE',       short:'cr', players:16, bots:0, skill:1, storm:1,
+               playR:260, arena:'creative', bus:false, phases:'box', rounds:1,
+               loadout:'creative' },
+  training  :{ label:'TRAINING',       short:'tr', players:1, bots:0, skill:1, storm:1,
                playR:150, arena:'training', bus:false, phases:'box', rounds:1,
                loadout:'train', respawn:true },
   boxfight  :{ label:'BOX FIGHT',     short:'bx', players:2, bots:1, skill:1.55, storm:1,
@@ -729,9 +880,10 @@ const DEFAULTS = {
   cloudShadows:.55,
   saturation:1.08, vignette:.45, grain:.03, aberration:.55, timeOfDay:'midday',
   volMaster:.95, volShots:1, volSteps:1, volUI:1, volAmbient:0,
-  volVoice:1, voiceProximity:true, voiceMode:'ptt', voiceWho:'team',
+  volVoice:1, voiceProximity:true, voiceMode:'ptt', voiceWho:'team', micDevice:'',
+  liveChannel:'', liveOverlay:true, liveLines:7, liveCommands:true, streamerMode:false,
   cues:true, minimap:true, killFeed:true, dmgNums:true, hitMarker:true, stormPanel:true,
-  showTips:true, killcam:true, botLobby:true, toggleSprint:false, autoReload:true, autoPickup:false,
+  showTips:true, killcam:true, botLobby:true, aimAssist:0, autoFire:false, toggleSprint:false, autoReload:true, autoPickup:false,
   botCount:19, botSkill:1, stormSpeed:1, startMats:0
 };
 let S = JSON.parse(JSON.stringify(DEFAULTS));
@@ -827,6 +979,9 @@ const SCHEMA = [
  { group:'Gameplay', items:[
    { k:'showTips', label:'Show control tips while playing', type:'toggle' },
    { k:'killcam', label:'Killcam when you are eliminated', type:'toggle' },
+   { k:'aimAssist', label:'Aim assist', type:'select',
+     opts:[[0,'Off'],[1,'Light'],[2,'Standard'],[3,'Strong']] },
+   { k:'autoFire', label:'Fire automatically when on target', type:'toggle' },
    { k:'botLobby', label:'Bot lobby (fill empty seats with AI)', type:'toggle' },
    { k:'toggleSprint', label:'Sprint toggles instead of held', type:'toggle' },
    { k:'autoReload', label:'Reload automatically when empty', type:'toggle' },
@@ -1204,6 +1359,9 @@ const CROSS_STYLE={
 function updateCrosshair(){
   const el=document.getElementById('cross');
   if(!el) return;
+  // tint the crosshair while the assist has hold of someone
+  if(assistTarget && S.aimAssist) el.classList.add('locked');
+  else el.classList.remove('locked');
   const arms=el.querySelectorAll('i'), dot=el.querySelector('b');
   if(arms.length<4||!dot) return;
 
@@ -1250,17 +1408,40 @@ function exportMap(){
     p.mask.forEach((on,i)=>{ if(on) mask|=(1<<i); });
     out.push([t,p.ix,p.iy,p.iz,p.dir,mask].join('.'));
   }
-  if(!out.length) return '';
-  const body='GB1|'+out.join(',');
+  // props carry their own section so older codes still load
+  const props=[];
+  for(const m of creative.placed){
+    const u=m.userData.prop;
+    if(!u) continue;
+    const pi=PROPS.findIndex(x=>x.id===u.id);
+    if(pi<0) continue;
+    props.push([pi, Math.round(u.x*2)/2, Math.round(u.y*2)/2, Math.round(u.z*2)/2,
+                Math.round((u.rot||0)*100)/100].join('.'));
+  }
+  if(!out.length && !props.length) return '';
+  const body='GB2|'+out.join(',')+'|'+props.join(',');
   try{ return btoa(body).replace(/=+$/,''); }catch(e){ return ''; }
+}
+function clearProps(){
+  for(const m of creative.placed){
+    if(m.parent) scene.remove(m);
+    const h=hittables.indexOf(m); if(h>=0) hittables.splice(h,1);
+    if(m.userData.box){ const c=colliders.indexOf(m.userData.box); if(c>=0) colliders.splice(c,1); }
+  }
+  creative.placed.length=0;
+  rebuildColGrid();
 }
 function importMap(code){
   let body;
   try{ body=atob(String(code||'').trim()); }catch(e){ return 'That code is not readable.'; }
-  if(body.indexOf('GB1|')!==0) return 'That is not a GALEBREAK map code.';
-  const rows=body.slice(4).split(',').filter(Boolean);
-  if(!rows.length) return 'That code has nothing in it.';
+  const v2=body.indexOf('GB2|')===0;
+  if(!v2 && body.indexOf('GB1|')!==0) return 'That is not a GALEBREAK map code.';
+  const sections=body.slice(4).split('|');
+  const rows=(sections[0]||'').split(',').filter(Boolean);
+  const propRows=v2?((sections[1]||'').split(',').filter(Boolean)):[];
+  if(!rows.length && !propRows.length) return 'That code has nothing in it.';
   clearPlayerBuilds();
+  clearProps();
   let made=0;
   for(const r of rows){
     const f=r.split('.').map(Number);
@@ -1279,9 +1460,34 @@ function importMap(code){
     made++;
     if(made>900) break;                 // a sane ceiling on a pasted code
   }
+  for(const r of propRows){
+    const f=r.split('.').map(Number);
+    if(f.length<5||f.some(n=>!isFinite(n))) continue;
+    const pr=PROPS[f[0]];
+    if(!pr) continue;
+    const m=box(pr.w,pr.h,pr.d, f[1], f[2]+pr.h/2, f[3], creativeMat(pr.mat));
+    m.rotation.set(pr.tilt||0, f[4], 0);
+    m.userData.prop={ id:pr.id, x:f[1], y:f[2], z:f[3], rot:f[4] };
+    m.userData.harvest=null;
+    creative.placed.push(m);
+    made++;
+    if(made>1400) break;
+  }
   rebuildColGrid();
-  return made?('Loaded '+made+' pieces.'):'Nothing in that code could be placed.';
+  return made?('Loaded '+made+' objects.'):'Nothing in that code could be placed.';
 }
+
+/* ---- named saves, kept with your profile ---- */
+function savedMaps(){ if(!profile.maps) profile.maps={}; return profile.maps; }
+function saveMapAs(name){
+  const code=exportMap();
+  if(!code) return 'Build something first.';
+  name=(name||'').trim().slice(0,24)||('Map '+(Object.keys(savedMaps()).length+1));
+  savedMaps()[name]={ code, at:Date.now(), parts:creative.placed.length+PIECES.size };
+  saveProfile();
+  return 'Saved as "'+name+'".';
+}
+function deleteMap(name){ delete savedMaps()[name]; saveProfile(); }
 let mapMsg='';
 function copyMapCode(){
   const code=exportMap();
@@ -1293,6 +1499,7 @@ function copyMapCode(){
 /* ================= galeball =================
    A ball, two goals, and every tool you already have. Shots push it, the
    pickaxe thumps it, and a wall you place will stop it dead. */
+const BALL_R=54, BALL_D=34, BALL_H=11, BALL_GW=8, BALL_GH=7, BALL_PD=5, BALL_RAD=1.5;
 const ball={ mesh:null, pos:null, vel:null, goalA:null, goalB:null, cool:0 };
 const ballScore={ me:0, them:0 };
 let ballMsg='', ballMsgT=0;
@@ -1301,60 +1508,117 @@ function buildArenaBall(){
   boxMaterials();
   teamPads.length=0;
   boxOffX=0; boxOffZ=0;
-  const cy=groundH(0,0), R=54, D=34, H=9, T=.8;
+  const cy=groundH(0,0);
+  const R=BALL_R, D=BALL_D, H=BALL_H, GW=BALL_GW, GH=BALL_GH, PD=BALL_PD, T=.9;
 
-  bSolid(R*2+T*2,.7,D*2+T*2, 0, cy-.35, 0, BOXMAT.deck);
-  bSolid(T,H,D*2, -R-T/2, cy+H/2, 0);
-  bSolid(T,H,D*2,  R+T/2, cy+H/2, 0);
-  bSolid(R*2+T*2,H,T, 0, cy+H/2, -D-T/2);
-  bSolid(R*2+T*2,H,T, 0, cy+H/2,  D-0+T/2);
+  // floor and a full roof, so nothing ever leaves the court
+  bSolid(R*2+PD*2+T*2, .8, D*2+T*2, 0, cy-.4, 0, BOXMAT.deck);
+  bSolid(R*2+PD*2+T*2, T, D*2+T*2, 0, cy+H+T/2, 0, BOXMAT.shell);
 
-  // halfway line and centre circle
-  bDeco(.3,.06,D*2, 0, cy+.05, 0, BOXMAT.gold);
-  for(let i=0;i<28;i++){
-    const a=i/28*Math.PI*2;
-    bDeco(.9,.05,.9, Math.cos(a)*9, cy+.05, Math.sin(a)*9, BOXMAT.gold);
+  // side walls run the whole length
+  bSolid(R*2+PD*2+T*2, H, T, 0, cy+H/2, -D-T/2);
+  bSolid(R*2+PD*2+T*2, H, T, 0, cy+H/2,  D+T/2);
+
+  // the end walls, built around a goal mouth
+  [-1,1].forEach(sx=>{
+    const x=sx*(R+T/2);
+    const side=(D-GW)/2;
+    bSolid(T, H, D-GW, x, cy+H/2,  (GW+D)/2);     // above the mouth in z
+    bSolid(T, H, D-GW, x, cy+H/2, -(GW+D)/2);
+    bSolid(T, H-GH, GW*2, x, cy+GH+(H-GH)/2, 0);  // lintel over the mouth
+  });
+
+  // a pocket behind each mouth to catch the ball
+  [-1,1].forEach(sx=>{
+    const px=sx*(R+PD+T/2);
+    bSolid(T, GH+1, GW*2+T*2, px, cy+(GH+1)/2, 0);                 // back of the net
+    bSolid(PD, GH+1, T, sx*(R+PD/2), cy+(GH+1)/2,  GW+T/2);        // its sides
+    bSolid(PD, GH+1, T, sx*(R+PD/2), cy+(GH+1)/2, -GW-T/2);
+    bSolid(PD, T, GW*2, sx*(R+PD/2), cy+GH+T/2, 0);                // and its roof
+    const col = sx>0 ? 0x3a7ad8 : 0xd83a3a;
+    const m=new THREE.Mesh(new THREE.BoxGeometry(.4,GH,GW*2),
+      new THREE.MeshStandardMaterial({color:col,transparent:true,opacity:.34,
+        emissive:new THREE.Color(col).multiplyScalar(.3),side:THREE.DoubleSide}));
+    m.position.set(sx*R, cy+GH/2, 0);
+    scene.add(m); stat(m);
+    signBoard(sx>0?'TEAM 1 GOAL':'TEAM 2 GOAL', sx*(R-2), cy+H-1.2, 0,
+      '#'+col.toString(16).padStart(6,'0'), 12);
+  });
+
+  // markings
+  bDeco(.35,.06,D*2, 0, cy+.06, 0, BOXMAT.gold);
+  for(let i=0;i<30;i++){
+    const a2=i/30*Math.PI*2;
+    bDeco(1,.05,1, Math.cos(a2)*9, cy+.06, Math.sin(a2)*9, BOXMAT.gold);
+  }
+  for(let i=1;i<6;i++){
+    const x=-R+i*(R*2/6);
+    bDeco(.14,.05,D*2, x, cy+.06, 0, BOXMAT.frame);
   }
 
-  // the goals, open at the front
-  const mkGoal=(sx,col)=>{
-    const gx=sx*(R-3);
-    const m=new THREE.MeshStandardMaterial({color:col,roughness:.5,
-      emissive:new THREE.Color(col).multiplyScalar(.3),transparent:true,opacity:.5});
-    const g=new THREE.Mesh(new THREE.BoxGeometry(.5,7,16),m);
-    g.position.set(gx,cy+3.5,0); scene.add(g); stat(g);
-    bSolid(3,.4,16, gx+sx*1.4, cy+7, 0, BOXMAT.frame);
-    bSolid(3,7,.5, gx+sx*1.4, cy+3.5, -8, BOXMAT.frame);
-    bSolid(3,7,.5, gx+sx*1.4, cy+3.5,  8, BOXMAT.frame);
-    signBoard(sx<0?'TEAM 2 GOAL':'TEAM 1 GOAL', gx, cy+9.4, 0, '#'+col.toString(16).padStart(6,'0'), 10);
-    return new THREE.Box3(V(gx-2.5,cy,-8), V(gx+2.5,cy+7,8));
-  };
-  ball.goalA=mkGoal(1,0x3a7ad8);     // you score here
-  ball.goalB=mkGoal(-1,0xd83a3a);
+  addTeamPad(-R+9, 0, 'TEAM 2', 0xd83a3a);
+  addTeamPad( R-9, 0, 'TEAM 1', 0x3a7ad8);
 
-  addTeamPad(-R+8, 0, 'TEAM 1', 0x3a7ad8);
-  addTeamPad( R-8, 0, 'TEAM 2', 0xd83a3a);
-
-  // the ball
-  const bm=new THREE.Mesh(new THREE.SphereGeometry(1.5,22,16),
-    new THREE.MeshStandardMaterial({color:0xffd873,roughness:.4,metalness:.1,
-      emissive:0x4a3708}));
+  const bm=new THREE.Mesh(new THREE.SphereGeometry(BALL_RAD,22,16),
+    new THREE.MeshStandardMaterial({color:0xffd873,roughness:.4,metalness:.1,emissive:0x4a3708}));
   bm.castShadow=true;
   scene.add(bm);
-  ball.mesh=bm;
-  ball.pos=V(0,cy+1.6,0);
-  ball.vel=V(0,0,0);
   hittables.push(bm);
   bm.userData.ball=true;
+  ball.mesh=bm;
+  ball.pos=V(0,cy+2,0);
+  ball.vel=V(0,0,0);
   ballReset();
 }
+
+/* The ball is kept inside by hand rather than by the generic collider pass.
+   A sphere squeezing through a seam between two boxes is the classic way a
+   ball escapes an arena, and this cannot do that: every surface is a clamp. */
+function ballContain(n){
+  const cy=groundH(0,0);
+  const r=BALL_RAD, R=BALL_R, D=BALL_D, H=BALL_H, GW=BALL_GW, GH=BALL_GH, PD=BALL_PD;
+  const bounce=(axis,k)=>{ ball.vel[axis]*=k; };
+
+  if(n.y > cy+H-r){ n.y=cy+H-r; bounce('y',-0.5); }
+  if(n.y < cy+r){   n.y=cy+r;   ball.vel.y=Math.abs(ball.vel.y)*0.55;
+                    ball.vel.x*=0.95; ball.vel.z*=0.95; }
+
+  const throughMouth = Math.abs(n.z) < GW-r*0.5 && n.y < cy+GH-r*0.5;
+  if(Math.abs(n.x) <= R-r || !throughMouth){
+    if(n.z >  D-r){ n.z= D-r; bounce('z',-0.62); }
+    if(n.z < -(D-r)){ n.z=-(D-r); bounce('z',-0.62); }
+    if(!throughMouth){
+      if(n.x >  R-r){ n.x= R-r; bounce('x',-0.62); }
+      if(n.x < -(R-r)){ n.x=-(R-r); bounce('x',-0.62); }
+    }
+  } else {
+    // inside a goal pocket: smaller box, softer walls so it settles
+    if(n.x >  R+PD-r){ n.x= R+PD-r; bounce('x',-0.35); }
+    if(n.x < -(R+PD-r)){ n.x=-(R+PD-r); bounce('x',-0.35); }
+    if(n.z >  GW-r){ n.z= GW-r; bounce('z',-0.45); }
+    if(n.z < -(GW-r)){ n.z=-(GW-r); bounce('z',-0.45); }
+    if(n.y >  cy+GH-r){ n.y=cy+GH-r; bounce('y',-0.4); }
+  }
+}
+
 function ballReset(){
   if(!ball.mesh) return;
   const cy=groundH(0,0);
-  ball.pos.set(0,cy+6,0);
+  ball.pos.set(0,cy+5,0);
   ball.vel.set(0,0,0);
   ball.mesh.position.copy(ball.pos);
   ball.cool=1.2;
+}
+function ballSwing(){
+  if(modeCfg().arena!=='ball'||!ball.mesh) return false;
+  const eye=camera.getWorldPosition(new THREE.Vector3());
+  const d=Math.hypot(ball.pos.x-eye.x, ball.pos.z-eye.z);
+  if(d>4.2 || Math.abs(ball.pos.y-eye.y)>3) return false;
+  const dir=camera.getWorldDirection(new THREE.Vector3());
+  ballKick(V(dir.x,0,dir.z).normalize(), 26);
+  ball.vel.y+=7;
+  hitmarker();
+  return true;
 }
 function ballKick(dir,power){
   if(!ball.mesh||ball.cool>0) return;
@@ -1362,36 +1626,94 @@ function ballKick(dir,power){
   ball.vel.y+=power*0.22;
   blip(300,.09,.16,'sine');
 }
+/* Each bot is given a side and a job. Attackers run to the far side of the
+   ball so that running into it sends it the right way; defenders hold a line
+   between the ball and their own net. No path finding, but it looks like
+   football because the geometry does the work. */
+function ballSetupBots(){
+  bots.forEach((b,i)=>{
+    b.ballTeam = (i%2===0) ? 1 : -1;      // +1 plays alongside you, toward +x
+    b.ballRole = (i<2) ? 'att' : ((i%3===0)?'def':'att');
+    b.weapon=null;
+    if(b.gunMesh) b.gunMesh.visible=false;
+  });
+}
+function updateBallBot(b,dt){
+  if(!b.alive||!ball.mesh) return;
+  const cy=groundH(0,0);
+  const atk=b.ballTeam;                    // the x direction this bot attacks
+  const bx=ball.pos.x, bz=ball.pos.z;
+
+  let tx,tz;
+  if(b.ballRole==='att'){
+    tx = bx - atk*2.6;                     // line up behind the ball
+    tz = bz;
+  } else {
+    tx = clamp(bx - atk*20, -46, 46);      // sit between the ball and the net
+    tz = bz*0.55;
+  }
+  tz = clamp(tz,-(BALL_D-4),BALL_D-4);
+  tx = clamp(tx,-(BALL_R-4),BALL_R-4);
+
+  const dx=tx-b.pos.x, dz=tz-b.pos.z;
+  const dist=Math.hypot(dx,dz);
+  const speed=(b.ballRole==='att'?7.4:6.2);
+  if(dist>0.4){
+    const k=Math.min(1,speed*dt/dist);
+    b.pos.x+=dx*k; b.pos.z+=dz*k;
+    b.moving=true;
+  } else b.moving=false;
+
+  b.pos.x=clamp(b.pos.x,-(BALL_R-2),BALL_R-2);
+  b.pos.z=clamp(b.pos.z,-(BALL_D-2),BALL_D-2);
+  b.pos.y=cy;
+  b.g.position.copy(b.pos);
+
+  // always look at the ball, which also aims the shove
+  b.face=Math.atan2(bx-b.pos.x, bz-b.pos.z);
+  b.g.rotation.y=b.face;
+  b.step=(b.step||0)+(b.moving?dt*9:0);
+  b.g.rotation.z=0;
+  poseWalk(b, b.moving?Math.sin(b.step):0, b.moving?Math.cos(b.step):0, false);
+  b.g.position.y += Math.abs(Math.sin(b.step))*0.035*(b.moving?1:0);
+
+  // a shove when they reach it, aimed at the goal rather than straight ahead
+  const bd=Math.hypot(bx-b.pos.x, bz-b.pos.z);
+  if(bd<2.6 && ball.cool<=0){
+    const aim=V(atk*1.0, 0, (0-bz)*0.03).normalize();
+    const push=V(bx-b.pos.x,0,bz-b.pos.z).normalize().multiplyScalar(0.5).add(aim).normalize();
+    ball.vel.addScaledVector(push, b.ballRole==='att'?10:8);
+    ball.vel.y+=1.4;
+  }
+}
 function updateBall(dt){
   if(modeCfg().arena!=='ball'||!ball.mesh) return;
   if(ball.cool>0) ball.cool-=dt;
+  for(const b of bots) updateBallBot(b,dt);
   const cy=groundH(0,0);
 
   ball.vel.y+=GRAV*0.55*dt;
   ball.vel.multiplyScalar(1-Math.min(1,dt*0.35));
-  const step=ball.vel.clone().multiplyScalar(dt);
-  const next=ball.pos.clone().add(step);
+  const next=ball.pos.clone().addScaledVector(ball.vel,dt);
 
-  // bounce off anything solid, including walls players put down
-  const near=nearColliders(next.x,next.z);
-  for(const b of near){
-    if(next.x>b.min.x-1.5 && next.x<b.max.x+1.5 &&
-       next.y>b.min.y-1.5 && next.y<b.max.y+1.5 &&
-       next.z>b.min.z-1.5 && next.z<b.max.z+1.5){
+  // anything a player has built still deflects it
+  for(const b of nearColliders(next.x,next.z)){
+    if(next.x>b.min.x-BALL_RAD && next.x<b.max.x+BALL_RAD &&
+       next.y>b.min.y-BALL_RAD && next.y<b.max.y+BALL_RAD &&
+       next.z>b.min.z-BALL_RAD && next.z<b.max.z+BALL_RAD){
       const cx=(b.min.x+b.max.x)/2, cz=(b.min.z+b.max.z)/2, cyb=(b.min.y+b.max.y)/2;
-      const dx=(next.x-cx)/((b.max.x-b.min.x)/2+1.5);
-      const dy=(next.y-cyb)/((b.max.y-b.min.y)/2+1.5);
-      const dz=(next.z-cz)/((b.max.z-b.min.z)/2+1.5);
-      const ax=Math.abs(dx), ay=Math.abs(dy), az=Math.abs(dz);
-      if(ax>=ay&&ax>=az){ ball.vel.x*=-0.62; next.x=ball.pos.x; }
-      else if(ay>=az){ ball.vel.y*=-0.52; next.y=ball.pos.y; }
-      else { ball.vel.z*=-0.62; next.z=ball.pos.z; }
+      const ax=Math.abs((next.x-cx)/((b.max.x-b.min.x)/2+BALL_RAD));
+      const ay=Math.abs((next.y-cyb)/((b.max.y-b.min.y)/2+BALL_RAD));
+      const az=Math.abs((next.z-cz)/((b.max.z-b.min.z)/2+BALL_RAD));
+      if(ax>=ay&&ax>=az){ ball.vel.x*=-0.6; next.x=ball.pos.x; }
+      else if(ay>=az){ ball.vel.y*=-0.5; next.y=ball.pos.y; }
+      else { ball.vel.z*=-0.6; next.z=ball.pos.z; }
       blip(220,.05,.09,'sine');
       break;
     }
   }
-  if(next.y<cy+1.5){ next.y=cy+1.5; ball.vel.y=Math.abs(ball.vel.y)*0.55; ball.vel.x*=0.94; ball.vel.z*=0.94; }
 
+  ballContain(next);
   ball.pos.copy(next);
   ball.mesh.position.copy(ball.pos);
   ball.mesh.rotation.x+=ball.vel.z*dt*0.6;
@@ -1404,9 +1726,10 @@ function updateBall(dt){
     ball.vel.addScaledVector(d, 9);
   }
 
-  if(ball.cool<=0){
-    if(ball.goalA && ball.goalA.containsPoint(ball.pos)) ballGoal(true);
-    else if(ball.goalB && ball.goalB.containsPoint(ball.pos)) ballGoal(false);
+  // past the goal line and inside the mouth means it is in the net
+  if(ball.cool<=0 && Math.abs(ball.pos.z)<BALL_GW && ball.pos.y<groundH(0,0)+BALL_GH){
+    if(ball.pos.x >  BALL_R) ballGoal(true);
+    else if(ball.pos.x < -BALL_R) ballGoal(false);
   }
   if(ballMsgT>0){
     ballMsgT-=dt;
@@ -1421,10 +1744,12 @@ function updateBall(dt){
   }
 }
 function ballGoal(mine){
+  if(ball.cool>0) return;
+  ball.cool=2.4;
   if(mine) ballScore.me++; else ballScore.them++;
   showRoundText(mine?'GOAL':'CONCEDED', ballScore.me+' — '+ballScore.them);
   ballMsgT=2.2;
-  victorySting?blip(880,.12,.2,'triangle'):0;
+  blip(mine?920:300,.14,.22,'triangle');
   const target=modeCfg().target||5;
   if(ballScore.me>=target){ endGame(true); return; }
   if(ballScore.them>=target){ endGame(false); return; }
@@ -1501,6 +1826,439 @@ function updateKillcam(dt){
   return true;
 }
 
+/* ================= aim assist =================
+   A thumb on glass cannot track a moving target the way a mouse can, so the
+   view is given a gentle pull toward whoever is already near the crosshair.
+   This is deliberately not an aimbot: the strength falls off sharply as the
+   target moves away from the centre, it stops entirely outside a narrow
+   cone, it never fires for you unless you ask, and it ignores teammates.
+   On a desktop it is off unless you turn it on. */
+const ASSIST_LEVELS=[
+  { name:'off',      cone:0,    pull:0,    snap:0    },
+  { name:'light',    cone:0.085, pull:2.2, snap:0.18 },
+  { name:'standard', cone:0.125, pull:4.0, snap:0.30 },
+  { name:'strong',   cone:0.175, pull:6.5, snap:0.46 }
+];
+let assistTarget=null, assistLock=0, autoFireT=0;
+
+function assistCandidates(){
+  const out=[];
+  for(const b of bots) if(b.alive && b.state==='ground') out.push({pos:b.pos, obj:b});
+  for(const r of remotePlayers.values())
+    if(r.alive && !isMate(r)) out.push({pos:r.pos, obj:r});
+  return out;
+}
+/* Returns the target nearest the crosshair, and how far off centre it is. */
+function assistPick(origin,fwd,range,cone){
+  let best=null, bestAng=cone;
+  for(const c of assistCandidates()){
+    // aim at the upper chest, which is where a hit actually lands
+    const aimPt=V(c.pos.x, c.pos.y+1.45, c.pos.z);
+    const to=aimPt.clone().sub(origin);
+    const dist=to.length();
+    if(dist<1.2||dist>range) continue;
+    to.multiplyScalar(1/dist);
+    const dot=to.dot(fwd);
+    if(dot<=0) continue;
+    const ang=Math.acos(Math.min(1,dot));
+    // a distant target subtends less angle, so widen the cone a little for it
+    const scaled=ang*Math.max(1,dist/26);
+    if(scaled>=bestAng) continue;
+    if(segBlocked(origin, aimPt)) continue;
+    bestAng=scaled;
+    best={point:aimPt, ang, dist, obj:c.obj};
+  }
+  return best;
+}
+function aimAssist(dt,aiming){
+  const lvl=ASSIST_LEVELS[clamp(S.aimAssist|0,0,3)];
+  assistTarget=null;
+  if(!lvl.pull || !running || paused || spectating || ended) return;
+  const g=heldGun();
+  if(!g) return;
+  if(roundLock) return;
+
+  const origin=camera.getWorldPosition(new THREE.Vector3());
+  const fwd=camera.getWorldDirection(new THREE.Vector3());
+  const range=Math.min(WEAPONS[g.kind].range, 95);
+  // aiming down sights tightens the cone and strengthens the pull, the way
+  // console aim assist does
+  const cone=lvl.cone*(aiming?0.8:1)*(touch.on?1:0.85);
+  const t=assistPick(origin,fwd,range,cone);
+  if(!t){ assistLock=Math.max(0,assistLock-dt*3); return; }
+
+  assistTarget=t;
+  assistLock=Math.min(1,assistLock+dt*5);
+
+  // falls off with angle: full strength dead centre, nothing at the edge
+  const centred=1-Math.min(1,t.ang/cone);
+  const strength=lvl.pull*centred*centred*(aiming?1.25:1)*assistLock;
+
+  const d=t.point.clone().sub(origin).normalize();
+  const ty=Math.atan2(-d.x,-d.z), tp=Math.asin(clamp(d.y,-1,1));
+  let dy=ty-yaw;
+  while(dy> Math.PI) dy-=Math.PI*2;
+  while(dy<-Math.PI) dy+=Math.PI*2;
+  const k=Math.min(0.65, strength*dt);
+  yaw  += dy*k;
+  pitch = clamp(pitch + (tp-pitch)*k*0.85, -1.45, 1.45);
+}
+
+/* ---- auto fire ----
+   Only pulls the trigger when the crosshair is genuinely on someone and the
+   line is clear. It will not shoot through walls and it will not shoot
+   teammates. There is a short settle delay so it does not fire the instant a
+   target crosses the screen. */
+function autoFire(dt){
+  if(!S.autoFire || !running || paused || spectating || ended || roundLock) return;
+  const g=heldGun();
+  if(!g || player.reloading>0) return;
+  if(g.ammo<=0) return;
+
+  const origin=camera.getWorldPosition(new THREE.Vector3());
+  const fwd=camera.getWorldDirection(new THREE.Vector3());
+  const hits=new THREE.Raycaster(origin,fwd,0.4,WEAPONS[g.kind].range)
+    .intersectObjects(hittables,false);
+  let good=false;
+  for(const h of hits){
+    const u=h.object.userData;
+    if(u.bot&&u.bot.alive){ good=true; break; }
+    if(u.remote&&u.remote.alive&&!isMate(u.remote)){ good=true; break; }
+    if(u.target){ good=true; break; }
+    // the first solid thing in the way ends the search
+    if(h.object!==terrain && !u.bot && !u.remote) break;
+    if(h.object===terrain) break;
+  }
+  if(!good){ autoFireT=0; return; }
+  autoFireT+=dt;
+  if(autoFireT<0.10) return;               // a beat, so it feels aimed
+  if(player.fireCd>0) return;
+  fireOnce();
+}
+/* ================= touch controls =================
+   A phone has no pointer lock, no keyboard and a thumb in front of the
+   screen. Movement is a real analogue stick rather than four fake key
+   presses, look is a drag anywhere on the right half, and the buttons sit
+   where a thumb can reach them. */
+const touch={ on:false, move:{x:0,y:0}, moveId:null, lookId:null,
+              lastX:0, lastY:0, firing:false, stickC:{x:0,y:0}, R:60 };
+function isTouchDevice(){
+  return ('ontouchstart' in window) ||
+         (navigator.maxTouchPoints>0 && !window.matchMedia('(pointer:fine)').matches);
+}
+function checkOrientation(){
+  if(!touch.on) return;
+  document.body.classList.toggle('portrait',
+    window.innerHeight>window.innerWidth && running);
+}
+function cycleBuildSlot(){
+  const order=[6,7,8,9];
+  const i=order.indexOf(player.slot);
+  setSlot(order[(i+1)%order.length]);
+  buildTouchSlots();
+}
+function buildTouchSlots(){
+  const box=document.getElementById('tslots');
+  if(!box||!touch.on) return;
+  const cells=[{n:0,t:'AXE'},{n:1,t:'1'},{n:2,t:'2'},{n:3,t:'3'},{n:4,t:'4'},{n:5,t:'5'}];
+  const sig=cells.map(c=>c.n===player.slot?'1':'0').join('');
+  if(box.dataset.sig===sig) return;              // only redraw when it changes
+  box.dataset.sig=sig;
+  box.innerHTML=cells.map(c=>
+    '<div class="tsl'+(player.slot===c.n?' on':'')+'" data-slot="'+c.n+'">'+c.t+'</div>').join('');
+  box.querySelectorAll('[data-slot]').forEach(b=>{
+    b.addEventListener('touchstart',e=>{
+      e.preventDefault(); e.stopPropagation();
+      setSlot(+b.dataset.slot);
+      buildTouchSlots();
+    },{passive:false});
+  });
+}
+function setupTouch(){
+  if(!isTouchDevice()) return;
+  touch.on=true;
+  document.body.classList.add('touch');
+
+  // the desktop defaults will not run on a phone, so start somewhere sensible
+  if(!S.__mobileTuned){
+    S.__mobileTuned=true;
+    S.quality='low'; S.renderScale=72; S.shadows='off'; S.shadowRate=4;
+    S.grassOn=false; S.ssao=0; S.godrays=0; S.dof=0; S.bloom=.3; S.bloomIters=1;
+    S.cloudShadows=false; S.botCount=11; S.showFps=false; S.fov=82;
+    S.aimAssist=2; S.autoFire=true;        // a thumb needs the help
+    saveSettings();
+    try{ applyQuality(S.quality); }catch(e){}
+  }
+
+  const stick=document.getElementById('tstick');
+  const nub=document.getElementById('tnub');
+  const look=document.getElementById('tlook');
+  if(!stick||!look) return;
+
+  const stickRect=()=>{
+    const r=stick.getBoundingClientRect();
+    touch.stickC={x:r.left+r.width/2, y:r.top+r.height/2};
+    touch.R=r.width/2;
+  };
+  stickRect();
+  window.addEventListener('resize',()=>{ stickRect(); checkOrientation(); });
+  window.addEventListener('orientationchange',
+    ()=>setTimeout(()=>{ stickRect(); checkOrientation(); },250));
+
+  const setNub=(dx,dy)=>{
+    nub.style.transform='translate('+dx+'px,'+dy+'px)';
+    nub.style.background=(dx||dy)?'rgba(255,255,255,.52)':'rgba(255,255,255,.3)';
+  };
+  function handleStick(t){
+    let dx=t.clientX-touch.stickC.x, dy=t.clientY-touch.stickC.y;
+    const d=Math.hypot(dx,dy), max=touch.R;
+    if(d>max){ dx*=max/d; dy*=max/d; }
+    setNub(dx,dy);
+    // dead zone then a smooth ramp, so walking slowly is possible
+    const mag=Math.min(1,Math.hypot(dx,dy)/max);
+    const live=mag<0.14?0:(mag-0.14)/0.86;
+    const ang=Math.atan2(dy,dx);
+    touch.move.x=Math.cos(ang)*live;
+    touch.move.y=Math.sin(ang)*live;
+  }
+
+  stick.addEventListener('touchstart',e=>{
+    e.preventDefault();
+    const t=e.changedTouches[0];
+    touch.moveId=t.identifier;
+    stickRect(); handleStick(t);
+  },{passive:false});
+
+  look.addEventListener('touchstart',e=>{
+    e.preventDefault();
+    const t=e.changedTouches[0];
+    touch.lookId=t.identifier;
+    touch.lastX=t.clientX; touch.lastY=t.clientY;
+  },{passive:false});
+
+  document.addEventListener('touchmove',e=>{
+    for(const t of e.changedTouches){
+      if(t.identifier===touch.moveId){ e.preventDefault(); handleStick(t); }
+      else if(t.identifier===touch.lookId){
+        e.preventDefault();
+        const sn=(S.sens||1)*0.0042;
+        yaw-=(t.clientX-touch.lastX)*sn;
+        pitch-=(t.clientY-touch.lastY)*sn;
+        pitch=clamp(pitch,-1.45,1.45);
+        touch.lastX=t.clientX; touch.lastY=t.clientY;
+      }
+    }
+  },{passive:false});
+
+  const endTouch=e=>{
+    for(const t of e.changedTouches){
+      if(t.identifier===touch.moveId){
+        touch.moveId=null; touch.move.x=touch.move.y=0; setNub(0,0);
+      }
+      if(t.identifier===touch.lookId) touch.lookId=null;
+    }
+  };
+  document.addEventListener('touchend',endTouch);
+  document.addEventListener('touchcancel',endTouch);
+
+  const hold=(id,onDown,onUp)=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('touchstart',e=>{
+      e.preventDefault(); e.stopPropagation();
+      el.classList.add('on'); onDown&&onDown();
+    },{passive:false});
+    const up=e=>{ if(e) e.preventDefault(); el.classList.remove('on'); onUp&&onUp(); };
+    el.addEventListener('touchend',up);
+    el.addEventListener('touchcancel',up);
+  };
+
+  hold('tfire', ()=>{
+    touch.firing=true;
+    if(editing) editToggle();
+    else if(phase==='ground') fireOnce();
+  }, ()=>{ touch.firing=false; });
+  hold('tjump', ()=>{
+    keys[S.keys.jump]=true;
+    if(window.doAction) window.doAction('jump');
+  }, ()=>{ keys[S.keys.jump]=false; });
+  hold('taim', ()=>{ ads=true; }, ()=>{ ads=false; });
+  hold('tuse',   ()=>{ if(window.doAction) window.doAction('interact'); });
+  hold('tswap',  ()=>{ tryEdit(); });
+  hold('tbuild', ()=>{ cycleBuildSlot(); });
+  hold('tassist', ()=>{
+    S.autoFire=!S.autoFire;
+    S.aimAssist=S.autoFire?2:0;
+    saveSettings();
+    const el=document.getElementById('tassist');
+    if(el) el.innerHTML='AUTO<br>'+(S.autoFire?'ON':'OFF');
+    toast(S.autoFire?'Aim assist and auto fire <u>on</u>':'Aim assist and auto fire <u>off</u>');
+  });
+  const ta=document.getElementById('tassist');
+  if(ta) ta.innerHTML='AUTO<br>'+(S.autoFire?'ON':'OFF');
+
+  const menu=document.getElementById('tmenu');
+  if(menu) menu.addEventListener('touchstart',e=>{
+    e.preventDefault(); setPaused(!paused);
+  },{passive:false});
+
+  // stop the page itself from scrolling or zooming under the game
+  document.addEventListener('gesturestart',e=>e.preventDefault());
+  document.body.addEventListener('touchmove',e=>{
+    if(running) e.preventDefault();
+  },{passive:false});
+
+  buildTouchSlots();
+  checkOrientation();
+}
+
+/* ================= live chat =================
+   Twitch's IRC gateway accepts anonymous read-only connections over a plain
+   WebSocket, so a channel's chat can be read with no key, no account and no
+   server in the middle. That is the only one of the big platforms that can
+   be done honestly from a web page, and it is done properly here:
+   IRCv3 tags for colour and display name, PING answered, reconnect with
+   backoff, and a hard cap on what is kept in memory. */
+const live={
+  sock:null, channel:'', state:'off', tries:0, backoff:1000,
+  msgs:[], viewers:0, lastPing:0, timer:0,
+  votes:null, voteT:0, cheers:0, shoutT:0
+};
+const LIVE_MAX=120;
+
+function liveSet(state,note){
+  live.state=state;
+  live.note=note||'';
+  if(lobbyTab==='stream') renderLobbyPanel();
+  paintLiveHud();
+}
+function liveConnect(channel){
+  channel=(channel||'').trim().toLowerCase().replace(/^@/,'').replace(/[^a-z0-9_]/g,'');
+  if(!channel){ liveSet('off','Enter your channel name.'); return; }
+  liveDisconnect(true);
+  live.channel=channel;
+  S.liveChannel=channel; saveSettings();
+  liveSet('connecting','Connecting to '+channel+'…');
+  let sock;
+  try{ sock=new WebSocket('wss://irc-ws.chat.twitch.tv:443'); }
+  catch(e){ liveSet('error','Could not open a connection.'); return; }
+  live.sock=sock;
+
+  sock.onopen=()=>{
+    // anonymous login: any nick beginning justinfan is accepted read-only
+    const nick='justinfan'+(10000+Math.floor(Math.random()*89999));
+    sock.send('CAP REQ :twitch.tv/tags twitch.tv/commands');
+    sock.send('PASS SCHMOOPIIE');
+    sock.send('NICK '+nick);
+    sock.send('JOIN #'+channel);
+    live.tries=0; live.backoff=1000;
+  };
+  sock.onmessage=ev=>{
+    for(const raw of String(ev.data).split('\r\n')){
+      if(!raw) continue;
+      if(raw.startsWith('PING')){ sock.send('PONG :tmi.twitch.tv'); continue; }
+      liveParse(raw);
+    }
+  };
+  sock.onerror=()=>{ liveSet('error','Connection problem.'); };
+  sock.onclose=()=>{
+    live.sock=null;
+    if(live.state==='off') return;
+    // reconnect with backoff, because a dropped chat should heal itself
+    live.tries++;
+    const wait=Math.min(30000, live.backoff*Math.pow(1.7,Math.min(live.tries,6)));
+    liveSet('retrying','Reconnecting in '+Math.round(wait/1000)+'s…');
+    clearTimeout(live.timer);
+    live.timer=setTimeout(()=>{ if(live.state!=='off') liveConnect(live.channel); },wait);
+  };
+}
+function liveDisconnect(quiet){
+  clearTimeout(live.timer);
+  const sk=live.sock;
+  live.sock=null;
+  if(!quiet) live.state='off';
+  try{ if(sk) sk.close(); }catch(e){}
+  if(!quiet) liveSet('off','');
+}
+function liveParse(raw){
+  // @tags :nick!user@host PRIVMSG #chan :message
+  let tags={}, rest=raw;
+  if(raw[0]==='@'){
+    const sp=raw.indexOf(' ');
+    raw.slice(1,sp).split(';').forEach(kv=>{
+      const i=kv.indexOf('=');
+      if(i>0) tags[kv.slice(0,i)]=kv.slice(i+1);
+    });
+    rest=raw.slice(sp+1);
+  }
+  if(rest.includes(' 366 ')||rest.includes(' JOIN ')){
+    if(live.state!=='live'){ liveSet('live','Reading chat from '+live.channel+'.'); }
+    return;
+  }
+  const m=rest.match(/^:([^!]+)![^ ]+ PRIVMSG #[^ ]+ :(.*)$/);
+  if(!m) return;
+  const user=tags['display-name']||m[1];
+  const text=m[2];
+  const colour=tags.color||'';
+  const mod=tags.mod==='1'||(tags.badges||'').includes('broadcaster');
+  const sub=(tags.badges||'').includes('subscriber');
+  liveMessage({user,text,colour,mod,sub});
+}
+function liveMessage(msg){
+  live.msgs.push(msg);
+  if(live.msgs.length>LIVE_MAX) live.msgs.shift();
+  paintLiveHud();
+  if(S.liveCommands) liveCommand(msg);
+}
+
+/* ---- viewer commands ---- */
+function liveCommand(m){
+  const t=m.text.trim().toLowerCase();
+  if(t==='!cheer'||t==='!gg'){
+    live.cheers++;
+    live.shoutT=2.2;
+    return;
+  }
+  if(t.startsWith('!drop ')&&phase==='bus'){
+    const where=t.slice(6).trim().slice(0,18);
+    if(!live.votes){ live.votes=new Map(); live.voteT=0; }
+    live.votes.set(m.user, where);
+    return;
+  }
+  if(t==='!where'){ return; }
+}
+function liveTick(dt){
+  if(live.shoutT>0){
+    live.shoutT-=dt;
+    if(live.shoutT<=0) paintLiveHud();
+  }
+  if(live.votes && phase!=='bus'){ live.votes=null; }
+}
+function liveTopVote(){
+  if(!live.votes||!live.votes.size) return null;
+  const count=new Map();
+  for(const v of live.votes.values()) count.set(v,(count.get(v)||0)+1);
+  let best=null,bn=0;
+  for(const [k,n] of count) if(n>bn){ bn=n; best=k; }
+  return best?{name:best,votes:bn,total:live.votes.size}:null;
+}
+
+/* ---- on-screen chat, sized for a stream ---- */
+function paintLiveHud(){
+  const el=document.getElementById('livechat');
+  if(!el) return;
+  const show=S.liveOverlay && live.state==='live' && !!live.msgs.length;
+  el.style.display=show?'block':'none';
+  if(!show) return;
+  const rows=live.msgs.slice(-S.liveLines);
+  el.innerHTML=rows.map(m=>{
+    const safe=m.text.replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+    const col=m.colour||(m.mod?'#7bd88f':(m.sub?'#c4b5fd':'#9fd4ff'));
+    return '<div class="lmsg"><b style="color:'+col+'">'+
+      (m.mod?'⚔ ':'')+m.user.replace(/[<>&]/g,'')+'</b> '+safe+'</div>';
+  }).join('')+
+  (live.shoutT>0?'<div class="lcheer">'+live.cheers+' cheers</div>':'');
+}
 /* ================= clip recorder =================
    The canvas is recorded continuously in rolling segments. A file is only
    built when you ask for one, so this costs memory and nothing else. Each
@@ -1680,6 +2438,40 @@ function ytVerify(){
 
 /* ================= accounts ================= */
 let account=null, authMsg='', authBusy=false, cloudSaveT=0;
+let renameMsg='', buyMsg2='', payPacks=null, payCurrency='usd';
+
+function doRename(){
+  const f=document.getElementById('newName');
+  const want=(f?f.value:'').trim();
+  if(!want){ renameMsg='Type the name you want.'; renderLobbyPanel(); return; }
+  if(!signedIn()){ renameMsg='Sign in first.'; renderLobbyPanel(); return; }
+  renameMsg='Checking…';
+  netSend({type:'rename',name:want});
+  renderLobbyPanel();
+}
+function handleRename(m){
+  if(!m.ok){ renameMsg=m.error||'That did not work.'; renderLobbyPanel(); return; }
+  account.user=m.user;
+  netName=m.user;
+  renameMsg='You are now '+m.user+'.';
+  updateWallet(); renderLobbyPanel();
+  const pn=document.getElementById('playerName');
+  if(pn) pn.value=m.user;
+}
+function buySparks(packId){
+  if(!signedIn()){ buyMsg2='Sign in first — sparks are attached to an account.'; renderLobbyPanel(); return; }
+  buyMsg2='Opening the payment page…';
+  renderLobbyPanel();
+  netSend({type:'buy',pack:packId});
+}
+function handleBuy(m){
+  if(!m.ok){ buyMsg2=m.error||'Could not start the purchase.'; renderLobbyPanel(); return; }
+  // Stripe hosts the card form; we only ever hand over a link to it
+  buyMsg2='Payment page opened in a new tab. Your sparks arrive here the moment it completes.';
+  renderLobbyPanel();
+  try{ window.open(m.url,'_blank','noopener'); }
+  catch(e){ location.href=m.url; }
+}
 let googleClientId=null, gisLoaded=false, gisReady=false;
 let serverHasAccounts=false, authTimer=null, serverVersion='', serverPersistent=true;
 const CLIENT_BUILD='2026-10-05c';
@@ -1926,20 +2718,36 @@ function closeChat(send){
 
 /* ---------- voice ---------- */
 const voice={ on:false, talking:false, stream:null, peers:new Map(),
-              gainNodes:new Map(), state:new Map(), heard:new Map() };
+              gainNodes:new Map(), state:new Map(), heard:new Map(),
+              meter:null, device:'' };
 function voiceStatusLine(){
   if(S.voiceMode==='off') return 'Voice chat is off.';
   if(S.voiceWho==='none') return 'Voice chat is on, but set to talk with no one.';
   if(!voice.on) return 'Microphone not started — pick a mode to allow it.';
-  if(!netConnected) return 'Microphone ready — connect on the PARTY screen to talk to anyone.';
+  const lvl=Math.round(micLevel()*100);
+  const mic='Mic: '+(voice.device||'default')+
+    ' <span class="vmeter"><i style="width:'+lvl+'%"></i></span>';
+  if(!netConnected) return mic+'<br>Connect on the PARTY screen to talk to anyone.';
   const n=remotePlayers.size;
-  if(!n) return 'Microphone ready — nobody else is in your room yet.';
-  let live=0;
-  for(const st of voice.state.values()) if(st==='connected') live++;
-  return 'Microphone on · '+live+' of '+n+' voice '+(live===1?'link':'links')+' connected'+
-         (voice.heard.size?' · receiving audio from '+voice.heard.size:'');
+  if(!n) return mic+'<br>Nobody else is here yet. The meter should move when you speak.';
+  let live=0, trying=0;
+  for(const st of voice.state.values()){
+    if(st==='connected'||st==='completed') live++;
+    else if(st==='checking'||st==='new') trying++;
+  }
+  let line=mic+'<br>'+live+' of '+n+' voice '+(live===1?'link':'links')+' connected';
+  if(trying) line+=' · '+trying+' connecting';
+  if(voice.heard.size) line+=' · hearing '+voice.heard.size;
+  if(!live && n && !turnAvailable)
+    line+='<br><b>No link yet.</b> Without a TURN relay, voice fails when both players '+
+          'are behind strict routers. Set TURN_URL on the server to fix it for everyone.';
+  return line;
 }
-const RTC_CFG={ iceServers:[{urls:'stun:stun.l.google.com:19302'}] };
+/* The server tells us which ICE servers to use, so a TURN relay can be added
+   without touching the client. Until it does, we fall back to plain STUN. */
+let RTC_CFG={ iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']}],
+              iceCandidatePoolSize:2 };
+let turnAvailable=false;
 
 async function applyVoiceMode(){
   if(!voiceWanted()){ voiceDisable(); return; }
@@ -1949,14 +2757,81 @@ async function applyVoiceMode(){
   else voiceTalk(false);
   voiceSync(0);
 }
+function startMicMeter(){
+  try{
+    const ac=audio();
+    const src=ac.createMediaStreamSource(voice.stream);
+    const an=ac.createAnalyser();
+    an.fftSize=512; an.smoothingTimeConstant=0.75;
+    src.connect(an);
+    voice.meter={an,buf:new Uint8Array(an.frequencyBinCount),level:0,peak:0};
+  }catch(e){}
+}
+function micLevel(){
+  const m=voice.meter;
+  if(!m) return 0;
+  m.an.getByteTimeDomainData(m.buf);
+  let sum=0;
+  for(let i=0;i<m.buf.length;i++){ const v=(m.buf[i]-128)/128; sum+=v*v; }
+  const rms=Math.sqrt(sum/m.buf.length);
+  m.level=Math.max(rms, m.level*0.86);
+  return Math.min(1, m.level*4.2);
+}
+/* Device names are hidden until permission is granted, so the list is only
+   worth reading once the microphone is already open. */
+let micList=[];
+async function refreshMicList(){
+  try{
+    const all=await navigator.mediaDevices.enumerateDevices();
+    micList=all.filter(d=>d.kind==='audioinput'&&d.deviceId);
+  }catch(e){ micList=[]; }
+  if(lobbyTab==='friends') renderLobbyPanel();
+  return micList;
+}
+async function setMicDevice(id){
+  S.micDevice=id||'';
+  saveSettings();
+  // reopen the input on the new device and hand the new track to every peer
+  const wasOn=voice.on;
+  const talking=voice.talking;
+  if(voice.stream){ voice.stream.getTracks().forEach(t=>t.stop()); voice.stream=null; }
+  voice.on=false; voice.meter=null;
+  if(!wasOn) return;
+  const ok=await voiceEnable();
+  if(!ok) return;
+  for(const pc of voice.peers.values()){
+    try{
+      const sender=pc.getSenders().find(sd=>sd.track&&sd.track.kind==='audio');
+      const track=voice.stream.getAudioTracks()[0];
+      if(sender&&track) await sender.replaceTrack(track);
+    }catch(e){}
+  }
+  voiceTalk(S.voiceMode==='open'?true:talking);
+}
+
 async function voiceEnable(){
   if(voice.stream) return true;
   try{
-    voice.stream=await navigator.mediaDevices.getUserMedia({
-      audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+    const au={ echoCancellation:true, noiseSuppression:true, autoGainControl:true,
+               channelCount:1, sampleRate:48000 };
+    if(S.micDevice) au.deviceId={exact:S.micDevice};
+    try{
+      voice.stream=await navigator.mediaDevices.getUserMedia({audio:au});
+    }catch(err){
+      // a saved device that has since been unplugged should not block voice
+      if(S.micDevice){ S.micDevice=''; saveSettings(); delete au.deviceId;
+        voice.stream=await navigator.mediaDevices.getUserMedia({audio:au}); }
+      else throw err;
+    }
+    refreshMicList();
     const openMic=S.voiceMode==='open';
     voice.stream.getAudioTracks().forEach(t=>t.enabled=openMic);
     voice.on=true;
+    startMicMeter();
+    try{
+      const dev=voice.stream.getAudioTracks()[0];
+      voice.device=dev?(dev.label||'default microphone'):'microphone';
+    }catch(e){ voice.device='microphone'; }
     toast(openMic ? 'Microphone on — your mic is <u>always live</u>'
                   : 'Microphone ready — hold <u>'+prettyKey(S.keys.talk)+'</u> to talk');
     if(openMic) voiceTalk(true);
@@ -2006,12 +2881,41 @@ function voiceConnect(id,initiator){
   if(!voiceAllowed(id)) return;
   if(!voice.on||voice.peers.has(id)||id===netId||!netId) return;
   // deterministic caller, otherwise two simultaneous offers cancel each other out
-  if(initiator && !(netId<id)) initiator=false;
+  const polite = !(netId<id);
+  if(initiator && polite) initiator=false;
   const pc=new RTCPeerConnection(RTC_CFG);
+  pc.__polite=polite;
+  pc.__making=false;
+  pc.__ignore=false;
+  pc.__retries=0;
   voice.peers.set(id,pc);
   if(voice.stream) voice.stream.getTracks().forEach(t=>pc.addTrack(t,voice.stream));
   pc.onicecandidate=e=>{ if(e.candidate) netSend({type:'rtc',to:id,data:{ice:e.candidate}}); };
   pc.ontrack=e=>attachVoice(id,e.streams[0]);
+  // if either side adds or drops a track later, renegotiate rather than go silent
+  pc.onnegotiationneeded=async()=>{
+    try{
+      pc.__making=true;
+      await pc.setLocalDescription();
+      netSend({type:'rtc',to:id,data:{sdp:pc.localDescription}});
+    }catch(e){}
+    finally{ pc.__making=false; }
+  };
+  pc.oniceconnectionstatechange=()=>{
+    voice.state.set(id,pc.iceConnectionState);
+    if(pc.iceConnectionState==='failed' && pc.__retries<3){
+      // a failed path is often recoverable: ask for fresh candidates
+      pc.__retries++;
+      try{ pc.restartIce(); }catch(e){}
+      if(!polite){
+        pc.createOffer({iceRestart:true})
+          .then(o=>pc.setLocalDescription(o))
+          .then(()=>netSend({type:'rtc',to:id,data:{sdp:pc.localDescription}}))
+          .catch(()=>{});
+      }
+    }
+    if(lobbyTab==='friends') renderLobbyPanel();
+  };
   pc.onconnectionstatechange=()=>{
     voice.state.set(id,pc.connectionState);
     if(pc.connectionState==='failed'||pc.connectionState==='closed'){
@@ -2046,20 +2950,31 @@ function attachVoice(id,stream){
     const a=new Audio(); a.srcObject=stream; a.muted=true; a.play().catch(()=>{});
   }catch(e){}
 }
-function voiceHandleRTC(m){
+/* The perfect negotiation pattern: when both sides offer at once, the polite
+   peer rolls back and accepts, the impolite one ignores. Without this, a
+   simultaneous offer leaves the call half-open and silent. */
+async function voiceHandleRTC(m){
   if(!voice.on||!voiceAllowed(m.from)) return;
-  let pc=voice.peers.get(m.from)||voiceConnect(m.from,false);
+  let pc=voice.peers.get(m.from);
+  if(!pc){ voiceConnect(m.from,false); pc=voice.peers.get(m.from); }
   if(!pc) return;
   const d=m.data||{};
-  if(d.sdp){
-    pc.setRemoteDescription(d.sdp).then(()=>{
-      if(d.sdp.type==='offer')
-        return pc.createAnswer().then(a=>pc.setLocalDescription(a))
-          .then(()=>netSend({type:'rtc',to:m.from,data:{sdp:pc.localDescription}}));
-    }).catch(()=>{});
-  } else if(d.ice){
-    pc.addIceCandidate(d.ice).catch(()=>{});
-  }
+  try{
+    if(d.sdp){
+      const offerCollision = d.sdp.type==='offer' &&
+        (pc.__making || pc.signalingState!=='stable');
+      pc.__ignore = !pc.__polite && offerCollision;
+      if(pc.__ignore) return;
+      await pc.setRemoteDescription(d.sdp);
+      if(d.sdp.type==='offer'){
+        await pc.setLocalDescription();
+        netSend({type:'rtc',to:m.from,data:{sdp:pc.localDescription}});
+      }
+    } else if(d.ice){
+      try{ await pc.addIceCandidate(d.ice); }
+      catch(err){ if(!pc.__ignore) throw err; }
+    }
+  }catch(e){}
 }
 function voiceTalk(on){
   if(!voice.on||!voice.stream) return;
@@ -2196,6 +3111,15 @@ function quickPlay(){
            name:netName, party:netParty||null, skin:profile.equipped.skin});
   return true;
 }
+setInterval(()=>{
+  try{
+    if(voice.on && lobbyTab==='friends' &&
+       !document.getElementById('menu').classList.contains('hidden')){
+      const b=document.querySelector('.vmeter i');
+      if(b) b.style.width=Math.round(micLevel()*100)+'%';
+    }
+  }catch(e){}
+},90);
 function updateOnlineChip(){
   const chip=document.getElementById('onlinechip');
   if(!chip) return;
@@ -2299,7 +3223,8 @@ function makeRemotePlayer(id,name,skinId){
   const tag=nameSprite(name);
   g.add(tag);
   const parts=f.meshes.slice();
-  const r={id,name,g,torso:f.parts.torso,head:f.parts.head,gun,
+  const r={id,name,g,torso:f.parts.torso,head:f.parts.head,gun,face:f.parts.face,
+           shL:f.parts.shL,shR:f.parts.shR,hips:f.parts.hips,
            legL:f.parts.legL,legR:f.parts.legR,armL:f.parts.armL,armR:f.parts.armR,
            parts,tag,party:null,cheats:[],mateState:null,skinId:skinId||'recruit',
            isRemote:true,state:'ground',
@@ -2477,11 +3402,28 @@ function handleNet(m){
     serverHasAccounts=!!m.accounts;
     serverVersion=m.server||'';
     ytChannel=m.youtube||null;
+    if(Array.isArray(m.ice)&&m.ice.length){
+      RTC_CFG={ iceServers:m.ice, iceCandidatePoolSize:2 };
+      turnAvailable=!!m.turn;
+    }
     serverPersistent=m.persistent!==false;
     serverCodeCount=(m.codeCount===undefined)?null:m.codeCount;
+    payPacks=m.packs||null;
+    payCurrency=m.currency||'usd';
     if(!account) setTimeout(googleSilentSignIn,400);
     googleClientId=m.googleClientId||null;
     if(lobbyTab==='account') renderLobbyPanel();
+  } else if(m.type==='rename'){
+    handleRename(m);
+  } else if(m.type==='buy'){
+    handleBuy(m);
+  } else if(m.type==='sparks'){
+    profile.coins=m.coins;
+    saveProfile(); updateWallet();
+    buyMsg2='Thank you — '+m.added.toLocaleString()+' sparks added.';
+    toast('<u>'+m.added.toLocaleString()+'</u> sparks added');
+    blip(900,.14,.2,'triangle');
+    renderLobbyPanel();
   } else if(m.type==='reward'){
     handleReward(m);
   } else if(m.type==='auth'){
@@ -4047,8 +4989,8 @@ function buildTerrain(){
   // close-range detail normals, faded out with distance so the ground has grain underfoot
   mat.onBeforeCompile=(sh)=>{
     sh.uniforms.uDetail={value:detailNrm};
-    sh.uniforms.uDetailScale={value:1.35};
-    sh.uniforms.uDetailStrength={value:1.15};
+    sh.uniforms.uDetailScale={value:2.6};
+    sh.uniforms.uDetailStrength={value:1.55};
     sh.vertexShader='varying vec3 vWPosD;\n'+sh.vertexShader.replace(
       '#include <begin_vertex>',
       '#include <begin_vertex>\n  vWPosD=(modelMatrix*vec4(transformed,1.0)).xyz;');
@@ -4059,13 +5001,21 @@ function buildTerrain(){
     ].join('\n')+'\n'+sh.fragmentShader.replace(
       '#include <normal_fragment_maps>',
       ['#include <normal_fragment_maps>',
-       'float dFade = 1.0 - smoothstep(14.0, 70.0, length(vWPosD - cameraPosition));',
-       'if(dFade > 0.01){',
-       '  vec3 dn1 = texture2D(uDetail, vWPosD.xz*uDetailScale).xyz*2.0-1.0;',
-       '  vec3 dn2 = texture2D(uDetail, vWPosD.xz*uDetailScale*0.23).xyz*2.0-1.0;',
-       '  vec3 dn = dn1*0.65 + dn2*0.35;',
-       '  normal = normalize(normal + vec3(dn.x, 0.0, dn.y)*uDetailStrength*dFade);',
-       '}'].join('\n'));
+       'float dCam = length(vWPosD - cameraPosition);',
+       'float fNear = 1.0 - smoothstep(2.0, 11.0, dCam);',
+       'float fMid  = 1.0 - smoothstep(10.0, 46.0, dCam);',
+       'float fFar  = 1.0 - smoothstep(40.0, 150.0, dCam);',
+       'vec3 dn = vec3(0.0);',
+       'if(fNear > 0.01) dn += (texture2D(uDetail, vWPosD.xz*uDetailScale*3.1).xyz*2.0-1.0)*0.55*fNear;',
+       'if(fMid  > 0.01) dn += (texture2D(uDetail, vWPosD.xz*uDetailScale).xyz*2.0-1.0)*0.70*fMid;',
+       'if(fFar  > 0.01) dn += (texture2D(uDetail, vWPosD.xz*uDetailScale*0.19).xyz*2.0-1.0)*0.45*fFar;',
+       'normal = normalize(normal + vec3(dn.x, 0.0, dn.y)*uDetailStrength);',
+       'float patch = texture2D(uDetail, vWPosD.xz*0.013).x;',
+       'float patch2 = texture2D(uDetail, vWPosD.xz*0.047).y;',
+       'float wear = smoothstep(0.42, 0.78, patch*0.7 + patch2*0.3);',
+       'diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb*vec3(1.22,1.04,0.78), wear*0.55);',
+       'diffuseColor.rgb *= 0.90 + patch2*0.20;'
+      ].join('\n'));
   };
 
   terrain=new THREE.Mesh(geo,mat);
@@ -4733,14 +5683,9 @@ function updateTeamPads(dt){
   if(modeCfg().arena==='training'){
     if(on.t>=0.6){
       on.t=0;
-      if(on.team.indexOf('FIGHT')>=0){
-        trainAggro=!trainAggro;
-        for(const b of bots) if(b.alive) b.weapon=trainAggro?'smg':null;
-        padPrompt='Dummies are now <u>'+(trainAggro?'fighting back':'passive')+'</u>';
-      } else {
-        clearPlayerBuilds();
-        padPrompt='Builds <u>cleared</u>';
-      }
+      if(on.team.indexOf('CHALLENGE')>=0){ startChallenge(); padPrompt='<u>Go</u>'; }
+      else if(on.team.indexOf('DUMMIES')>=0){ padPrompt='<u>'+spawnDummies()+'</u>'; }
+      else { clearPlayerBuilds(); padPrompt='Builds <u>cleared</u>'; }
       pickupSound();
     } else padPrompt='Hold · <u>'+on.team+'</u>';
     return;
@@ -4947,75 +5892,140 @@ function buildArenaTraining(){
   boxMaterials();
   teamPads.length=0; targets.length=0;
   const cy=groundH(0,0);
-  const pad=(w,d,x,z,mat)=>bSolid(w,.6,d,x,cy-.3,z,mat||BOXMAT.deck);
   boxOffX=0; boxOffZ=0;
+  const pad=(w,d,x,z,mat)=>bSolid(w,.6,d,x,cy-.3,z,mat||BOXMAT.deck);
 
-  // ---- aim range, three distance bands ----
-  pad(70,16,0,-26);
-  signBoard('AIM RANGE',0,cy+6.4,-16,'#ffd873',11);
-  [[15,0xffd873],[34,0xff9a4d],[62,0xff5c5c]].forEach(([dist,col],row)=>{
-    for(let i=0;i<5;i++){
-      const x=(i-2)*8.5, z=-26-dist;
-      const post=bSolid(.45,3.2,.45,x,cy+1.6,z,BOXMAT.frame);
-      const t=new THREE.Mesh(new THREE.CylinderGeometry(1.15,1.15,.3,20),
-        new THREE.MeshStandardMaterial({color:col,roughness:.5,
-          emissive:new THREE.Color(col).multiplyScalar(.25)}));
-      t.rotation.x=Math.PI/2;
-      t.position.set(x,cy+3.6,z);
-      t.castShadow=true;
-      t.userData.target=true; t.userData.home=t.position.clone(); t.userData.down=0;
-      scene.add(t); hittables.push(t);
-      targets.push(t);
-      const ring=new THREE.Mesh(new THREE.TorusGeometry(1.15,.10,8,22),
-        new THREE.MeshBasicMaterial({color:0xffffff}));
-      ring.position.copy(t.position); scene.add(ring);
-      t.userData.ring=ring;
-    }
-    signBoard(dist+'m',-26,cy+4.2,-26-dist,'#'+col.toString(16).padStart(6,'0'),5);
-  });
+  /* ---- aim range: three rows that train three different things ---- */
+  pad(92,96,0,-54);
+  signBoard('AIM RANGE',0,cy+7.4,-12,'#ffd873',14);
 
-  // ---- build zone, clear and gridded ----
-  pad(56,56,0,42);
-  signBoard('BUILD ZONE',0,cy+6.4,16,'#9fd4ff',11);
+  const addTarget=(x,y,z,rad,col,mode,span)=>{
+    const t=new THREE.Mesh(new THREE.CylinderGeometry(rad,rad,.35,22),
+      new THREE.MeshStandardMaterial({color:col,roughness:.45,
+        emissive:new THREE.Color(col).multiplyScalar(.3)}));
+    t.rotation.x=Math.PI/2;
+    t.position.set(x,y,z);
+    t.castShadow=true;
+    t.userData.target=true;
+    t.userData.home=t.position.clone();
+    t.userData.down=0;
+    t.userData.mode=mode||'static';
+    t.userData.span=span||0;
+    t.userData.phase=Math.random()*6.283;
+    t.userData.rad=rad;
+    scene.add(t); hittables.push(t); targets.push(t);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(rad,.09,8,24),
+      new THREE.MeshBasicMaterial({color:0xffffff}));
+    ring.position.copy(t.position); scene.add(ring);
+    t.userData.ring=ring;
+    const bull=new THREE.Mesh(new THREE.CylinderGeometry(rad*.32,rad*.32,.4,14),
+      new THREE.MeshStandardMaterial({color:0xffffff,emissive:0x555555}));
+    bull.rotation.x=Math.PI/2; bull.position.copy(t.position);
+    scene.add(bull); t.userData.bull=bull;
+    return t;
+  };
+
+  // close static row, chest height, for consistency
+  for(let i=0;i<5;i++){
+    const x=(i-2)*7;
+    bSolid(.5,3.4,.5,x,cy+1.7,-24,BOXMAT.frame);
+    addTarget(x,cy+3.5,-24,1.35,0xffd873,'static');
+  }
+  signBoard('12m · STATIC',-30,cy+4.4,-24,'#ffd873',8);
+
+  // mid row that strafes, for tracking
+  for(let i=0;i<4;i++){
+    const x=(i-1.5)*11;
+    addTarget(x,cy+3.8,-42,1.15,0xff9a4d,'strafe',7);
+  }
+  signBoard('30m · MOVING',-34,cy+5.2,-42,'#ff9a4d',9);
+
+  // far row that bobs and is small, for flicks
+  for(let i=0;i<3;i++){
+    const x=(i-1)*15;
+    addTarget(x,cy+4.4,-66,.85,0xff5c5c,'bob',2.2);
+  }
+  signBoard('54m · SMALL',-38,cy+6,-66,'#ff5c5c',9);
+
+  // a backboard so misses are visible instead of vanishing
+  bSolid(92,10,.8,0,cy+5,-74,BOXMAT.shell);
+
+  /* ---- build zone ---- */
+  pad(60,60,74,0);
+  signBoard('BUILD ZONE',74,cy+7.4,-28,'#9fd4ff',12);
   for(let i=-7;i<=7;i++){
-    bDeco(56,.04,.09,0,cy+.33,42+i*4,BOXMAT.trim);
-    bDeco(.09,.04,56,i*4,cy+.33,42,BOXMAT.trim);
+    bDeco(60,.04,.09,74,cy+.33,i*4,BOXMAT.trim);
+    bDeco(.09,.04,60,74+i*4,cy+.33,0,BOXMAT.trim);
   }
 
-  // ---- edit course: pieces already placed to practise on ----
-  pad(30,20,-52,10);
-  signBoard('EDIT COURSE',-52,cy+6.4,0,'#6ee7a8',9);
-  for(let i=0;i<4;i++){
-    const ix=Math.floor((-52+(i-1.5)*CELL*1.4)/CELL), iz=Math.floor(10/CELL);
-    const key=pieceKey('wall',ix,0,iz,2);
-    if(PIECES.has(key)) continue;
-    const pc={key,type:'wall',ix,iy:0,iz,dir:2,mask:new Array(9).fill(true),meshes:[],boxes:[]};
+  /* ---- edit course: eight pieces to practise cuts on ---- */
+  pad(46,26,-74,0);
+  signBoard('EDIT COURSE',-74,cy+7.4,-14,'#6ee7a8',12);
+  const course=[
+    ['wall',2],['wall',2],['wall',2],['wall',2],
+    ['ramp',0],['ramp',0],['floor',0],['cone',0]
+  ];
+  course.forEach(([type,dir],i)=>{
+    const col=i%4, row=(i/4)|0;
+    const wx=-74+(col-1.5)*CELL*1.6, wz=-6+row*CELL*2.4;
+    const ix=Math.round(wx/CELL), iz=Math.round(wz/CELL);
+    const key=pieceKey(type,ix,0,iz,dir);
+    if(PIECES.has(key)) return;
+    const pc={key,type,ix,iy:0,iz,dir,
+              mask:new Array(tileCount(type)).fill(true),meshes:[],boxes:[]};
     PIECES.set(key,pc); builds.push(pc);
     buildPieceMeshes(pc);
-  }
+  });
 
-  // ---- control pads ----
-  addTeamPad(-14,8,'DUMMIES FIGHT BACK',0xd83a3a);
-  addTeamPad( 14,8,'CLEAR MY BUILDS',0x3a7ad8);
-  signBoard('TRAINING',0,cy+8.6,0,'#ffffff',13);
+  /* ---- pads ---- */
+  addTeamPad(0, -6, 'START 30s CHALLENGE', 0xffd873);
+  addTeamPad(-22, -6, 'SPAWN DUMMIES', 0xd83a3a);
+  addTeamPad( 22, -6, 'CLEAR MY BUILDS', 0x3a7ad8);
+  signBoard('TRAINING',0,cy+9.4,2,'#ffffff',14);
 }
 
+let challenge={on:false,t:0,hits:0};
 function trainTick(dt){
   if(modeCfg().arena!=='training') return;
   trainStats.t+=dt;
   player.mats=999;
   const g=heldGun();
   if(g){ g.ammo=WEAPONS[g.kind].mag; g.res=999; }
-  const now=performance.now()*.004;
+
+  const now=performance.now()/1000;
   for(const t of targets){
     if(t.userData.down>0){
       t.userData.down-=dt;
       if(t.userData.down<=0){
-        t.visible=true; t.userData.ring.visible=true;
+        t.visible=true; t.userData.ring.visible=true; t.userData.bull.visible=true;
       }
     }
-    if(t.visible) t.userData.ring.rotation.z=now+t.position.x;
+    if(!t.visible) continue;
+    const h=t.userData;
+    let x=h.home.x, y=h.home.y;
+    if(h.mode==='strafe') x=h.home.x+Math.sin(now*0.9+h.phase)*h.span;
+    if(h.mode==='bob')    y=h.home.y+Math.sin(now*1.35+h.phase)*h.span;
+    t.position.set(x,y,h.home.z);
+    h.ring.position.copy(t.position);
+    h.bull.position.copy(t.position);
+    h.ring.rotation.z=now*0.8+h.phase;
   }
+
+  if(challenge.on){
+    challenge.t-=dt;
+    if(challenge.t<=0){
+      challenge.on=false;
+      const best=Math.max(profile.aimBest||0, challenge.hits);
+      const isBest=challenge.hits>(profile.aimBest||0);
+      profile.aimBest=best; saveProfile();
+      showRoundText(challenge.hits+' HITS', isBest?'NEW BEST':'BEST IS '+best);
+      setTimeout(()=>showRoundText(''),3000);
+      blip(isBest?1100:520,.16,.24,'triangle');
+    } else {
+      showRoundText(Math.ceil(challenge.t)+'s', challenge.hits+' HITS');
+    }
+  }
+
   const el=document.getElementById('trainhud');
   if(el){
     const acc=trainStats.shots?Math.round(trainStats.hits/trainStats.shots*100):0;
@@ -5024,22 +6034,53 @@ function trainTick(dt){
       '<b>TRAINING</b>'+
       '<div><span>targets</span>'+trainStats.targets+'</div>'+
       '<div><span>accuracy</span>'+acc+'%</div>'+
-      '<div><span>headshots</span>'+trainStats.heads+'</div>'+
       '<div><span>streak</span>'+trainStats.streak+' (best '+trainStats.best+')</div>'+
-      '<div><span>dummies</span>'+(trainAggro?'fighting back':'passive')+'</div>'+
-      '<i>walk onto a pad to change things</i>';
+      '<div><span>30s best</span>'+(profile.aimBest||0)+'</div>'+
+      '<div><span>dummies</span>'+(bots.filter(b=>b.alive).length||'none')+'</div>'+
+      '<i>pads: challenge · dummies · clear builds</i>';
   }
 }
+function startChallenge(){
+  challenge={on:true,t:30,hits:0};
+  trainStats.streak=0;
+  for(const t of targets){
+    t.visible=true; t.userData.ring.visible=true; t.userData.bull.visible=true; t.userData.down=0;
+  }
+  blip(900,.1,.16,'triangle');
+}
+function spawnDummies(){
+  if(bots.filter(b=>b.alive).length>=4){
+    for(const b of bots){ if(b.g.parent) scene.remove(b.g); }
+    for(let i=hittables.length-1;i>=0;i--) if(hittables[i].userData.bot) hittables.splice(i,1);
+    bots.length=0;
+    refreshAlive();
+    return 'Dummies cleared';
+  }
+  const names=BOT_NAMES.slice().sort(()=>RNG()-.5);
+  for(let i=0;i<4;i++){
+    const b=spawnBot(names[i%names.length],0);
+    const x=(i-1.5)*8, z=-16;
+    b.state='ground'; b.pos.set(x,groundH(x,z),z); b.g.position.copy(b.pos);
+    b.weapon=trainAggro?'smg':null;
+    setBotVisible(b,true);
+  }
+  refreshAlive();
+  return 'Four dummies spawned';
+}
+
 function hitTarget(obj){
   if(!obj.userData.target||!obj.visible) return;
-  obj.visible=false; obj.userData.ring.visible=false;
-  obj.userData.down=1.1;
+  obj.visible=false;
+  obj.userData.ring.visible=false;
+  obj.userData.bull.visible=false;
+  obj.userData.down=challenge.on?0.55:1.1;
+  if(challenge.on) challenge.hits++;
   trainStats.targets++;
   trainStats.streak++;
   trainStats.best=Math.max(trainStats.best,trainStats.streak);
   hitmarker();
   blip(1200,.05,.1,'triangle');
-  floatDamage(obj.userData.home.clone(),100,false);
+  floatDamage(obj.position.clone(),100,false);
 }
 
 function buildArenaBox(){
@@ -5139,6 +6180,7 @@ function buildWorld(){
     buildArenaFloor();
     buildWater();
     if(arena==='box') buildArenaBox();
+    else if(arena==='creative') buildArenaCreative();
     else if(arena==='ball') buildArenaBall();
     else if(arena==='training') buildArenaTraining();
     else buildArenaZone();
@@ -5251,7 +6293,7 @@ function buildWorld(){
 
 /* ================= ground cover ================= */
 let grass=null;
-const GRASS_SIDE=37, GRASS_N=GRASS_SIDE*GRASS_SIDE, GRASS_STEP=2.4;
+const GRASS_SIDE=74, GRASS_N=GRASS_SIDE*GRASS_SIDE, GRASS_STEP=1.15;
 const grassDummy=new THREE.Object3D();
 const grassCol=new THREE.Color();
 let grassAnchor=new THREE.Vector3(1e9,0,1e9);
@@ -5273,13 +6315,58 @@ function grassTex(){
   }
   return new THREE.CanvasTexture(c);
 }
+/* A flat quad reads as a sticker. Real grass is a tapered blade that bends,
+   so each one is a four-segment strip, narrowing to a point and curving over
+   at the tip, and three of them are crossed into a tuft. */
+function grassBladeGeometry(){
+  const SEG=4, H=.62, W=.085;
+  const pos=[], uv=[], idx=[];
+  const blade=(rotY,lean,wobble)=>{
+    const base=pos.length/3;
+    const c=Math.cos(rotY), s2=Math.sin(rotY);
+    for(let i=0;i<=SEG;i++){
+      const t=i/SEG;
+      const w=W*(1-t*0.88);                       // taper to a point
+      const y=H*t;
+      const bend=lean*t*t;                        // curve over toward the tip
+      const side=Math.sin(t*3.1)*wobble*0.03;
+      for(const sx of [-1,1]){
+        const lx=sx*w+side, lz=bend;
+        pos.push(lx*c-lz*s2, y, lx*s2+lz*c);
+        uv.push((sx+1)/2, t);
+      }
+    }
+    for(let i=0;i<SEG;i++){
+      const a=base+i*2;
+      idx.push(a,a+1,a+2, a+1,a+3,a+2);
+    }
+  };
+  blade(0, .16, 1);
+  blade(2.1, .22, -1);
+  blade(4.2, .12, .5);
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
 function buildGrass(){
-  const geo=new THREE.PlaneGeometry(1.05,.52);
-  geo.translate(0,.26,0);
+  const geo=grassBladeGeometry();
   const mat=new THREE.MeshStandardMaterial({
-    map:grassTex(), transparent:true, alphaTest:.42,
-    side:THREE.DoubleSide, roughness:1, depthWrite:true, vertexColors:true
+    side:THREE.DoubleSide, roughness:.94, metalness:0, vertexColors:true,
+    envMapIntensity:.35
   });
+  // darken toward the root, the way light fails to reach the bottom of a tuft
+  mat.onBeforeCompile=sh=>{
+    sh.vertexShader=sh.vertexShader
+      .replace('#include <common>','#include <common>\nvarying float vBladeT;')
+      .replace('#include <begin_vertex>','#include <begin_vertex>\n  vBladeT = uv.y;');
+    sh.fragmentShader=sh.fragmentShader
+      .replace('#include <common>','#include <common>\nvarying float vBladeT;')
+      .replace('#include <color_fragment>',
+        '#include <color_fragment>\n  diffuseColor.rgb *= mix(0.42, 1.12, vBladeT);');
+  };
   addWind(mat,0.075,0.6);
   grass=new THREE.InstancedMesh(geo,mat,GRASS_N);
   grass.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -5310,15 +6397,18 @@ function refreshGrass(){
         grassDummy.position.set(0,-9999,0);
         grassDummy.scale.set(.001,.001,.001);
       } else {
-        grassDummy.position.set(px,gh-.05,pz);
+        grassDummy.position.set(px,gh-.03,pz);
         const lush=clamp(damp*1.5-.1,0,1)*clamp(1-sl*1.4,0,1);
-        const sc=(.55+h2*.45)*(.8+lush*.45);
-        grassDummy.scale.set(sc,sc*(.7+h1*.5)*(.85+lush*.35),sc);
+        const sc=(.62+h2*.55)*(.82+lush*.5);
+        grassDummy.scale.set(sc,sc*(.72+h1*.72)*(.8+lush*.5),sc);
         if(grass.setColorAt){
+          // every tuft is a slightly different plant, and dry patches go yellow
+          const dry=clamp(1-lush,0,1);
+          const v=(h1*.5+h2*.5);
           grassCol.setRGB(
-            .62+(1-lush)*.42+h2*.16,
-            .95-(1-lush)*.22+h1*.10,
-            .55+(1-lush)*.18);
+            .20+dry*.46+v*.16,
+            .40+(1-dry)*.30-v*.06,
+            .13+dry*.10+v*.05);
           grass.setColorAt(i,grassCol);
         }
       }
@@ -5983,6 +7073,46 @@ function closeCheats(){
 let lobbyScene=null, lobbyCam=null, lobbyChar=null, lobbyParts=null;
 let lobbyEmote=null, lobbyEmoteT=0, lobbyT=0, lobbyMates=[];
 
+/* In the locker the character becomes a turntable: drag to spin, wheel to
+   zoom, and it keeps turning for a moment after you let go. Left alone it
+   drifts back to a slow idle rotation. */
+const turn={ yaw:0, vel:0, dragging:false, lastX:0, lastY:0,
+             pitch:0, zoom:0, idle:0, active:false };
+function turnActive(){
+  return lobbyTab==='locker' &&
+         !document.getElementById('menu').classList.contains('hidden');
+}
+function bindTurntable(){
+  const el=renderer.domElement;
+  el.addEventListener('pointerdown',e=>{
+    if(!turnActive()) return;
+    turn.dragging=true; turn.lastX=e.clientX; turn.lastY=e.clientY;
+    turn.vel=0; turn.idle=0;
+    el.setPointerCapture&&el.setPointerCapture(e.pointerId);
+  });
+  el.addEventListener('pointermove',e=>{
+    if(!turn.dragging||!turnActive()) return;
+    const dx=e.clientX-turn.lastX, dy=e.clientY-turn.lastY;
+    turn.lastX=e.clientX; turn.lastY=e.clientY;
+    turn.yaw-=dx*0.0115;
+    turn.vel=-dx*0.0115;
+    turn.pitch=clamp(turn.pitch+dy*0.004,-0.32,0.42);
+  });
+  const stop=e=>{
+    if(!turn.dragging) return;
+    turn.dragging=false; turn.idle=0;
+    try{ el.releasePointerCapture&&el.releasePointerCapture(e.pointerId); }catch(err){}
+  };
+  el.addEventListener('pointerup',stop);
+  el.addEventListener('pointercancel',stop);
+  el.addEventListener('pointerleave',stop);
+  el.addEventListener('wheel',e=>{
+    if(!turnActive()) return;
+    e.preventDefault();
+    turn.zoom=clamp(turn.zoom+Math.sign(e.deltaY)*0.25,-2.0,2.4);
+  },{passive:false});
+}
+
 function buildLobbyStage(){
   lobbyScene=new THREE.Scene();
   lobbyScene.fog=null;
@@ -6038,7 +7168,12 @@ function refreshLobbyChar(){
   if(lobbyChar) lobbyScene.remove(lobbyChar);
   lobbyMates.forEach(m=>lobbyScene.remove(m.group));
   lobbyMates=[];
-  const f=makeFighter();
+  let f;
+  try{ f=makeFighter(); }
+  catch(err){
+    console.error('character build failed:',err);
+    f=makeFighter({detail:false});          // fall back to a body with no face
+  }
   f.group.traverse(o=>{ if(o.isMesh) o.castShadow=true; });
   const pk=makePickaxe();
   pk.rotation.set(0,0,-.2); pk.position.set(0,-.05,0);
@@ -6070,12 +7205,37 @@ function updateLobby(dt){
   lobbyT+=dt;
   lobbyCam.aspect=innerWidth/innerHeight;
   lobbyCam.updateProjectionMatrix();
-  const orbit=Math.sin(lobbyT*.16)*.28;
-  lobbyCam.position.set(2.05+Math.sin(orbit)*.5, 1.72, 4.25+Math.cos(orbit)*.35);
-  lobbyCam.lookAt(0.62,1.12,0);
+  if(turnActive()){
+    // locker: the character fills more of the frame and faces the panel
+    if(!turn.dragging){
+      turn.vel*=Math.pow(0.0016,dt);               // spin down after a flick
+      turn.yaw+=turn.vel;
+      turn.idle+=dt;
+      if(turn.idle>2.6) turn.yaw-=dt*0.18;         // idle drift
+      turn.pitch+=(0-turn.pitch)*Math.min(1,dt*1.1);
+    }
+    const dist=4.5+turn.zoom;
+    lobbyCam.position.set(
+      0.30+Math.sin(turn.pitch*0.5)*0.25,
+      1.30+turn.pitch*1.6,
+      dist);
+    lobbyCam.lookAt(0.30,1.02,0);
+    if(lobbyChar){
+      lobbyChar.rotation.y=turn.yaw;
+      lobbyChar.position.x=0.30;
+    }
+  } else {
+    const orbit=Math.sin(lobbyT*.16)*.28;
+    lobbyCam.position.set(2.05+Math.sin(orbit)*.5, 1.72, 4.25+Math.cos(orbit)*.35);
+    lobbyCam.lookAt(0.62,1.12,0);
+    if(lobbyChar){
+      lobbyChar.rotation.y=-0.42+Math.sin(lobbyT*.25)*.10;
+      lobbyChar.position.x=0;
+    }
+  }
 
+  // posing, breathing and emotes run whichever view you are in
   if(lobbyChar){
-    lobbyChar.rotation.y=-0.42+Math.sin(lobbyT*.25)*.10;
     if(lobbyEmote){
       lobbyEmoteT+=dt;
       const e=poseEmote(lobbyEmote,lobbyEmoteT,lobbyParts);
@@ -6094,8 +7254,13 @@ function updateLobby(dt){
       lobbyParts.legR.rotation.set(-.05,0,0);
       if(lobbyParts.legL.knee) lobbyParts.legL.knee.rotation.x=.10;
       if(lobbyParts.legR.knee) lobbyParts.legR.knee.rotation.x=.16;
-      lobbyParts.head.rotation.y=Math.sin(lobbyT*.4)*.22;
-      lobbyParts.head.rotation.x=Math.sin(lobbyT*.31)*.07;
+      if(turnActive()){
+        lobbyParts.head.rotation.y=Math.sin(lobbyT*.5)*.05;
+        lobbyParts.head.rotation.x=Math.sin(lobbyT*.4)*.025;
+      } else {
+        lobbyParts.head.rotation.y=Math.sin(lobbyT*.4)*.22;
+        lobbyParts.head.rotation.x=Math.sin(lobbyT*.31)*.07;
+      }
     }
   }
   lobbyMates.forEach((m,i)=>{
@@ -6295,6 +7460,9 @@ function renderLobbyPanel(){
   } else if(lobbyTab==='locker'){
     const cats=['skin','pack','pick','glider','emote'];
     el.innerHTML='<div class="ptitle">LOCKER</div>'+
+      '<div class="turnhint">Drag the character to turn them · wheel to zoom'+
+        ' · <button class="ghost small" id="turnReset" style="margin:0;padding:4px 10px;'+
+        'font-size:10px">RESET</button></div>'+
       '<div class="slotrow">'+cats.map(c=>
         '<button class="cslot'+(lockerCat===c?' on':'')+'" data-lcat="'+c+'">'+
         '<span class="ct">'+CAT_LABEL[c].toUpperCase()+'</span>'+
@@ -6313,6 +7481,13 @@ function renderLobbyPanel(){
           '<div class="psub" style="margin-top:14px">Your level, sparks, locker and friends are '+
             'stored on the server, so they follow you to any device that can reach it. '+
             'Progress is saved every few seconds while you are connected.</div>'+
+          '<div class="setgroup">Change your name</div>'+
+          '<div class="prow"><label>New name</label>'+
+            '<input id="newName" maxlength="16" placeholder="3-16 characters" value="">'+
+            '<button class="ghost small" id="renameBtn" style="margin:0">CHANGE</button></div>'+
+          '<div class="psub" style="font-size:12px">Your friend code and everything you own '+
+            'stay with you. You can change it once a day.</div>'+
+          '<div class="buyline'+(/You are now/.test(renameMsg)?' good':'')+'">'+renameMsg+'</div>'+
           '<div class="statrow">'+
             '<div><b>'+levelOf()+'</b>level</div>'+
             '<div><b>'+profile.coins+'</b>sparks</div>'+
@@ -6349,26 +7524,124 @@ function renderLobbyPanel(){
           : !serverHasAccounts
             ? 'This server has no account system. Replace <i>server.js</i> with the current one and restart it.'
             : (googleClientId?'':'Google sign in is not set up on this server — use a username.')))+'</div>';
+  } else if(lobbyTab==='stream'){
+    const svc=[
+      ['twitch','Twitch','#a970ff','Works now. Reads your chat live over an anonymous '+
+        'connection — no login, no key, nothing to approve.'],
+      ['youtube','YouTube','#ff4e45','Needs a Data API key on your server and an active '+
+        'broadcast. Set YOUTUBE_API_KEY and the server will poll your live chat.'],
+      ['kick','Kick','#53fc18','No public chat API. It can be wired through your own '+
+        'server if you have a relay, but nothing here can do it on its own.'],
+      ['tiktok','TikTok','#ff0050','Live chat needs a signed connection that only a '+
+        'server library can make. Not possible from a browser.']
+    ];
+    el.innerHTML='<div class="ptitle">STREAM</div>'+
+      '<div class="psub">This links your <b>chat</b> to the game, so viewers can see what '+
+        'you see and vote on what happens. It does not broadcast video — going live still '+
+        'means OBS, because browsers cannot speak RTMP.</div>'+
+      '<div class="svcgrid">'+
+        svc.map(([id,name,col,note])=>
+          '<div class="svc'+(stream.service===id?' on':'')+'" style="--sc:'+col+'">'+
+            '<b>'+name+'</b><p>'+note+'</p>'+
+            (id==='twitch'
+              ? (stream.service==='twitch'&&stream.on
+                  ? '<button class="ghost small" id="svcOff">DISCONNECT</button>'
+                  : '<button class="ghost small" data-svc="twitch">CONNECT</button>')
+              : '<span class="svcna">'+(id==='youtube'?'server setup required':'not available')+'</span>')+
+          '</div>').join('')+
+      '</div>'+
+      '<div class="prow"><label>Twitch channel</label>'+
+        '<input id="twChan" maxlength="30" placeholder="your channel name" value="'+
+          (stream.channel||'')+'"></div>'+
+      '<div class="setgroup">Overlay and viewer commands</div>'+
+      '<div class="prow"><label>Chat on screen</label>'+
+        '<button class="sw'+(stream.overlay?' on':'')+'" id="ovToggle"></button>'+
+        '<span class="hintsm">last eight messages, bottom right</span></div>'+
+      '<div class="psub" style="font-size:12px">Viewers can type <b>!stats</b> for your record, '+
+        'and <b>1</b>, <b>2</b> or <b>3</b> during a vote. Start one below and it appears on '+
+        'stream with a live tally.</div>'+
+      '<div class="menubtns" style="margin:10px 0 4px">'+
+        '<button class="ghost small" id="voteDrop">VOTE: WHERE TO DROP</button>'+
+        '<button class="ghost small" id="voteMode">VOTE: NEXT MODE</button>'+
+      '</div>'+
+      '<div class="buyline'+(stream.on?' good':'')+'">'+(stream.status||'Not connected.')+'</div>';
+  } else if(lobbyTab==='stream'){
+    const st=live.state;
+    const dot=st==='live'?'#4ade80':(st==='connecting'||st==='retrying'?'#ffd873':'#64748b');
+    el.innerHTML='<div class="ptitle">STREAM</div>'+
+      '<div class="psub">Read your live chat into the game, and let viewers take part. '+
+        'Nothing here broadcasts video — see the note at the bottom for why.</div>'+
+
+      '<div class="setgroup">Twitch chat</div>'+
+      '<div class="prow"><label>Channel</label>'+
+        '<input id="liveCh" maxlength="26" placeholder="your twitch name" value="'+
+          (S.liveChannel||'').replace(/"/g,'')+'" style="text-transform:lowercase">'+
+        '<button class="ghost small" id="liveGo" style="margin:0">'+
+          (st==='off'||st==='error'?'CONNECT':'DISCONNECT')+'</button></div>'+
+      '<div class="diagbox"><span><i style="display:inline-block;width:8px;height:8px;'+
+        'border-radius:50%;background:'+dot+';margin-right:7px"></i>'+
+        st.toUpperCase()+'</span>'+
+        '<span>MESSAGES <b>'+live.msgs.length+'</b></span>'+
+        '<span>CHEERS <b>'+live.cheers+'</b></span></div>'+
+      '<div class="buyline'+(st==='live'?' good':'')+'">'+(live.note||'')+'</div>'+
+
+      '<div class="setgroup">On screen</div>'+
+      '<div class="prow"><label>Show chat in game</label>'+
+        '<button class="sw'+(S.liveOverlay?' on':'')+'" id="liveOv"></button></div>'+
+      '<div class="prow"><label>Lines shown</label>'+
+        '<input id="liveLn" type="range" min="3" max="14" step="1" value="'+S.liveLines+'" '+
+        'style="flex:1"><span class="hintsm">'+S.liveLines+'</span></div>'+
+      '<div class="prow"><label>Viewer commands</label>'+
+        '<button class="sw'+(S.liveCommands?' on':'')+'" id="liveCmd"></button>'+
+        '<span class="hintsm">!drop &lt;place&gt; votes your landing spot · !cheer</span></div>'+
+      '<div class="prow"><label>Streamer mode</label>'+
+        '<button class="sw'+(S.streamerMode?' on':'')+'" id="liveSafe"></button>'+
+        '<span class="hintsm">hides your account name and room codes on screen</span></div>'+
+
+      '<div class="setgroup">The other platforms</div>'+
+      '<div class="psub" style="font-size:12px;line-height:1.7">'+
+        '<b>Twitch</b> works with no key and no account because its chat gateway accepts '+
+        'anonymous read-only connections.<br>'+
+        '<b>YouTube</b> needs an API key and burns quota per poll, so it has to run through '+
+        'your own server rather than the browser.<br>'+
+        '<b>Kick</b> and <b>TikTok</b> publish no public chat API; every library that reads '+
+        'them scrapes private endpoints that break without warning.<br><br>'+
+        '<b>And none of them can be broadcast to from a web page.</b> Going live needs RTMP, '+
+        'which is a raw TCP socket, and browsers have no such thing. Anything claiming '+
+        'otherwise is re-encoding on a server you are paying for. Capture this tab in OBS '+
+        'or Streamlabs as you would any other game.</div>';
   } else if(lobbyTab==='maps'){
     const code=exportMap();
-    el.innerHTML='<div class="ptitle">MAP CODES</div>'+
-      '<div class="psub">Anything you build in Training or a Box Fight can be packed into a '+
-        'code. Send it to a friend and they load the same arena, piece for piece.</div>'+
-      '<div class="setgroup">Your current build</div>'+
-      '<div class="codebox"><span>'+(code?PIECES.size+' PIECES':'NOTHING BUILT YET')+'</span>'+
-        '<b style="font-size:13px;letter-spacing:1px;word-break:break-all;text-align:left">'+
-          (code?code.slice(0,120)+(code.length>120?'…':''):'—')+'</b>'+
+    const list=savedMaps();
+    const names=Object.keys(list).sort((x,y)=>list[y].at-list[x].at);
+    el.innerHTML='<div class="ptitle">MAPS</div>'+
+      '<div class="psub">Anything you build — pieces and props — packs into a code. '+
+        'Save it here, or send the code to a friend and they load the same map.</div>'+
+      '<div class="setgroup">Current build</div>'+
+      '<div class="codebox"><span>'+(code?(creative.placed.length+PIECES.size)+' OBJECTS':'NOTHING BUILT')+'</span>'+
+        '<b style="font-size:12px;letter-spacing:0;word-break:break-all;text-align:left">'+
+          (code?code.slice(0,90)+(code.length>90?'…':''):'—')+'</b>'+
         (code?'<button class="ghost small" id="copyMap">COPY</button>':'')+'</div>'+
+      '<div class="prow"><label>Save as</label>'+
+        '<input id="mapName" maxlength="24" placeholder="name this map">'+
+        '<button class="ghost small" id="saveMapBtn" style="margin:0">SAVE</button></div>'+
       '<div class="setgroup">Load a code</div>'+
       '<div class="prow"><label>Code</label>'+
         '<textarea id="mapIn" rows="2" placeholder="paste a map code" '+
           'style="flex:1;background:rgba(4,8,16,.6);border:1px solid rgba(255,255,255,.18);'+
           'border-radius:4px;color:#fff;font-family:inherit;font-size:12px;padding:8px"></textarea>'+
         '<button class="ghost small" id="loadMap" style="margin:0">LOAD</button></div>'+
-      '<div class="psub">Loading replaces whatever you have built. Start a Training match '+
-        'first, then come back here and paste.</div>'+
-      '<div class="buyline'+(/Loaded|copied/.test(mapMsg)?' good':'')+'">'+
-        (mapMsg||(running?'':'Not in a match — codes load into the arena you are playing.'))+'</div>';
+      '<div class="setgroup">Your maps</div>'+
+      (names.length
+        ? names.map(n=>'<div class="friend on"><i></i><b>'+n+'</b>'+
+            '<span>'+(list[n].parts||0)+' objects</span>'+
+            '<button class="ghost small fbtn" data-loadmap="'+n+'">LOAD</button>'+
+            '<button class="ghost small fbtn" data-copymap="'+n+'">COPY</button>'+
+            '<button class="ghost small fbtn" data-delmap="'+n+'">DELETE</button></div>').join('')
+        : '<div class="psub">Nothing saved yet. Start a CREATIVE match and build something.</div>')+
+      '<div class="buyline'+(/Loaded|Saved|copied/.test(mapMsg)?' good':'')+'">'+
+        (mapMsg||(running?'Loading replaces what is already built.'
+                         :'Start a match to load a map into it.'))+'</div>';
   } else if(lobbyTab==='unlock'){
     const got=owns('skin','subscriber');
     el.innerHTML='<div class="ptitle">SUBSCRIBER OUTFIT</div>'+
@@ -6430,12 +7703,52 @@ function renderLobbyPanel(){
         [['none','NO ONE'],['friends','FRIENDS'],['team','TEAM + FRIENDS'],['all','EVERYONE']].map(([v,l])=>
           '<button class="oppbtn'+(S.voiceWho===v?' on':'')+'" data-vwho="'+v+'">'+l+'</button>').join('')+
         '</div></div>'+
+      (voice.on&&micList.length>1
+        ? '<div class="prow"><label>Microphone in</label>'+
+          '<select id="micPick" style="flex:1;background:rgba(4,8,16,.6);color:#fff;'+
+          'border:1px solid rgba(255,255,255,.18);border-radius:4px;padding:7px 9px;'+
+          'font-family:inherit;font-size:12px">'+
+          micList.map(d=>'<option value="'+d.deviceId+'"'+
+            (S.micDevice===d.deviceId?' selected':'')+'>'+
+            (d.label||'Input '+(micList.indexOf(d)+1)).replace(/[<>]/g,'')+'</option>').join('')+
+          '</select></div>'
+        : '')+
       '<div class="buyline'+(voice.on?' good':'')+'">'+voiceStatusLine()+'</div>'+
       '<div class="prow"><label>Chat</label><span class="hintsm">'+
         prettyKey(S.keys.chat)+' for everyone · '+prettyKey(S.keys.teamChat)+' for your squad</span></div>';
   } else {
     const sh=dailyShop();
+    const money=(c)=>{
+      const sym={usd:'$',eur:'€',gbp:'£',cad:'C$',aud:'A$'}[payCurrency]||'';
+      return sym+(c/100).toFixed(2);
+    };
     el.innerHTML='<div class="ptitle">ITEM SHOP</div>'+
+      '<div class="sparkhead" id="sparkTop">'+
+        '<b>GET SPARKS</b><span>buy them, or earn them by playing</span></div>'+
+      (payPacks&&payPacks.length
+        ? '<div class="packs">'+payPacks.map((pk,i)=>
+            '<button class="pack'+(i===2?' best':'')+'" data-pack="'+pk.id+'">'+
+              (i===2?'<div class="bestTag">BEST VALUE</div>':'')+
+              '<div class="packIcon">◆</div>'+
+              '<b>'+pk.sparks.toLocaleString()+'</b>'+
+              (pk.bonus?'<em>'+pk.bonus+'</em>':'<em>&nbsp;</em>')+
+              '<span>'+money(pk.price)+'</span></button>').join('')+'</div>'+
+          '<div class="buyline'+(/Thank you/.test(buyMsg2)?' good':'')+'">'+
+            (buyMsg2||(signedIn()
+              ? 'Payment is handled by Stripe. This game never sees your card.'
+              : 'Sign in on the ACCOUNT tab first — sparks attach to an account.'))+'</div>'
+        : '<div class="warnbox">'+
+            (!netConnected
+              ? 'Not connected to a server, so there is nothing to buy from.'
+              : (payPacks===null && serverVersion
+                 ? '<b>Buying sparks is not switched on for this server.</b><br>'+
+                   'It needs a Stripe account and three environment variables — '+
+                   '<i>STRIPE_SECRET</i>, <i>STRIPE_WEBHOOK_SECRET</i> and <i>PUBLIC_URL</i>. '+
+                   'See PAYMENTS.txt. Until then sparks are earned by playing.'
+                 : 'This server is an older <i>server.js</i> with no payment support. '+
+                   'Update it and restart.'))+
+          '</div>')+
+      '<div class="setgroup">Earned</div>'+
       '<div class="buyline'+(buyMsg?' good':'')+'" id="buyLine">'+(buyMsg||
         'Six pieces are made fresh every day and never return. '+rotationLabel()+'.')+'</div>'+
       '<div class="shoprow"><div class="shophead"><b>FEATURED</b><span>'+rotationLabel()+'</span></div>'+
@@ -6447,8 +7760,101 @@ function renderLobbyPanel(){
 }
 function bindPanel(){
   if(lobbyTab==='account') mountGoogleButton();
+  const rnb=document.getElementById('renameBtn');
+  if(rnb) rnb.addEventListener('click',()=>{ uiClick(); doRename(); });
+  const nn=document.getElementById('newName');
+  if(nn) nn.addEventListener('keydown',e=>{
+    e.stopPropagation(); if(e.key==='Enter') doRename();
+  });
+  document.querySelectorAll('[data-pack]').forEach(b=>b.addEventListener('click',()=>{
+    uiClick(); buySparks(b.dataset.pack);
+  }));
+  const lg=document.getElementById('liveGo');
+  if(lg) lg.addEventListener('click',()=>{
+    uiClick();
+    if(live.state==='off'||live.state==='error')
+      liveConnect(document.getElementById('liveCh').value);
+    else liveDisconnect();
+  });
+  const lc=document.getElementById('liveCh');
+  if(lc) lc.addEventListener('keydown',e=>{
+    e.stopPropagation();
+    if(e.key==='Enter') document.getElementById('liveGo').click();
+  });
+  const lo=document.getElementById('liveOv');
+  if(lo) lo.addEventListener('click',()=>{ S.liveOverlay=!S.liveOverlay; saveSettings();
+    paintLiveHud(); renderLobbyPanel(); uiClick(); });
+  const lcm=document.getElementById('liveCmd');
+  if(lcm) lcm.addEventListener('click',()=>{ S.liveCommands=!S.liveCommands; saveSettings();
+    renderLobbyPanel(); uiClick(); });
+  const ls=document.getElementById('liveSafe');
+  if(ls) ls.addEventListener('click',()=>{ S.streamerMode=!S.streamerMode; saveSettings();
+    updateWallet(); renderLobbyPanel(); uiClick(); });
+  const ll=document.getElementById('liveLn');
+  if(ll) ll.addEventListener('input',e=>{ S.liveLines=+e.target.value; saveSettings();
+    paintLiveHud(); renderLobbyPanel(); });
+  const tr=document.getElementById('turnReset');
+  if(tr) tr.addEventListener('click',()=>{
+    uiClick(); turn.yaw=0; turn.vel=0; turn.pitch=0; turn.zoom=0; turn.idle=0;
+  });
   const cm=document.getElementById('copyMap');
   if(cm) cm.addEventListener('click',()=>{ uiClick(); copyMapCode(); });
+  document.querySelectorAll('[data-svc]').forEach(b=>b.addEventListener('click',()=>{
+    uiClick();
+    twitchConnect(document.getElementById('twChan').value);
+  }));
+  const so=document.getElementById('svcOff');
+  if(so) so.addEventListener('click',()=>{ uiClick(); streamDisconnect(); });
+  const tc=document.getElementById('twChan');
+  if(tc) tc.addEventListener('keydown',e=>{
+    e.stopPropagation();
+    if(e.key==='Enter') twitchConnect(tc.value);
+  });
+  const ov=document.getElementById('ovToggle');
+  if(ov) ov.addEventListener('click',()=>{
+    uiClick(); stream.overlay=!stream.overlay;
+    ov.classList.toggle('on',stream.overlay); paintStreamOverlay();
+  });
+  const vd=document.getElementById('voteDrop');
+  if(vd) vd.addEventListener('click',()=>{
+    uiClick();
+    startVote('Where should we drop?',['Kettle Hollow','Saltpine Docks','Anywhere quiet'],40);
+  });
+  const vm2=document.getElementById('voteMode');
+  if(vm2) vm2.addEventListener('click',()=>{
+    uiClick();
+    startVote('What next?',['Battle Royale','Box Fight','Zone Wars'],40);
+  });
+  const sm=document.getElementById('saveMapBtn');
+  if(sm) sm.addEventListener('click',()=>{
+    uiClick();
+    mapMsg=saveMapAs(document.getElementById('mapName').value);
+    renderLobbyPanel();
+  });
+  const mn=document.getElementById('mapName');
+  if(mn) mn.addEventListener('keydown',e=>{
+    e.stopPropagation();
+    if(e.key==='Enter') document.getElementById('saveMapBtn').click();
+  });
+  document.querySelectorAll('[data-loadmap]').forEach(b=>b.addEventListener('click',()=>{
+    uiClick();
+    const rec=savedMaps()[b.dataset.loadmap];
+    mapMsg = !rec ? 'That map is gone.'
+           : running ? importMap(rec.code)
+           : 'Start a match first, then load it.';
+    renderLobbyPanel();
+  }));
+  document.querySelectorAll('[data-copymap]').forEach(b=>b.addEventListener('click',()=>{
+    uiClick();
+    const rec=savedMaps()[b.dataset.copymap];
+    if(!rec) return;
+    try{ navigator.clipboard.writeText(rec.code); mapMsg='Code copied.'; }
+    catch(e){ mapMsg=rec.code; }
+    renderLobbyPanel();
+  }));
+  document.querySelectorAll('[data-delmap]').forEach(b=>b.addEventListener('click',()=>{
+    uiClick(); deleteMap(b.dataset.delmap); mapMsg='Deleted.'; renderLobbyPanel();
+  }));
   const lm=document.getElementById('loadMap');
   if(lm) lm.addEventListener('click',()=>{
     uiClick();
@@ -6502,6 +7908,11 @@ function bindPanel(){
   document.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{
     removeFriend(b.dataset.del); renderLobbyPanel(); uiClick();
   }));
+  const mp=document.getElementById('micPick');
+  if(mp) mp.addEventListener('change',async e=>{
+    await setMicDevice(e.target.value);
+    renderLobbyPanel();
+  });
   document.querySelectorAll('[data-vmode]').forEach(b=>b.addEventListener('click',async()=>{
     S.voiceMode=b.dataset.vmode; saveSettings(); uiClick();
     await applyVoiceMode(); renderLobbyPanel();
@@ -6574,7 +7985,9 @@ function refreshCosmetics(){
   if(camera && glider){
     const vis=glider.visible;
     if(glider.parent) glider.parent.remove(glider);
-    glider=makeGliderMesh(); glider.visible=vis; camera.add(glider);
+    glider=makeGliderMesh(); glider.visible=vis;
+    glider.traverse(o=>{ if(o.isMesh) o.castShadow=true; });
+    scene.add(glider);
   }
   if(avParts) avParts.current=null;
   updateWallet();
@@ -6773,7 +8186,7 @@ function findItem(cat,id){ return (CATALOG[cat]||[]).find(x=>x.id===id) || CATAL
 /* ================= profile ================= */
 const DEFAULT_PROFILE={
   coins:800, xp:0, matches:0, wins:0, kills:0,
-  friendCode:null, friends:[], customItems:{},
+  friendCode:null, friends:[], customItems:{}, aimBest:0, maps:{},
   owned:{ skin:['recruit','dustline'], pack:['none','daypack'], pick:['standard'],
           glider:['standard'], emote:['wave','bounce','clap'] },
   equipped:{ skin:'recruit', pack:'daypack', pick:'standard', glider:'standard', emote:'wave' }
@@ -6818,68 +8231,260 @@ function makeLimb2(upLen,loLen,rTop,rMid,rBot,mat,seg){
   return g;
 }
 
+let _fabricTex=null;
+function fabricTexture(){
+  if(_fabricTex) return _fabricTex;
+  const S2=128, c=document.createElement('canvas');
+  c.width=c.height=S2;
+  const x=c.getContext('2d');
+  const img=x.createImageData(S2,S2);
+  for(let j=0;j<S2;j++) for(let i=0;i<S2;i++){
+    // a plain weave: alternating warp and weft, plus a little fibre noise
+    const warp=Math.sin(i*Math.PI/2)*0.5+0.5;
+    const weft=Math.sin(j*Math.PI/2)*0.5+0.5;
+    const over=((i+j)>>1)%2 ? warp : weft;
+    const fibre=(Math.sin(i*7.3+j*3.1)*0.5+0.5)*0.18;
+    const h=over*0.82+fibre;
+    const k=(j*S2+i)*4;
+    img.data[k]=128+(h-0.5)*90;
+    img.data[k+1]=128+(h-0.5)*90;
+    img.data[k+2]=255;
+    img.data[k+3]=255;
+  }
+  x.putImageData(img,0,0);
+  _fabricTex=new THREE.CanvasTexture(c);
+  _fabricTex.wrapS=_fabricTex.wrapT=THREE.RepeatWrapping;
+  _fabricTex.repeat.set(5,5);
+  return _fabricTex;
+}
 function makeFighter(opt){
   opt=opt||{};
   const detail=opt.detail!==false;
-  const seg=opt.lowpoly?9:14;
+  const seg=opt.lowpoly?9:18;
   const skin=findItem('skin', opt.skin||profile.equipped.skin);
+  /* Two builds. Which one an outfit uses is part of the outfit, and if it
+     does not say, it comes from a hash of the id, so the same outfit is
+     always the same person on every machine. */
+  let fem;
+  if(opt.sex) fem=(opt.sex==='f');
+  else if(skin.sex) fem=(skin.sex==='f');
+  else {
+    let hsh=0;
+    const sid=String(skin.id||'recruit');
+    for(let i=0;i<sid.length;i++) hsh=(hsh*31+sid.charCodeAt(i))>>>0;
+    fem=(hsh%2)===1;
+  }
   const pack=findItem('pack', opt.pack||profile.equipped.pack);
   const g=new THREE.Group();
+  /* Cloth, skin and hard kit catch light in completely different ways, and
+     giving them one shared material is the main reason stylised characters
+     look like toys. Each surface gets its own response. */
+  const clothTex=fabricTexture();
   const mats={
-    pri : new THREE.MeshStandardMaterial({color:skin.pri, roughness:.72}),
-    sec : new THREE.MeshStandardMaterial({color:skin.sec, roughness:.85}),
-    tone: new THREE.MeshStandardMaterial({color:skin.tone,roughness:.82}),
-    acc : new THREE.MeshStandardMaterial({color:skin.acc, roughness:.55, metalness:.25}),
-    dark: new THREE.MeshStandardMaterial({color:0x14181f, roughness:.6})
+    // woven cloth: rough, no specular punch, a faint weave in the normal
+    pri : new THREE.MeshStandardMaterial({color:skin.pri, roughness:.93, metalness:0,
+            normalMap:clothTex, normalScale:new THREE.Vector2(.35,.35), envMapIntensity:.45}),
+    sec : new THREE.MeshStandardMaterial({color:skin.sec, roughness:.97, metalness:0,
+            normalMap:clothTex, normalScale:new THREE.Vector2(.28,.28), envMapIntensity:.4}),
+    // skin: softer falloff, slight sheen, warm in the shadows
+    tone: new THREE.MeshStandardMaterial({color:skin.tone, roughness:.56, metalness:0,
+            envMapIntensity:.7}),
+    // webbing, buckles and plate: the only thing here that should glint
+    acc : new THREE.MeshStandardMaterial({color:skin.acc, roughness:.38, metalness:.55,
+            envMapIntensity:1.1}),
+    dark: new THREE.MeshStandardMaterial({color:0x14181f, roughness:.52, metalness:.2,
+            envMapIntensity:.8})
+  };
+  // warm the skin where it turns away from the light, the way thin flesh does
+  mats.tone.onBeforeCompile=sh=>{
+    sh.fragmentShader=sh.fragmentShader.replace(
+      '#include <lights_fragment_end>',
+      ['#include <lights_fragment_end>',
+       'float wrap = 1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0);',
+       'reflectedLight.indirectDiffuse += diffuseColor.rgb * vec3(0.16,0.045,0.03) * wrap;'
+      ].join('\n'));
   };
   const add=(m)=>{ m.castShadow=true; g.add(m); return m; };
 
   /* ---- torso: a lathed profile, flattened front to back like a ribcage ---- */
-  const prof=[[.215,0],[.252,.09],[.232,.24],[.198,.38],[.212,.50],[.262,.62],
-              [.278,.70],[.252,.77],[.140,.82]];
+  // waist, chest and shoulder taper all shift between the two builds
+  const prof = fem
+    ? [[.222,0],[.254,.09],[.228,.24],[.186,.38],[.206,.50],[.240,.62],
+       [.248,.70],[.228,.77],[.132,.82]]
+    : [[.215,0],[.252,.09],[.232,.24],[.198,.38],[.212,.50],[.262,.62],
+       [.282,.70],[.256,.77],[.140,.82]];
   const torsoGeo=new THREE.LatheGeometry(prof.map(p=>new THREE.Vector2(p[0],p[1])),seg+4);
   const torso=add(new THREE.Mesh(torsoGeo,mats.pri));
   torso.position.y=.98; torso.scale.z=.70;
 
-  const hips=add(new THREE.Mesh(new THREE.SphereGeometry(.225,seg,8),mats.sec));
-  hips.position.y=1.00; hips.scale.set(1,.62,.80);
+  const hips=add(new THREE.Mesh(new THREE.SphereGeometry(fem?.238:.225,seg,8),mats.sec));
+  hips.position.y=1.00; hips.scale.set(1,.62,fem?.86:.80);
 
   // shoulders and collar
-  const shL=add(new THREE.Mesh(new THREE.SphereGeometry(.118,seg,9),mats.pri));
-  shL.position.set(-.205,1.655,0); shL.scale.set(1,.92,1);
-  const shR=add(new THREE.Mesh(new THREE.SphereGeometry(.118,seg,9),mats.pri));
-  shR.position.set(.205,1.655,0); shR.scale.set(1,.92,1);
+  const SHX=fem?.188:.208, SHR=fem?.106:.120;
+  const shL=add(new THREE.Mesh(new THREE.SphereGeometry(SHR,seg,9),mats.pri));
+  shL.position.set(-SHX,1.655,0); shL.scale.set(1,.92,1);
+  const shR=add(new THREE.Mesh(new THREE.SphereGeometry(SHR,seg,9),mats.pri));
+  shR.position.set(SHX,1.655,0); shR.scale.set(1,.92,1);
   const collar=add(new THREE.Mesh(new THREE.CylinderGeometry(.128,.162,.075,seg),mats.sec));
   collar.position.y=1.700; collar.scale.z=.78;
 
-  const neck=add(new THREE.Mesh(new THREE.CylinderGeometry(.062,.080,.115,seg),mats.tone));
+  const neck=add(new THREE.Mesh(new THREE.CylinderGeometry(
+    fem?.054:.064, fem?.070:.082, .115, seg),mats.tone));
   neck.position.y=1.740;
 
   /* ---- head ---- */
-  const head=add(new THREE.Mesh(new THREE.SphereGeometry(.108,seg+4,seg+2),mats.tone));
-  head.position.y=1.862; head.scale.set(.96,1.22,1.04);
+  /* ---- head and face ----
+     The skull is built from parts rather than one ball: cranium, cheekbones,
+     a jaw that can open, and a brow ridge whose heaviness depends on the
+     build. Everything that moves is kept on the parts object so expressions
+     can drive it later. */
+  const F={};                                   // face parts, for expressions
+  const HY=1.862;                               // head centre height
+  const head=add(new THREE.Mesh(new THREE.SphereGeometry(.108,seg+6,seg+4),mats.tone));
+  head.position.y=HY;
+  head.scale.set(.96*(fem?.965:1.0), 1.22, 1.04);
+
   if(detail){
-    const jaw=add(new THREE.Mesh(new THREE.SphereGeometry(.086,seg,8),mats.tone));
-    jaw.position.set(0,1.812,.014); jaw.scale.set(.95,.70,1.02);
-    const brow=add(new THREE.Mesh(new THREE.BoxGeometry(.152,.026,.040),mats.tone));
-    brow.position.set(0,1.888,-.092);
-    const nose=add(new THREE.Mesh(new THREE.ConeGeometry(.026,.052,6),mats.tone));
-    nose.position.set(0,1.856,-.110); nose.rotation.x=-1.9;
-    const eyeGeo=new THREE.SphereGeometry(.021,8,6);
-    [-.042,.042].forEach(ex=>{
-      const e=add(new THREE.Mesh(eyeGeo,mats.dark));
-      e.position.set(ex,1.874,-.088); e.scale.set(1,.85,.6);
+    const skinMat=mats.tone;
+    const put=(m,x,y,z)=>{ m.position.set(x,y,z); return add(m); };
+
+    // cranium shaping: a flatter back and a fuller forehead
+    const occ=put(new THREE.Mesh(new THREE.SphereGeometry(.098,seg,10),skinMat),0,HY-.012,.030);
+    occ.scale.set(.96,1.02,.86);
+
+    // cheekbones, higher and sharper on the lighter build
+    [-1,1].forEach(sx=>{
+      const ch=put(new THREE.Mesh(new THREE.SphereGeometry(fem?.040:.044,10,8),skinMat),
+        sx*.062, HY-.018, -.058);
+      ch.scale.set(.9,fem?.62:.70,.78);
     });
-    const mouth=add(new THREE.Mesh(new THREE.BoxGeometry(.046,.010,.018),mats.dark));
-    mouth.position.set(0,1.812,-.095);
-    const earGeo=new THREE.SphereGeometry(.028,7,6);
-    [-.106,.106].forEach(ex=>{
-      const e=add(new THREE.Mesh(earGeo,mats.tone));
-      e.position.set(ex,1.858,.004); e.scale.set(.42,1,.8);
+
+    // jaw, hinged so it can open
+    const jaw=new THREE.Group();
+    jaw.position.set(0,HY+.018,.020);
+    g.add(jaw);
+    const jawM=new THREE.Mesh(new THREE.SphereGeometry(fem?.079:.088,seg,10),skinMat);
+    jawM.position.set(0,-.040,-.006);
+    jawM.scale.set(fem?.93:1.0, fem?.66:.72, 1.02);
+    jawM.castShadow=true; jaw.add(jawM);
+    const chin=new THREE.Mesh(new THREE.SphereGeometry(fem?.032:.038,10,8),skinMat);
+    chin.position.set(0,-.070,-.058);
+    chin.scale.set(fem?.86:1.0,.72,.80);
+    chin.castShadow=true; jaw.add(chin);
+    F.jaw=jaw;
+
+    // brow ridge: pronounced on the heavier build, barely there on the other
+    const brow=put(new THREE.Mesh(new THREE.BoxGeometry(.150,fem?.016:.026,.044),skinMat),
+      0,HY+.026,-.090);
+    brow.rotation.x=-.12;
+
+    // eyebrows, which are what an expression actually reads from
+    F.browL=put(new THREE.Mesh(new THREE.BoxGeometry(.050,.009,.012),mats.dark),
+      -.043,HY+.040,-.104);
+    F.browR=put(new THREE.Mesh(new THREE.BoxGeometry(.050,.009,.012),mats.dark),
+       .043,HY+.040,-.104);
+    F.browL.rotation.z=.12; F.browR.rotation.z=-.12;
+    F.browL.userData.y0=F.browL.position.y;
+    F.browR.userData.y0=F.browR.position.y;
+
+    // eyes: a white, a coloured iris and a pupil, set into a socket
+    const eyeW=new THREE.MeshStandardMaterial({color:0xf2f0ec,roughness:.26});
+    const iris=new THREE.MeshStandardMaterial({color:skin.eyes||0x4b6a4f,roughness:.2,
+      metalness:.05});
+    const pupil=new THREE.MeshStandardMaterial({color:0x07090c,roughness:.15});
+    [[-.042,'L'],[.042,'R']].forEach(([ex,side])=>{
+      const socket=put(new THREE.Mesh(new THREE.SphereGeometry(.030,10,8),mats.dark),
+        ex,HY+.012,-.086);
+      socket.scale.set(1,.72,.5);
+      socket.material=new THREE.MeshStandardMaterial({color:0x2a1f1c,roughness:.9});
+      const ball=put(new THREE.Mesh(new THREE.SphereGeometry(.0205,12,10),eyeW),
+        ex,HY+.012,-.090);
+      const ir=put(new THREE.Mesh(new THREE.SphereGeometry(.0092,10,8),iris),
+        ex,HY+.012,-.1055);
+      ir.scale.set(1,1,.5);
+      const pu=put(new THREE.Mesh(new THREE.SphereGeometry(.0042,8,6),pupil),
+        ex,HY+.012,-.1085);
+      pu.scale.set(1,1,.5);
+      // the lid is a cap that rotates down over the eye to blink
+      const lid=new THREE.Group();
+      lid.position.set(ex,HY+.012,-.090);
+      g.add(lid);
+      const lidM=new THREE.Mesh(new THREE.SphereGeometry(.0225,12,8,0,6.283,0,1.25),skinMat);
+      lidM.rotation.x=-1.25;
+      lidM.castShadow=true;
+      lid.add(lidM);
+      F['lid'+side]=lid;
+      F['eye'+side]=ball;
+      F['iris'+side]=ir;
+      F['pupil'+side]=pu;
     });
+
+    // nose: bridge, tip and nostrils
+    const bridge=put(new THREE.Mesh(new THREE.BoxGeometry(fem?.020:.024,.052,.026),skinMat),
+      0,HY+.012,-.100);
+    bridge.rotation.x=.16;
+    const tip=put(new THREE.Mesh(new THREE.SphereGeometry(fem?.019:.022,10,8),skinMat),
+      0,HY-.020,-.110);
+    tip.scale.set(1,.86,1.1);
+    [-1,1].forEach(sx=>{
+      const nos=put(new THREE.Mesh(new THREE.SphereGeometry(.009,8,6),mats.dark),
+        sx*.014,HY-.028,-.104);
+      nos.scale.set(.8,.7,.8);
+    });
+
+    // lips, as two cushions around a dark line, so the mouth has form
+    const lipMat=new THREE.MeshStandardMaterial({
+      color:new THREE.Color(skin.tone).lerp(new THREE.Color(0xa3524b),fem?.52:.34),
+      roughness:.5});
+    F.lipU=put(new THREE.Mesh(new THREE.SphereGeometry(fem?.027:.029,12,7),lipMat),
+      0,HY-.046,-.096);
+    F.lipU.scale.set(1.5,fem?.36:.30,.56);
+    F.lipU.userData.y0=F.lipU.position.y;
+    const mouthLine=put(new THREE.Mesh(new THREE.BoxGeometry(.046,.005,.012),mats.dark),
+      0,HY-.052,-.100);
+    F.mouthLine=mouthLine;
+    const lipL=new THREE.Mesh(new THREE.SphereGeometry(fem?.026:.028,12,7),lipMat);
+    lipL.position.set(0,-.078,-.100);
+    lipL.scale.set(1.45,fem?.40:.34,.56);
+    lipL.castShadow=true;
+    jaw.add(lipL);
+    F.lipL=lipL;
+
+    // ears with a lobe
+    [-1,1].forEach(sx=>{
+      const ear=put(new THREE.Mesh(new THREE.SphereGeometry(.027,9,8),skinMat),
+        sx*.104,HY-.002,.004);
+      ear.scale.set(.40,1.05,.78);
+      ear.rotation.y=sx*.25;
+      const lobe=put(new THREE.Mesh(new THREE.SphereGeometry(.013,7,6),skinMat),
+        sx*.103,HY-.030,.008);
+      lobe.scale.set(.5,.9,.8);
+      const canal=put(new THREE.Mesh(new THREE.SphereGeometry(.011,7,6),mats.dark),
+        sx*.098,HY-.002,.000);
+      canal.scale.set(.35,.8,.6);
+    });
+
+    // hair, in a style that suits the build
     if(skin.head==='none'||skin.head==='visor'){
-      const hair=add(new THREE.Mesh(new THREE.SphereGeometry(.114,seg,9,0,6.283,0,1.35),mats.sec));
-      hair.position.set(0,1.868,.010); hair.scale.set(1,1.14,1.06);
+      const hairMat=mats.sec;
+      const cap=put(new THREE.Mesh(
+        new THREE.SphereGeometry(.116,seg,10,0,6.283,0,fem?1.5:1.30),hairMat),
+        0,HY+.008,.012);
+      cap.scale.set(1,fem?1.18:1.12,1.07);
+      if(fem){
+        // a gathered tail at the back
+        const tail=put(new THREE.Mesh(new THREE.SphereGeometry(.052,10,9),hairMat),
+          0,HY-.040,.112);
+        tail.scale.set(.8,1.5,.9);
+        const band=put(new THREE.Mesh(new THREE.TorusGeometry(.040,.010,6,14),mats.acc),
+          0,HY+.010,.108);
+        band.rotation.y=Math.PI/2;
+      } else {
+        const back=put(new THREE.Mesh(new THREE.SphereGeometry(.100,seg,9,0,6.283,0,1.0),hairMat),
+          0,HY-.004,.030);
+        back.scale.set(1,.9,1.0);
+      }
     }
   }
 
@@ -6932,10 +8537,12 @@ function makeFighter(opt){
   }
 
   /* ---- limbs ---- */
-  const legL=makeLimb2(.50,.47,.094,.070,.058,mats.sec,seg); legL.position.set(-.098,1.01,0);
-  const legR=makeLimb2(.50,.47,.094,.070,.058,mats.sec,seg); legR.position.set(.098,1.01,0);
-  const armL=makeLimb2(.355,.325,.072,.054,.045,mats.pri,seg); armL.position.set(-.212,1.638,0);
-  const armR=makeLimb2(.355,.325,.072,.054,.045,mats.pri,seg); armR.position.set(.212,1.638,0);
+  const LR=fem?.088:.094, LR2=fem?.066:.070, AR=fem?.064:.074;
+  const LX=fem?.106:.098;
+  const legL=makeLimb2(.50,.47,LR,LR2,.056,mats.sec,seg); legL.position.set(-LX,1.01,0);
+  const legR=makeLimb2(.50,.47,LR,LR2,.056,mats.sec,seg); legR.position.set(LX,1.01,0);
+  const armL=makeLimb2(.355,.325,AR,.050,.042,mats.pri,seg); armL.position.set(-SHX-.006,1.638,0);
+  const armR=makeLimb2(.355,.325,AR,.050,.042,mats.pri,seg); armR.position.set(SHX+.006,1.638,0);
 
   const bootGeo=new THREE.BoxGeometry(.115,.085,.215);
   [legL,legR].forEach(l=>{
@@ -6991,7 +8598,14 @@ function makeFighter(opt){
   const held=new THREE.Group(); held.position.set(.245,1.285,-.20); g.add(held);
   const meshes=[];
   g.traverse(o=>{ if(o.isMesh) meshes.push(o); });
-  return {group:g, parts:{legL,legR,armL,armR,held,head,torso,chest:torso,hips,mats}, meshes, skin};
+  torso.userData.y0=torso.position.y;
+  shL.userData.y0=shL.position.y;
+  shR.userData.y0=shR.position.y;
+  g.scale.setScalar(fem?0.975:1.0);
+  torso.userData.y0=torso.position.y;
+  return {group:g, parts:{legL,legR,armL,armR,held,head,torso,chest:torso,hips,shL,shR,mats,
+                          face:F, fem},
+          meshes, skin};
 }
 
 function makePickaxe(id){
@@ -7021,26 +8635,624 @@ function makePickaxe(id){
   return g;
 }
 
+/* ================= gliders =================
+   Each canopy is built from real parts: cells and seams on the ram-air wing,
+   gores and a vent on the round one, spars and rigging on the deltas. The
+   lines are drawn individually from riser to anchor point so the whole thing
+   hangs together the way a canopy actually does. */
+function gliderLine(from,to,mat,thick){
+  const dir=to.clone().sub(from);
+  const len=dir.length();
+  const geo=new THREE.CylinderGeometry(thick||.012,thick||.012,len,4);
+  const m=new THREE.Mesh(geo,mat);
+  m.position.copy(from).addScaledVector(dir,.5);
+  m.quaternion.setFromUnitVectors(V(0,1,0), dir.normalize());
+  return m;
+}
 function makeGliderMesh(id){
   const d=findItem('glider', id||profile.equipped.glider);
   const g=new THREE.Group();
-  const m=new THREE.MeshStandardMaterial({color:d.col,roughness:.85,side:THREE.DoubleSide});
+  const col=new THREE.Color(d.col);
+  const dark=col.clone().multiplyScalar(.62);
+  const light=col.clone().lerp(new THREE.Color(0xffffff),.34);
+
+  const fabric=new THREE.MeshStandardMaterial({color:col,roughness:.72,metalness:.02,
+    side:THREE.DoubleSide,envMapIntensity:.7});
+  const fabric2=new THREE.MeshStandardMaterial({color:light,roughness:.74,metalness:.02,
+    side:THREE.DoubleSide,envMapIntensity:.7});
+  const seam=new THREE.MeshStandardMaterial({color:dark,roughness:.8,side:THREE.DoubleSide});
+  const frame=new THREE.MeshStandardMaterial({color:0x1b2230,roughness:.42,metalness:.65});
+  const cord=new THREE.MeshStandardMaterial({color:0xe6e9ee,roughness:.9});
+  const add=o=>{ o.castShadow=true; g.add(o); return o; };
+
   if(d.shape==='cone'){
-    const c=new THREE.Mesh(new THREE.ConeGeometry(2.6,1.4,10,1,true),m);
-    c.rotation.x=Math.PI; c.position.set(0,2.6,.4); g.add(c);
+    /* ---- ram-air canopy: seven inflated cells with a curved span ---- */
+    const CELLS=7, span=5.4, chord=2.1, arc=1.0;
+    for(let i=0;i<CELLS;i++){
+      const t=(i/(CELLS-1))-0.5;
+      const x=t*span;
+      const dropY=-Math.pow(t*2,2)*arc;
+      const w=span/CELLS*0.94;
+      const h=0.52*(1-Math.abs(t)*0.34);
+      const cell=add(new THREE.Mesh(new THREE.CylinderGeometry(h,h*0.72,chord,10,1,false,0,Math.PI),
+        i%2?fabric:fabric2));
+      cell.rotation.x=Math.PI/2;
+      cell.rotation.z=Math.PI;
+      cell.scale.x=w/(h*2);
+      cell.position.set(x, 3.05+dropY, .25);
+      cell.rotation.y=-t*0.5;
+      // the rib between cells
+      if(i<CELLS-1){
+        const rib=add(new THREE.Mesh(new THREE.BoxGeometry(.04,h*1.5,chord*.98),seam));
+        rib.position.set(x+span/CELLS/2, 3.05+dropY-h*.2, .25);
+      }
+    }
+    // leading edge openings
+    const le=add(new THREE.Mesh(new THREE.TorusGeometry(span*.52,.075,6,26,Math.PI),seam));
+    le.rotation.set(Math.PI/2,0,Math.PI);
+    le.position.set(0,3.05,-.78);
+    le.scale.y=0.36;
+    // risers and lines
+    [-1,1].forEach(sx=>{
+      const riser=add(new THREE.Mesh(new THREE.BoxGeometry(.07,.52,.07),frame));
+      riser.position.set(sx*.34,1.72,.1);
+      for(let i=0;i<CELLS;i++){
+        const t=(i/(CELLS-1))-0.5;
+        if(Math.sign(t||sx)!==sx && t!==0) continue;
+        const x=t*span, dropY=-Math.pow(t*2,2)*arc;
+        add(gliderLine(V(sx*.34,1.98,.1), V(x,3.05+dropY-.3,-.45), cord));
+        add(gliderLine(V(sx*.34,1.98,.1), V(x,3.05+dropY-.3, .95), cord,.010));
+      }
+    });
+
   } else if(d.shape==='kite'){
-    const c=new THREE.Mesh(new THREE.ConeGeometry(2.4,1.5,4,1,true),m);
-    c.rotation.x=Math.PI; c.rotation.y=Math.PI/4; c.position.set(0,2.6,.4); g.add(c);
+    /* ---- round canopy: eight gores, a vent, a flared skirt ---- */
+    const GORES=10, rad=2.75;
+    const profile=[];
+    for(let i=0;i<=8;i++){
+      const u=i/8;
+      profile.push(new THREE.Vector2(Math.sin(u*Math.PI*0.52)*rad, Math.cos(u*Math.PI*0.52)*rad*0.74));
+    }
+    const dome=add(new THREE.Mesh(new THREE.LatheGeometry(profile,GORES*2),fabric));
+    dome.position.set(0,2.62,.25);
+    // alternating gore panels for a sewn look
+    for(let i=0;i<GORES;i++){
+      if(i%2) continue;
+      const a0=(i/GORES)*Math.PI*2;
+      const gore=add(new THREE.Mesh(new THREE.LatheGeometry(profile,2,a0,Math.PI*2/GORES),fabric2));
+      gore.position.set(0,2.625,.25);
+    }
+    for(let i=0;i<GORES;i++){
+      const a0=(i/GORES)*Math.PI*2;
+      const st=add(new THREE.Mesh(new THREE.LatheGeometry(
+        profile.map(p=>new THREE.Vector2(p.x*1.004,p.y*1.004)),2,a0,0.035),seam));
+      st.position.set(0,2.63,.25);
+    }
+    // apex vent
+    const vent=add(new THREE.Mesh(new THREE.TorusGeometry(.42,.09,8,20),seam));
+    vent.rotation.x=Math.PI/2;
+    vent.position.set(0,2.62+rad*0.74,.25);
+    // skirt hem
+    const hem=add(new THREE.Mesh(new THREE.TorusGeometry(rad,.07,7,30),seam));
+    hem.rotation.x=Math.PI/2;
+    hem.position.set(0,2.62,.25);
+    // rigging
+    for(let i=0;i<GORES;i++){
+      const a0=(i/GORES)*Math.PI*2;
+      const px=Math.cos(a0)*rad, pz=Math.sin(a0)*rad+.25;
+      add(gliderLine(V(px*.12,1.85,.1), V(px,2.62,pz), cord));
+    }
+    [-1,1].forEach(sx=>{
+      const riser=add(new THREE.Mesh(new THREE.BoxGeometry(.07,.5,.07),frame));
+      riser.position.set(sx*.3,1.7,.1);
+    });
+
   } else {
-    const wing=new THREE.Mesh(new THREE.ConeGeometry(2.7,1.0,3,1,true),m);
-    wing.rotation.x=Math.PI; wing.position.set(0,2.5,.4); g.add(wing);
-    const spine=new THREE.Mesh(new THREE.BoxGeometry(.09,.09,3.2),
-      new THREE.MeshStandardMaterial({color:0x1c2230,roughness:.6}));
-    spine.position.set(0,2.55,.4); g.add(spine);
+    /* ---- rigid delta: swept sail, spars, kingpost and control bar ---- */
+    const span=6.2, root=2.6, sweep=1.5;
+    const sail=new THREE.BufferGeometry();
+    const verts=new Float32Array([
+       0,0,-root*0.62,   -span/2,-.42, sweep,   0,0, root*0.38,
+       0,0,-root*0.62,    0,0, root*0.38,        span/2,-.42, sweep
+    ]);
+    sail.setAttribute('position',new THREE.BufferAttribute(verts,3));
+    sail.computeVertexNormals();
+    const wing=add(new THREE.Mesh(sail,fabric));
+    wing.position.set(0,3.0,.3);
+
+    // undersurface in the lighter tone, so it reads from below
+    const under=add(new THREE.Mesh(sail.clone(),fabric2));
+    under.position.set(0,2.97,.3);
+
+    // leading edges, keel and cross tube
+    [-1,1].forEach(sx=>{
+      const le=add(new THREE.Mesh(new THREE.CylinderGeometry(.055,.045,
+        Math.hypot(span/2,root*0.62+sweep),8),frame));
+      le.position.set(sx*span/4, 2.9, .3+(sweep-root*0.62)/2);
+      le.rotation.z=sx*Math.atan2(span/2,root*0.62+sweep);
+      le.rotation.x=Math.PI/2;
+      le.rotation.order='ZYX';
+      // battens
+      for(let b2=1;b2<=3;b2++){
+        const t=b2/4;
+        const bat=add(new THREE.Mesh(new THREE.BoxGeometry(.03,.03,root*0.7*(1-t*0.45)),seam));
+        bat.position.set(sx*span/2*t, 3.0-t*.34, .3+sweep*t*0.5);
+      }
+    });
+    const keel=add(new THREE.Mesh(new THREE.CylinderGeometry(.06,.05,root+sweep*0.9,8),frame));
+    keel.rotation.x=Math.PI/2;
+    keel.position.set(0,3.0,.3+sweep*0.1);
+    const cross=add(new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,span*0.82,8),frame));
+    cross.rotation.z=Math.PI/2;
+    cross.position.set(0,2.86,.3+sweep*0.42);
+
+    // kingpost above, control bar below, rigged to both
+    const kp=add(new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.75,7),frame));
+    kp.position.set(0,3.38,.3);
+    const barY=2.0;
+    [-1,1].forEach(sx=>{
+      const up=add(new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,1.12,7),frame));
+      up.position.set(sx*.62,barY+.52,.45);
+      up.rotation.z=sx*0.22;
+    });
+    const bar=add(new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,1.3,8),frame));
+    bar.rotation.z=Math.PI/2;
+    bar.position.set(0,barY,.45);
+    [-1,1].forEach(sx=>{
+      add(gliderLine(V(0,3.74,.3), V(sx*span/2*0.8,2.78,.3+sweep*0.8), cord,.010));
+      add(gliderLine(V(sx*.62,barY+.1,.45), V(sx*span/2*0.8,2.84,.3+sweep*0.8), cord,.010));
+    });
   }
   return g;
 }
 
+/* hands on the risers, legs trailing */
+function poseGlide(P){
+  if(!P) return;
+  P.armL.rotation.set(-2.5, 0, 0.35);
+  P.armR.rotation.set(-2.5, 0, -0.35);
+  if(P.armL.knee) P.armL.knee.rotation.x=0.3;
+  if(P.armR.knee) P.armR.knee.rotation.x=0.3;
+  P.legL.rotation.set(0.22, 0, 0.07);
+  P.legR.rotation.set(0.22, 0, -0.07);
+  if(P.legL.knee) P.legL.knee.rotation.x=0.18;
+  if(P.legR.knee) P.legR.knee.rotation.x=0.18;
+}
+/* spread eagle on the way down, with a slow flutter */
+function poseDive(P,t){
+  if(!P) return;
+  const f=Math.sin(t*4)*0.08;
+  P.armL.rotation.set(-1.9+f, 0, 1.15);
+  P.armR.rotation.set(-1.9-f, 0, -1.15);
+  if(P.armL.knee) P.armL.knee.rotation.x=0.9;
+  if(P.armR.knee) P.armR.knee.rotation.x=0.9;
+  P.legL.rotation.set(0.5-f, 0, 0.32);
+  P.legR.rotation.set(0.5+f, 0, -0.32);
+  if(P.legL.knee) P.legL.knee.rotation.x=0.75;
+  if(P.legR.knee) P.legR.knee.rotation.x=0.75;
+}
+
+/* ================= streaming =================
+   What a browser can and cannot do here is worth being precise about.
+
+   It CANNOT push video to Twitch or YouTube. Those take RTMP, which is a raw
+   TCP protocol with no browser API. Going live needs OBS, or a server that
+   transcodes WebRTC into RTMP. Nothing in this file can change that.
+
+   It CAN read your live chat and react to it, which is the part that makes a
+   stream feel connected to the game. Twitch allows an anonymous read-only
+   IRC connection over WebSocket with no key and no login, so that one works
+   out of the box. The others need credentials or a relay, and the panel says
+   so rather than pretending. */
+const stream={ on:false, service:'', channel:'', sock:null, msgs:[], viewers:null,
+               status:'', votes:null, voteT:0, retry:0, overlay:true };
+
+function streamLog(from,text,colour){
+  stream.msgs.push({from,text,colour:colour||'#9fd4ff',t:performance.now()});
+  if(stream.msgs.length>80) stream.msgs.shift();
+  paintStreamOverlay();
+}
+function paintStreamOverlay(){
+  const el=document.getElementById('chatstream');
+  if(!el) return;
+  if(!stream.on||!stream.overlay){ el.style.display='none'; return; }
+  const now=performance.now();
+  const rows=stream.msgs.filter(m=>now-m.t<26000).slice(-8);
+  el.style.display=rows.length?'block':'none';
+  el.innerHTML=rows.map(m=>
+    '<div class="smsg"><b style="color:'+m.colour+'">'+esc(m.from)+'</b> '+esc(m.text)+'</div>'
+  ).join('');
+}
+function esc(t){ return String(t).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+
+/* ---- Twitch: anonymous IRC over WebSocket, no credentials needed ---- */
+function twitchConnect(channel){
+  twitchClose();
+  channel=String(channel||'').trim().toLowerCase().replace(/^#/,'').replace(/[^a-z0-9_]/g,'');
+  if(!channel){ stream.status='Enter your Twitch channel name.'; renderLobbyPanel(); return; }
+  stream.service='twitch'; stream.channel=channel;
+  stream.status='Connecting to Twitch chat…';
+  renderLobbyPanel();
+  let sock;
+  try{ sock=new WebSocket('wss://irc-ws.chat.twitch.tv:443'); }
+  catch(e){ stream.status='Could not open a connection to Twitch.'; renderLobbyPanel(); return; }
+  stream.sock=sock;
+  sock.onopen=()=>{
+    // justinfan is Twitch's documented anonymous read-only login
+    sock.send('CAP REQ :twitch.tv/tags twitch.tv/commands');
+    sock.send('PASS SCHMOOPIIE');
+    sock.send('NICK justinfan'+Math.floor(Math.random()*90000+10000));
+    sock.send('JOIN #'+channel);
+    stream.on=true; stream.retry=0;
+    stream.status='Reading chat in #'+channel+'.';
+    streamLog('GALEBREAK','connected to #'+channel,'#7bd88f');
+    renderLobbyPanel();
+  };
+  sock.onmessage=ev=>{
+    for(const raw of String(ev.data).split('\r\n')){
+      if(!raw) continue;
+      if(raw.startsWith('PING')){ sock.send('PONG :tmi.twitch.tv'); continue; }
+      const m=raw.match(/^(?:@([^ ]*) )?:([^!]+)!.* PRIVMSG #[^ ]+ :(.*)$/);
+      if(!m) continue;
+      const tags={};
+      (m[1]||'').split(';').forEach(kv=>{ const i=kv.indexOf('='); if(i>0) tags[kv.slice(0,i)]=kv.slice(i+1); });
+      const name=tags['display-name']||m[2];
+      const colour=tags.color||'#9fd4ff';
+      const text=m[3];
+      streamLog(name,text,colour);
+      handleStreamCommand(name,text);
+    }
+  };
+  sock.onclose=()=>{
+    if(stream.service!=='twitch') return;
+    stream.on=false;
+    stream.status='Twitch chat disconnected.';
+    renderLobbyPanel();
+    // come back on its own, backing off so we never hammer them
+    if(stream.retry<6){
+      const wait=Math.min(30000, 1500*Math.pow(2,stream.retry++));
+      setTimeout(()=>{ if(stream.service==='twitch') twitchConnect(stream.channel); },wait);
+    }
+  };
+  sock.onerror=()=>{ stream.status='Twitch chat connection failed.'; renderLobbyPanel(); };
+}
+function twitchClose(){
+  if(stream.sock){ try{ stream.sock.onclose=null; stream.sock.close(); }catch(e){} }
+  stream.sock=null; stream.on=false;
+}
+function streamDisconnect(){
+  stream.service=''; stream.channel='';
+  twitchClose();
+  stream.status='Disconnected.';
+  stream.msgs.length=0;
+  paintStreamOverlay();
+  renderLobbyPanel();
+}
+
+/* ---- viewers can affect the match ---- */
+function startVote(question,options,secs){
+  stream.votes={ q:question, opts:options, tally:options.map(()=>0), voted:new Set(),
+                 left:secs||30 };
+  streamLog('GALEBREAK', question+' — type '+options.map((o,i)=>(i+1)+' for '+o).join(', '), '#ffd873');
+}
+function handleStreamCommand(name,text){
+  const t=text.trim().toLowerCase();
+  if(stream.votes){
+    const n=parseInt(t,10);
+    if(n>=1 && n<=stream.votes.opts.length && !stream.votes.voted.has(name)){
+      stream.votes.voted.add(name);
+      stream.votes.tally[n-1]++;
+    }
+  }
+  if(t==='!drop' && phase==='bus'){
+    streamLog('GALEBREAK','chat says drop','#ffd873');
+  }
+  if(t==='!stats'){
+    streamLog('GALEBREAK', netName+' — level '+levelOf()+', '+profile.wins+' wins, '+
+      profile.kills+' eliminations','#7bd88f');
+  }
+}
+function updateStream(dt){
+  if(stream.votes){
+    stream.votes.left-=dt;
+    const el=document.getElementById('votebox');
+    if(el){
+      const v=stream.votes, total=Math.max(1,v.tally.reduce((a,b)=>a+b,0));
+      el.style.display='block';
+      el.innerHTML='<b>'+esc(v.q)+'</b>'+
+        v.opts.map((o,i)=>'<div class="vrow"><span>'+(i+1)+' '+esc(o)+'</span>'+
+          '<em style="width:'+Math.round(v.tally[i]/total*100)+'%"></em>'+
+          '<i>'+v.tally[i]+'</i></div>').join('')+
+        '<small>'+Math.ceil(Math.max(0,v.votes_left||v.left))+'s</small>';
+    }
+    if(stream.votes.left<=0){
+      const v=stream.votes;
+      const win=v.tally.indexOf(Math.max(...v.tally));
+      streamLog('GALEBREAK','chat chose '+v.opts[win],'#ffd873');
+      toast('Chat chose <u>'+v.opts[win]+'</u>');
+      stream.votes=null;
+      const el2=document.getElementById('votebox');
+      if(el2) el2.style.display='none';
+    }
+  }
+  if((waterTick&31)===0) paintStreamOverlay();
+}
+/* ================= creative =================
+   A flat plate, unlimited materials, a fly camera and a palette of props.
+   Everything placed is recorded in an undo stack and serialised into the
+   same map code the build pieces use, so a whole arena travels as a string. */
+const PROPS=[
+  { id:'crate',  name:'Crate',        w:1.6, h:1.6, d:1.6,  mat:'built' },
+  { id:'barrel', name:'Barrel',       w:1.1, h:1.7, d:1.1,  mat:'frame', round:true },
+  { id:'block',  name:'Block',        w:4,   h:2,   d:4,    mat:'shell' },
+  { id:'pillar', name:'Pillar',       w:1.2, h:8,   d:1.2,  mat:'frame' },
+  { id:'wallL',  name:'Long wall',    w:12,  h:5,   d:0.6,  mat:'shell' },
+  { id:'ramp',   name:'Slope',        w:5,   h:0.5, d:8,    mat:'deck', tilt:-0.42 },
+  { id:'plat',   name:'Platform',     w:10,  h:0.6, d:10,   mat:'deck' },
+  { id:'tower',  name:'Tower',        w:6,   h:14,  d:6,    mat:'shell' },
+  { id:'goal',   name:'Goal frame',   w:8,   h:6,   d:0.6,  mat:'trim' },
+  { id:'spawn',  name:'Spawn pad',    w:3,   h:0.3, d:3,    mat:'gold', spawn:true }
+];
+let creative={ on:false, fly:false, propIdx:0, undo:[], placed:[], grid:2,
+               rot:0, lastSave:'', msg:'' };
+
+function creativeMat(key){
+  if(!BOXMAT.shell) boxMaterials();
+  return ({ built:MAT.built, frame:BOXMAT.frame, shell:BOXMAT.shell,
+            deck:BOXMAT.deck, trim:BOXMAT.trim, gold:BOXMAT.gold })[key]||BOXMAT.shell;
+}
+function buildArenaCreative(){
+  boxMaterials();
+  teamPads.length=0;
+  creative.placed.length=0; creative.undo.length=0;
+  boxOffX=0; boxOffZ=0;
+  const cy=groundH(0,0);
+  // a generous plate with a grid you can actually align to
+  bSolid(420,.8,420, 0, cy-.4, 0, BOXMAT.deck);
+  for(let i=-26;i<=26;i++){
+    const o=i*8;
+    bDeco(420,.05,.08, 0, cy+.04, o, i%5===0?BOXMAT.trim:BOXMAT.frame);
+    bDeco(.08,.05,420, o, cy+.04, 0, i%5===0?BOXMAT.trim:BOXMAT.frame);
+  }
+  bDeco(420,.06,.3, 0, cy+.05, 0, BOXMAT.gold);
+  bDeco(.3,.06,420, 0, cy+.05, 0, BOXMAT.gold);
+  signBoard('CREATIVE', 0, cy+9, -30, '#ffd873', 20);
+}
+
+function propGhost(){
+  const pr=PROPS[creative.propIdx];
+  const t=creativeAim();
+  if(!creative.ghost){
+    creative.ghost=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),
+      new THREE.MeshBasicMaterial({color:0x7bd88f,transparent:true,opacity:.34,depthWrite:false}));
+    creative.ghost.frustumCulled=false;
+    scene.add(creative.ghost);
+  }
+  const gh=creative.ghost;
+  gh.visible = creative.on && !creative.buildMode;
+  if(!gh.visible) return;
+  gh.scale.set(pr.w,pr.h,pr.d);
+  gh.position.set(t.x, t.y+pr.h/2, t.z);
+  gh.rotation.set(pr.tilt||0, creative.rot, 0);
+}
+function creativeAim(){
+  const o=camera.getWorldPosition(new THREE.Vector3());
+  const d=camera.getWorldDirection(new THREE.Vector3());
+  const hits=new THREE.Raycaster(o,d,.5,90).intersectObjects(hittables,false);
+  const pt=hits.length?hits[0].point.clone():o.clone().add(d.clone().multiplyScalar(18));
+  const g=creative.grid;
+  return { x:Math.round(pt.x/g)*g, y:Math.round(pt.y/g*2)/2*g/g*1, z:Math.round(pt.z/g)*g,
+           raw:pt };
+}
+function placeProp(){
+  const pr=PROPS[creative.propIdx];
+  const t=creativeAim();
+  const y=Math.round(t.raw.y/0.5)*0.5;
+  const m=box(pr.w,pr.h,pr.d, t.x, y+pr.h/2, t.z, creativeMat(pr.mat));
+  m.rotation.set(pr.tilt||0, creative.rot, 0);
+  m.userData.prop={ id:pr.id, x:t.x, y:y, z:t.z, rot:creative.rot };
+  m.userData.harvest=null;
+  creative.placed.push(m);
+  creative.undo.push({type:'prop',mesh:m});
+  if(creative.undo.length>120) creative.undo.shift();
+  buildSound(player.pos);
+}
+function creativeUndo(){
+  const last=creative.undo.pop();
+  if(!last){ toast('Nothing to undo'); return; }
+  if(last.type==='prop'){
+    const i=creative.placed.indexOf(last.mesh);
+    if(i>=0) creative.placed.splice(i,1);
+    if(last.mesh.parent) scene.remove(last.mesh);
+    const h=hittables.indexOf(last.mesh); if(h>=0) hittables.splice(h,1);
+    if(last.mesh.userData.box){
+      const c=colliders.indexOf(last.mesh.userData.box);
+      if(c>=0) colliders.splice(c,1);
+    }
+    rebuildColGrid();
+  } else if(last.type==='piece' && last.piece){
+    removePiece(last.piece);
+  }
+  blip(300,.06,.1,'sine');
+}
+function creativeDelete(){
+  const o=camera.getWorldPosition(new THREE.Vector3());
+  const d=camera.getWorldDirection(new THREE.Vector3());
+  const hits=new THREE.Raycaster(o,d,.5,40).intersectObjects(hittables,false);
+  for(const h of hits){
+    if(h.object.userData.piece){ removePiece(h.object.userData.piece); blip(260,.07,.1,'sawtooth'); return; }
+    if(h.object.userData.prop){
+      const i=creative.placed.indexOf(h.object);
+      if(i>=0) creative.placed.splice(i,1);
+      if(h.object.parent) scene.remove(h.object);
+      const hi=hittables.indexOf(h.object); if(hi>=0) hittables.splice(hi,1);
+      if(h.object.userData.box){
+        const c=colliders.indexOf(h.object.userData.box);
+        if(c>=0) colliders.splice(c,1);
+      }
+      rebuildColGrid();
+      blip(260,.07,.1,'sawtooth');
+      return;
+    }
+  }
+}
+/* ---- named save slots, stored on the profile ---- */
+function creativeSlots(){ if(!profile.maps) profile.maps=[]; return profile.maps; }
+function creativeSave(name){
+  const code=exportMap();
+  if(!code){ mapMsg='Build something before saving.'; renderLobbyPanel(); return; }
+  name=(name||'').trim().slice(0,24)||('Map '+(creativeSlots().length+1));
+  const list=creativeSlots();
+  const hit=list.find(m=>m.name.toLowerCase()===name.toLowerCase());
+  const rec={name, code, updated:Date.now(), pieces:PIECES.size};
+  if(hit) Object.assign(hit,rec); else list.push(rec);
+  while(list.length>24) list.shift();
+  saveProfile();
+  mapMsg='Saved "'+name+'" · '+PIECES.size+' pieces.';
+  renderLobbyPanel();
+}
+function creativeLoadSlot(name){
+  const m=creativeSlots().find(x=>x.name===name);
+  if(!m){ mapMsg='No such map.'; renderLobbyPanel(); return; }
+  if(!running){ mapMsg='Start a match first, then load.'; renderLobbyPanel(); return; }
+  mapMsg=importMap(m.code);
+  creative.undo.length=0;
+  renderLobbyPanel();
+}
+function creativeDeleteSlot(name){
+  profile.maps=creativeSlots().filter(x=>x.name!==name);
+  saveProfile();
+  mapMsg='Deleted "'+name+'".';
+  renderLobbyPanel();
+}
+
+/* ---- play testing ---- */
+function creativeTest(){
+  creative.testing=!creative.testing;
+  if(creative.testing){
+    creative.wasFly=creative.fly;
+    creative.fly=false;
+    giveLoadout('box');
+    player.pos.y=groundH(player.pos.x,player.pos.z)+0.5;
+    toast('Play testing — press the same key to go back to building');
+  } else {
+    creative.fly=creative.wasFly!==false;
+    player.inv=[null,null,null,null,null];
+    setSlot(0,true);
+    toast('Back to building');
+  }
+  syncHUD();
+}
+
+function creativeTick(dt){
+  if(modeCfg().arena!=='creative') return;
+  creative.on=true;
+  if(!creative.testing) player.mats=999;
+  propGhost();
+  const el=document.getElementById('crhud');
+  if(!el) return;
+  const pr=PROPS[creative.propIdx];
+  el.style.display='block';
+  el.innerHTML=
+    '<b>CREATIVE</b>'+
+    '<div><span>mode</span>'+(creative.testing?'PLAY TESTING':
+      (creative.buildMode?'pieces':'props'))+'</div>'+
+    '<div><span>holding</span>'+(creative.buildMode?'wall / ramp / floor / cone':pr.name)+'</div>'+
+    '<div><span>grid</span>'+creative.grid+'m</div>'+
+    '<div><span>placed</span>'+(creative.placed.length+PIECES.size)+'</div>'+
+    '<div><span>fly</span>'+(creative.fly?'on':'off')+'</div>'+
+    '<i>TAB props/pieces · [ ] cycle · R rotate · G grid · F fly<br>'+
+    'X delete · Z undo · P play test · MAPS tab to save</i>'+
+    (creative.msg?'<em>'+creative.msg+'</em>':'');
+}
+/* ================= expressions =================
+   Blinking is the single cheapest thing that stops a face looking dead, so
+   it runs on everyone. Brows, jaw and eye direction are driven by what the
+   character is actually doing: hurt, aiming, shouting, or just breathing. */
+const EXPR_SET={
+  neutral:{ brow:0,    browTilt:0,    jaw:0,    squint:0,   lip:0 },
+  focus  :{ brow:-.006,browTilt:.10,  jaw:0,    squint:.35, lip:.2 },
+  hurt   :{ brow:.004, browTilt:-.22, jaw:.09,  squint:.70, lip:.5 },
+  shout  :{ brow:.009, browTilt:-.08, jaw:.16,  squint:.25, lip:.8 },
+  happy  :{ brow:.007, browTilt:.04,  jaw:.03,  squint:.45, lip:.6 },
+  dead   :{ brow:0,    browTilt:0,    jaw:.05,  squint:1,   lip:.3 }
+};
+function faceState(P){
+  if(!P||!P.face) return null;
+  const f=P.face;
+  if(!f.st) f.st={ blink:1.4+Math.random()*3, closing:0, cur:'neutral',
+                   mix:{brow:0,browTilt:0,jaw:0,squint:0,lip:0},
+                   look:{x:0,y:0}, lookT:0, hold:0 };
+  return f.st;
+}
+function setExpression(P,name,hold){
+  const st=faceState(P);
+  if(!st) return;
+  st.cur=name;
+  st.hold=hold||0.9;
+}
+function updateFace(P,dt){
+  const f=P&&P.face;
+  const st=faceState(P);
+  if(!st||!f.lidL) return;
+
+  // hold an expression for a moment, then settle back
+  if(st.hold>0){ st.hold-=dt; if(st.hold<=0) st.cur='neutral'; }
+  const want=EXPR_SET[st.cur]||EXPR_SET.neutral;
+  for(const k in st.mix) st.mix[k]+=(want[k]-st.mix[k])*Math.min(1,dt*7);
+
+  // blink: fast down, slower up, with a random gap between
+  st.blink-=dt;
+  if(st.blink<=0 && st.closing<=0){ st.closing=0.16; st.blink=2.2+Math.random()*4; }
+  let lidClose=st.mix.squint*0.55;
+  if(st.closing>0){
+    st.closing-=dt;
+    const t=1-(st.closing/0.16);
+    lidClose=Math.max(lidClose, Math.sin(t*Math.PI));
+  }
+  if(st.cur==='dead') lidClose=1;
+  f.lidL.rotation.x=lidClose*1.35;
+  f.lidR.rotation.x=lidClose*1.35;
+
+  // eyes drift, then flick somewhere new
+  st.lookT-=dt;
+  if(st.lookT<=0){
+    st.lookT=0.8+Math.random()*2.6;
+    st.look.x=(Math.random()*2-1)*0.22;
+    st.look.y=(Math.random()*2-1)*0.12;
+  }
+  [['irisL','pupilL','eyeL'],['irisR','pupilR','eyeR']].forEach(([ir,pu,ey])=>{
+    if(!f[ir]||!f[ey]) return;
+    const bx=f[ey].position.x, by=f[ey].position.y;
+    f[ir].position.x=bx+st.look.x*0.010;
+    f[ir].position.y=by+st.look.y*0.008;
+    if(f[pu]){ f[pu].position.x=bx+st.look.x*0.011; f[pu].position.y=by+st.look.y*0.009; }
+  });
+
+  if(f.browL){
+    f.browL.position.y=f.browL.userData.y0+st.mix.brow;
+    f.browR.position.y=f.browR.userData.y0+st.mix.brow;
+    f.browL.rotation.z= .12+st.mix.browTilt;
+    f.browR.rotation.z=-.12-st.mix.browTilt;
+  }
+  if(f.jaw) f.jaw.rotation.x=st.mix.jaw;
+  if(f.lipU) f.lipU.position.y=f.lipU.userData.y0-st.mix.lip*0.004;
+}
+function updateFaces(dt){
+  if(avParts) updateFace(avParts,dt);
+  // only the ones close enough to read are worth animating
+  const cam=camera.getWorldPosition(new THREE.Vector3());
+  for(const b of bots){
+    if(!b.alive||!b.face) continue;
+    if(b.pos.distanceToSquared(cam)>900) continue;
+    updateFace(b,dt);
+  }
+  for(const r of remotePlayers.values()){
+    if(!r.alive||!r.face) continue;
+    if(r.pos.distanceToSquared(cam)>900) continue;
+    updateFace(r,dt);
+  }
+}
 /* ================= player avatar (third person) ================= */
 let avatar=null, avParts=null;
 function buildAvatar(){
@@ -7098,7 +9310,8 @@ function buildViewModels(){
   if(glider && glider.parent) glider.parent.remove(glider);
   glider=makeGliderMesh();
   glider.visible=false;
-  camera.add(glider);
+  glider.traverse(o=>{ if(o.isMesh) o.castShadow=true; });
+  scene.add(glider);
 }
 
 function refreshViewGun(){
@@ -7157,8 +9370,10 @@ function spawnBot(name,jumpAt){
 
   g.position.copy(bus.start); scene.add(g);
 
-  const bot={ name,g,torso:f.parts.torso,head:f.parts.head,
+  const bot={ name,g,torso:f.parts.torso,head:f.parts.head, face:f.parts.face,
+    shL:f.parts.shL, shR:f.parts.shR, hips:f.parts.hips,
     legL:f.parts.legL, legR:f.parts.legR, armL:f.parts.armL, armR:f.parts.armR, chute,
+    phaseOff:RNG()*6.283,
     pos:bus.start.clone(), vel:new THREE.Vector3(),
     hp:100, shield:rnd(0,100)|0, alive:true,
     state:'bus', jumpAt:jumpAt, land:new THREE.Vector3(),
@@ -7376,6 +9591,7 @@ function updateBots(dt){
   // with a hundred of them, only a third think per frame
   const heavy=bots.length>40, slices=3;
   if(heavy) botPhase=(botPhase+1)%slices;
+  if(modeCfg().arena==='ball') return;     // handled by the ball logic instead
   let idx=-1;
   for(const b of bots){
     idx++;
@@ -7495,6 +9711,10 @@ function updateBots(dt){
     b.g.rotation.z=0;
     poseWalk(b, b.moving?Math.sin(b.step):0, b.moving?Math.cos(b.step):0,
              !!(b.weapon&&b.enemy));
+    if(!b.moving && b.torso){
+      const bt=performance.now()/1000+(b.phaseOff||0);
+      b.torso.rotation.x=Math.sin(bt*1.4)*0.012;
+    }
     b.g.position.y += Math.abs(Math.sin(b.step))*0.035*(b.moving?1:0);
 
     if(storm.armed && toC>storm.r){
@@ -7515,11 +9735,43 @@ function updateBots(dt){
 }
 
 /* one walk pose used by the player, the bots and everyone on the network */
+/* Real walking is not two legs swinging. The hips drop onto the loaded leg,
+   the torso counter-rotates against the arms, the shoulders roll, and the
+   head holds steady while everything beneath it moves. Those four things do
+   most of the work of making a figure look alive. */
 function poseWalk(P,sw,cw,aiming){
-  P.legL.rotation.x=sw*.62;
-  P.legR.rotation.x=-sw*.62;
-  if(P.legL.knee) P.legL.knee.rotation.x=Math.max(0,-sw)*1.05+.05;
-  if(P.legR.knee) P.legR.knee.rotation.x=Math.max(0, sw)*1.05+.05;
+  const gait=Math.min(1,Math.abs(sw)+Math.abs(cw));
+
+  // legs, with the knee only bending on the back swing
+  P.legL.rotation.x=sw*.68;
+  P.legR.rotation.x=-sw*.68;
+  P.legL.rotation.z= .03+sw*.04;
+  P.legR.rotation.z=-.03-sw*.04;
+  if(P.legL.knee) P.legL.knee.rotation.x=Math.max(0,-sw)*1.18+.06;
+  if(P.legR.knee) P.legR.knee.rotation.x=Math.max(0, sw)*1.18+.06;
+
+  // hips: drop onto whichever leg is carrying the weight, and sway with it
+  if(P.hips){
+    P.hips.rotation.z=cw*.085*gait;
+    P.hips.rotation.y=-sw*.10*gait;
+    P.hips.position.x=cw*.035*gait;
+  }
+  // torso counter-rotates against the legs, and leans into the stride
+  if(P.torso){
+    P.torso.rotation.y=sw*.13*gait;
+    P.torso.rotation.z=-cw*.045*gait;
+    P.torso.rotation.x=gait*.06;
+  }
+  // shoulders roll with the swing
+  if(P.shL) P.shL.position.y=(P.shL.userData.y0||P.shL.position.y)-Math.max(0,sw)*.02*gait;
+  if(P.shR) P.shR.position.y=(P.shR.userData.y0||P.shR.position.y)-Math.max(0,-sw)*.02*gait;
+
+  // the head stays level while the body moves under it
+  if(P.head){
+    P.head.rotation.z=-cw*.03*gait;
+    P.head.rotation.y=-sw*.05*gait;
+  }
+
   if(!P.armL) return;
   if(aiming){
     P.armL.rotation.set(-1.32,0,.34);
@@ -7527,15 +9779,17 @@ function poseWalk(P,sw,cw,aiming){
     if(P.armL.knee) P.armL.knee.rotation.x=-.62;
     if(P.armR.knee) P.armR.knee.rotation.x=-.28;
   } else {
-    P.armL.rotation.set(-sw*.48,0,.10);
-    P.armR.rotation.set( sw*.48,0,-.10);
-    const bend=.24+Math.max(0,sw)*.35;
-    if(P.armL.knee) P.armL.knee.rotation.x=-bend;
-    if(P.armR.knee) P.armR.knee.rotation.x=-(.24+Math.max(0,-sw)*.35);
+    // arms swing opposite the legs, with a little outward splay under load
+    P.armL.rotation.set(-sw*.56,0,.12+Math.abs(sw)*.05);
+    P.armR.rotation.set( sw*.56,0,-.12-Math.abs(sw)*.05);
+    if(P.armL.knee) P.armL.knee.rotation.x=-(.26+Math.max(0,sw)*.42);
+    if(P.armR.knee) P.armR.knee.rotation.x=-(.26+Math.max(0,-sw)*.42);
   }
 }
 
+
 function killBot(bot,by){
+  if(bot && bot.face) setExpression(bot,'dead',999);
   if(!bot.alive) return;
   if(netConnected&&netHost) netSend({type:'botkill', i:bots.indexOf(bot), by:(by==='you'?netName:by)});
   bot.alive=false; scene.remove(bot.g);
@@ -7555,6 +9809,8 @@ function killBot(bot,by){
   }
   if(by==='you'){
     player.kills++; feed('You',bot.name); killSound(); updateModeBadge(); showElim(bot.name);
+    setExpression(avParts,'happy',1.6);
+    if(bot.face) setExpression(bot,'dead',999);
     if(modeCfg().arena==='box'){ boxAwardRound(true); return; }
   }
   else feed(by==='the storm'?'The storm':by,bot.name);
@@ -7588,6 +9844,7 @@ function shoot(){
   gunShot(g.kind,null);
 
   if(!cheats.steady) player.kick += g.kind==='sniper'?.075:(g.kind==='shotgun'?.055:.017);
+  setExpression(avParts,'focus',.5);
   addShake(g.kind==='sniper'?.42:(g.kind==='shotgun'?.34:.10));
 
   const origin=camera.getWorldPosition(new THREE.Vector3());
@@ -7635,7 +9892,7 @@ function shoot(){
     if(h){
       end=h.point.clone();
       if(h.object.userData.ball){
-        ballKick(dir.clone().normalize(), (t.kind==='shotgun'?3.2:1.5)*(t.dmg/12));
+        ballKick(dir.clone().normalize(), (g.kind==='shotgun'?2.4:1.5)*(t.dmg/11));
         hitmarker(); anyHit=true; continue;
       }
       if(h.object.userData.target){ hitTarget(h.object); anyHit=true; continue; }
@@ -7731,6 +9988,7 @@ function breakProp(o){
 }
 
 function damageBot(bot,dmg,head,defer){
+  if(modeCfg().arena==='ball') return;
   if(roundLock) return;               // no free hits before the bell
   if(cheats.oneshot) dmg=9999;
   const total=dmg;
@@ -7745,6 +10003,7 @@ function damageBot(bot,dmg,head,defer){
 
 function swing(){
   player.fireCd=.55; player.recoil=1; swingWhoosh();
+  if(ballSwing()) return;
   const origin=camera.getWorldPosition(new THREE.Vector3());
   const dir=camera.getWorldDirection(new THREE.Vector3());
   const hits=new THREE.Raycaster(origin,dir,.3,4.2).intersectObjects(hittables,false);
@@ -7764,6 +10023,7 @@ function swing(){
 let lastHitBy='';
 function hurtPlayer(amount, from, byName){
   if(ended||winPending||spectating) return;
+  if(modeCfg().arena==='ball') return;        // galeball is non-contact
   if(byName) lastHitBy=byName;
   if(roundLock) return;               // staging lobby and the countdown are safe
   if(cheats.god && cheatsAllowed()){
@@ -7777,6 +10037,7 @@ function hurtPlayer(amount, from, byName){
   const f=document.getElementById('dmgflash');
   f.style.opacity=.85; setTimeout(()=>f.style.opacity=0,90);
   if(from){ addCue(from,'dmg'); hurtSound(shieldHit,amount+s); addShake(.35); }
+  setExpression(avParts,'hurt',1.1);
   syncHUD();
   if(player.hp<=0){
     player.hp=0;
@@ -8660,6 +10921,19 @@ function bindInput(){
     }
     if(act==='rotate' && player.slot>=6){ buildRot=(buildRot+1)%4; blip(820,.04,.09,'triangle'); }
     if(act==='clip'){ clipSave(); return; }
+    if(modeCfg().arena==='creative'){
+      if(e.code==='Tab'){ e.preventDefault(); creative.buildMode=!creative.buildMode;
+        setSlot(creative.buildMode?6:0,true); uiClick(); return; }
+      if(e.code==='BracketLeft'){ creative.propIdx=(creative.propIdx+PROPS.length-1)%PROPS.length; blip(620,.04,.07,'sine'); return; }
+      if(e.code==='BracketRight'){ creative.propIdx=(creative.propIdx+1)%PROPS.length; blip(700,.04,.07,'sine'); return; }
+      if(e.code==='KeyG'&&!editing){ creative.grid=creative.grid===1?2:(creative.grid===2?4:1);
+        toast('Grid '+creative.grid+'m'); return; }
+      if(e.code==='KeyZ'){ creativeUndo(); return; }
+      if(e.code==='KeyP'){ creativeTest(); return; }
+      if(e.code==='KeyX'){ creativeDelete(); return; }
+      if(e.code==='KeyF'){ creative.fly=!creative.fly; toast(creative.fly?'Fly on':'Fly off'); return; }
+      if(act==='rotate'){ creative.rot=(creative.rot+Math.PI/4)%(Math.PI*2); return; }
+    }
     if(act==='chat') openChat('all');
     if(act==='teamChat') openChat('team');
     if(act==='accept' && pendingInvite){
@@ -8730,7 +11004,7 @@ function bindInput(){
     keys[code]=false;
     if(keyAction[code]==='aim') ads=false;
   });
-  window.__auto=()=>!!keys[S.keys.fire];
+  window.__auto=()=>!!keys[S.keys.fire]||touch.firing;
 
   renderer.domElement.addEventListener('click',()=>{
     if(running&&!paused){ tryLock(); return; }
@@ -8759,7 +11033,7 @@ function bindInput(){
       renderer.domElement.style.cursor='none';
     } else {
       renderer.domElement.style.cursor='crosshair';
-      if(lockBusy) return;                       // we asked for this, do not pause
+      if(lockBusy||touch.on) return;             // we asked for this, do not pause
       if(running&&!ended&&!paused&&!lockFailed) setPaused(true);
     }
   });
@@ -8780,6 +11054,10 @@ function goFullscreen(){
 }
 // fullscreen first, then lock — embedded pages often only grant the lock once fullscreen
 function enterImmersive(){
+  if(touch.on){                     // phones have no pointer lock to acquire
+    goFullscreen().catch(()=>{});
+    return;
+  }
   lockFailed=false;
   lockBusy=true;
   clearTimeout(lockBusyT);
@@ -8828,6 +11106,7 @@ function fallbackLook(dt){
 function fireOnce(){
   if(myEmote) stopEmote();
   if(editing){ editToggle(); return; }
+  if(modeCfg().arena==='creative' && !creative.buildMode){ placeProp(); return; }
   if(roundLock) return;
   if(player.fireCd>0||ended||spectating||respawnT>0) return;
   if(player.slot===0){ swing(); return; }
@@ -8861,6 +11140,27 @@ function updateBus(dt){
 function updateAir(dt){
   const gliding=player.pos.y<GLIDE_ALT;
   glider.visible=gliding;
+  if(gliding){
+    // hang it above the player and let it bank with the steering
+    glider.position.set(player.pos.x, player.pos.y, player.pos.z);
+    glider.rotation.set(0, yaw+Math.PI, 0);
+    glider.rotation.z = -(player.lean||0)*0.5;
+    glider.rotation.x = 0.12;
+  }
+
+  // the body is drawn during the drop as well, posed under the canopy
+  if(avatar && !spectating){
+    avatar.visible=true;
+    avatar.position.set(player.pos.x,player.pos.y,player.pos.z);
+    avatar.rotation.y=yaw+Math.PI;
+    avatar.rotation.z=-(player.lean||0)*0.35;
+    if(avParts){
+      avParts.held.visible=false;
+      if(gliding) poseGlide(avParts);
+      else poseDive(avParts, performance.now()/1000);
+      avParts.head.rotation.x=clamp(pitch*.5,-.5,.5);
+    }
+  }
 
   const fwd=V(-Math.sin(yaw),0,-Math.cos(yaw)), right=V(Math.cos(yaw),0,-Math.sin(yaw));
   let mv=V(0,0,0);
@@ -8868,6 +11168,14 @@ function updateAir(dt){
   if(down('back'))    mv.sub(fwd);
   if(down('right'))   mv.add(right);
   if(down('left'))    mv.sub(right);
+  if(touch.on && (touch.move.x||touch.move.y)){
+    mv.addScaledVector(right, touch.move.x);
+    mv.addScaledVector(fwd,  -touch.move.y);
+  }
+
+  // how hard you are steering sideways, smoothed, so the canopy banks into it
+  const steer=(down('right')?1:0)-(down('left')?1:0);
+  player.lean=(player.lean||0)+((steer)-(player.lean||0))*Math.min(1,dt*5);
   const hspd=gliding?19:34;
   if(mv.lengthSq()>0) mv.normalize().multiplyScalar(hspd);
 
@@ -8884,10 +11192,11 @@ function updateAir(dt){
   const d=Math.hypot(player.pos.x,player.pos.z);
   if(d>PLAY_R-3){ player.pos.x*=(PLAY_R-3)/d; player.pos.z*=(PLAY_R-3)/d; }
 
-  camera.position.set(player.pos.x,player.pos.y+EYE,player.pos.z);
+  placeCamera(V(player.pos.x,player.pos.y+EYE,player.pos.z), dt);
 
   if(landed){
     phase='ground'; glider.visible=false; player.grounded=true;
+    if(avParts){ avParts.held.visible=true; }
     if(!(netConnected && !netHost) && modeCfg().phases!=='box'){
       storm.armed=true; storm.timer=PH()[0].wait/effStorm();
     }
@@ -8900,9 +11209,20 @@ function updateAir(dt){
   }
 }
 
+/* Falling and gliding always show the body: there is no point owning a
+   canopy you cannot see. The camera also backs off a little while the glider
+   is open so the whole wing fits in frame. */
+function thirdActive(){
+  if(phase==='air') return true;
+  return S.thirdPerson;
+}
+function airCamBoost(){
+  if(phase!=='air') return 0;
+  return (player.pos.y<GLIDE_ALT) ? 3.0 : 1.2;
+}
 function placeCamera(headPos, dt){
-  if(!S.thirdPerson){ camera.position.copy(headPos); return; }
-  const dist=S.camDist*(1-player.aim*.45);
+  if(!thirdActive()){ camera.position.copy(headPos); return; }
+  const dist=S.camDist*(1-player.aim*.45)+airCamBoost();
   const side=S.camSide*(1-player.aim*.5);
   const dir=V(-Math.sin(yaw),0,-Math.cos(yaw));
   const right=V(Math.cos(yaw),0,-Math.sin(yaw));
@@ -8933,10 +11253,34 @@ function updatePlayer(dt){
   if(down('back'))    mv.sub(fwd);
   if(down('right'))   mv.add(right);
   if(down('left'))    mv.sub(right);
+  if(touch.on && (touch.move.x||touch.move.y)){
+    mv.addScaledVector(right, touch.move.x);
+    mv.addScaledVector(fwd,  -touch.move.y);
+  }
+  if(modeCfg().arena==='creative' && creative.fly){
+    const f2=V(-Math.sin(yaw),0,-Math.cos(yaw)), r2=V(Math.cos(yaw),0,-Math.sin(yaw));
+    const fv=V(0,0,0);
+    if(down('forward')) fv.add(f2);
+    if(down('back'))    fv.sub(f2);
+    if(down('right'))   fv.add(r2);
+    if(down('left'))    fv.sub(r2);
+    if(down('jump'))    fv.y+=1;
+    if(down('sprint'))  fv.y-=1;
+    const fs=down('sprint')&&down('jump')?30:17;
+    if(fv.lengthSq()>0) player.pos.addScaledVector(fv.normalize(),fs*dt);
+    player.vel.set(0,0,0);
+    player.grounded=false;
+  }
   const sprint = S.toggleSprint ? sprintLatch : down('sprint');
   const speed=(sprint?9.6:6.1)*(1-player.aim*.42)*(cheats.speed?2.5:1);
-  if(mv.lengthSq()>0){ mv.normalize().multiplyScalar(speed); player.bob+=dt*(sprint?13:9); }
-  else player.bob+=dt*1.5;
+  if(mv.lengthSq()>0){
+    mv.normalize().multiplyScalar(speed);
+    // a pace tied to ground speed: the foot is planted for the time it takes
+    // the body to travel one stride, so it does not slide
+    const stride=sprint?2.45:1.95;
+    player.bob+=dt*(speed/stride)*Math.PI;
+  }
+  else player.bob+=dt*1.1;
 
   // footstep rhythm
   if(player.grounded && mv.lengthSq()>0){
@@ -8984,7 +11328,7 @@ function updatePlayer(dt){
 
   // the visible body
   if(avatar){
-    const show = S.thirdPerson && !spectating;
+    const show = thirdActive() && !spectating;
     avatar.visible = show;
     if(show){
       avatar.position.set(player.pos.x,player.pos.y,player.pos.z);
@@ -8998,15 +11342,26 @@ function updatePlayer(dt){
       } else {
         avatar.rotation.z=0;
         avParts.held.visible=true;
-        const sw=(mv.lengthSq()>0)?Math.sin(player.bob*1.0):0;
-        poseWalk(avParts, sw, Math.cos(player.bob), !!heldGun());
+        const moving=mv.lengthSq()>0;
+        const sw=moving?Math.sin(player.bob):0;
+        const cwv=moving?Math.cos(player.bob):0;
+        poseWalk(avParts, sw, cwv, !!heldGun());
+        if(!moving && avParts.torso){
+          // breathing, and a slow drift of weight from one foot to the other
+          const t=performance.now()/1000;
+          const br=Math.sin(t*1.5)*0.012;
+          avParts.torso.rotation.x=br;
+          avParts.torso.position.y=(avParts.torso.userData.y0||avParts.torso.position.y)+br*0.5;
+          if(avParts.hips) avParts.hips.rotation.z=Math.sin(t*0.42)*0.02;
+          avatar.rotation.z=Math.sin(t*0.37)*0.006;
+        }
         avParts.head.rotation.x=clamp(pitch*.55,-.5,.5);
         avParts.held.rotation.x=clamp(-pitch,-1,1);
         avatarHeld();
       }
     }
   }
-  if(viewGroup) viewGroup.visible = !S.thirdPerson && !spectating;
+  if(viewGroup) viewGroup.visible = !thirdActive() && !spectating;
 
   player.recoil=Math.max(0,player.recoil-dt*7);
   player.kick += (0-player.kick)*Math.min(1,dt*8);
@@ -9019,6 +11374,9 @@ function updatePlayer(dt){
     const lt=nearestTargetPoint();
     if(lt) faceToward(lt,dt,26);
   }
+
+  aimAssist(dt, aiming);
+  autoFire(dt);
 
   // holding aim with the aimbot on drags the view onto the nearest target
   if(cheats.aim && aiming && !spectating){
@@ -9278,6 +11636,9 @@ function startOverCountdown(sec){
 }
 
 function toLobby(){
+  const tv=document.getElementById('touch');
+  if(tv) tv.style.display='none';
+  document.body.classList.remove('portrait');
   clearOverCountdown();
   running=false; paused=false; ended=true; winPending=false;
   timeScale=1; slowmoT=0;
@@ -9302,6 +11663,8 @@ function leaveMatch(){
 }
 function setPaused(p){
   paused=p;
+  const tv=document.getElementById('touch');
+  if(tv&&touch.on) tv.style.display=(p||!running)?'none':'block';
   document.getElementById('pause').classList.toggle('hidden',!p);
   if(p){
     // never leave the menu up with the cursor captured
@@ -9463,10 +11826,12 @@ function giveLoadout(kind){
     player.inv[3]={type:'heal',kind:'shieldsm',count:5};
     player.mats=999; player.shield=100;
   } else if(kind==='ball'){
-    player.inv[0]=wep('smg');
-    player.inv[1]=wep('shotgun');
-    player.inv[2]={type:'heal',kind:'shieldsm',count:4};
-    player.mats=500; player.shield=50;
+    // a sport, not a firefight: the pickaxe and a pile of materials
+    player.inv=[null,null,null,null,null];
+    player.mats=500; player.shield=100; player.hp=100;
+  } else if(kind==='creative'){
+    player.inv=[null,null,null,null,null];
+    player.mats=999; player.shield=100; player.hp=100;
   } else if(kind==='train'){
     player.inv[0]=wep('rifle');
     player.inv[1]=wep('smg');
@@ -9489,13 +11854,16 @@ function giveLoadout(kind){
 }
 function arenaSpawn(i){
   const cfg=modeCfg();
+  if(cfg.arena==='creative'){
+    return V(0, groundH(0,0)+0.4, 14);
+  }
   if(cfg.arena==='ball'){
     const side=(i%2===0)?-1:1;
     const x=side*(30+((i/2|0)%3)*6), z=((i%4)-1.5)*9;
     return V(x, groundH(x,z)+0.4, z);
   }
   if(cfg.arena==='training'){
-    const x=(i===0?0:(i-2.5)*7), z=(i===0?-8:30);
+    const x=(i===0?0:(i-1.5)*8), z=(i===0?2:-16);
     return V(x, groundH(x,z)+0.4, z);
   }
   if(cfg.arena==='box'){
@@ -9532,6 +11900,7 @@ function respawnPlayer(){
   syncHUD(); refreshAlive();
 }
 function armBots(){
+  if(modeCfg().arena==='ball'){ ballSetupBots(); return; }
   const train=modeCfg().arena==='training';
   for(const b of bots){
     if(!b.alive) continue;
@@ -9612,6 +11981,8 @@ function resetGame(){
   bounce.position.set(-120,60,-100); scene.add(bounce);
 
   scene.add(camera);
+  ball.mesh=null; ball.goalA=null; ball.goalB=null;
+  endEdit(); PIECES.clear(); builds.length=0;
   buildWorld(); buildStorm(); buildViewModels(); buildBus();
 
   player.pos.copy(bus.start); player.vel.set(0,0,0);
@@ -9636,13 +12007,18 @@ function resetGame(){
   ambientKill=rnd(35,55);
 
   phase='bus'; ended=false; winPending=false; toastTimer=0; sprintLatch=false;
-  endEdit(); PIECES.clear(); builds.length=0; ghostGroup=null; buildRot=0;
+  endEdit(); ghostGroup=null; buildRot=0;
   hideCoach(); elimT=0; shake=0;
   trainStats.shots=trainStats.hits=trainStats.heads=trainStats.targets=0;
   trainStats.streak=trainStats.best=0; trainStats.t=0; trainAggro=false;
+  challenge={on:false,t:0,hits:0};
   const th=document.getElementById('trainhud'); if(th) th.style.display='none';
+  const ch=document.getElementById('crhud'); if(ch) ch.style.display='none';
+  creative.on=false; creative.buildMode=false; creative.fly=false;
+  creative.placed.length=0; creative.undo.length=0; creative.rot=0;
+  if(creative.ghost){ scene.remove(creative.ghost); creative.ghost=null; }
   kcBuf.length=0; stopKillcam(); lastHitBy='';
-  ballScore.me=0; ballScore.them=0; ball.mesh=null; ballMsgT=0;
+  ballScore.me=0; ballScore.them=0; ballMsgT=0;
   boxScore.me=0; boxScore.them=0; roundPhase=''; roundT=0; roundLock=false;
   boxIdx=0; boxBarrier=null; barrierCol=null;
   showRoundText('');
@@ -9651,7 +12027,7 @@ function resetGame(){
   if(emotePrevTP!==null){ S.thirdPerson=emotePrevTP; emotePrevTP=null; }
   myEmote=null; emoteWheel=false;
   document.getElementById('emotewheel').style.display='none';
-  timeScale=1; slowmoT=0; currentPOI=''; builds.length=0;
+  timeScale=1; slowmoT=0; currentPOI='';
   buildAvatar();
   document.getElementById('spectate').style.display='none';
   document.getElementById('poi').style.opacity=0;
@@ -10142,6 +12518,8 @@ function tick(){
   if(menuOpen && document.pointerLockElement && document.exitPointerLock && !lockBusy){
     document.exitPointerLock();
   }
+  if(renderer && turnActive())
+    renderer.domElement.style.cursor = turn.dragging ? 'grabbing' : 'grab';
   const lobbyVisible = !document.getElementById('menu').classList.contains('hidden');
   if(lobbyVisible && !running){
     updateLobby(rawDt);
@@ -10196,7 +12574,8 @@ function tick(){
       if(c.position.x>1000) c.position.x=-1000;
     }
     colGridTick();
-    if((waterTick&31)===0){ updateModeBadge(); applyModeHud(); }
+    if((waterTick&31)===0){ updateModeBadge(); applyModeHud();
+      if(touch.on){ buildTouchSlots(); checkOrientation(); } }
     updateRounds(dt);
     if(respawnT>0){
       respawnT-=dt;
@@ -10209,6 +12588,7 @@ function tick(){
     voiceUpdatePositions();
     if((waterTick&63)===0) paintChat();
     updateCoach(dt); updateElim(dt); updateCrosshair(); trainTick(dt); clipTick(dt); kcSample(dt);
+    updateFaces(dt); creativeTick(dt); updateStream(dt);
     updateBall(dt);
     cheatTick(dt);
     updateEsp(dt);
@@ -10267,6 +12647,8 @@ function init(){
   sizeCues();
 
   bindInput();
+  bindTurntable();
+  setupTouch();
   initPost();
   applySettings();
   updateMenuKeys();
@@ -10296,6 +12678,11 @@ function start(){
 }
 function buildAndLaunch(){
   resetGame();
+  if(touch.on){
+    const tv=document.getElementById('touch');
+    if(tv) tv.style.display='block';
+    buildTouchSlots(); checkOrientation();
+  }
   clipStart();
   document.getElementById('loading').classList.add('hidden');
   document.getElementById('hud').classList.remove('hidden');
@@ -10367,6 +12754,15 @@ document.getElementById('setReset').addEventListener('click',()=>{
 document.querySelectorAll('.lnavbtn[data-tab]').forEach(b=>{
   b.addEventListener('click',()=>{ uiClick(); setLobbyTab(b.dataset.tab); });
 });
+const gsBtn=document.getElementById('getSparks');
+if(gsBtn) gsBtn.addEventListener('click',e=>{
+  e.stopPropagation(); uiClick();
+  setLobbyTab('shop');
+  setTimeout(()=>{
+    const t=document.getElementById('sparkTop');
+    if(t&&t.scrollIntoView) t.scrollIntoView({behavior:'smooth',block:'start'});
+  },60);
+});
 document.querySelectorAll('.oppbtn').forEach(b=>{
   b.addEventListener('click',()=>{
     S.botLobby = b.dataset.bots==='1';
@@ -10400,6 +12796,11 @@ document.getElementById('againBtn').addEventListener('click',()=>{ clearOverCoun
 document.getElementById('resumeBtn').addEventListener('click',()=>setPaused(false));
 document.getElementById('leaveBtn').addEventListener('click',()=>{ uiClick(); leaveMatch(); });
 document.getElementById('lobbyBtn').addEventListener('click',()=>{ uiClick(); toLobby(); });
+if(location.search.indexOf('paid=1')>=0){
+  history.replaceState(null,'',location.pathname);
+  setTimeout(()=>{ buyMsg2='Payment received — your sparks are on the way.';
+                   setLobbyTab('shop'); },900);
+}
 Promise.resolve()
   .then(loadSettings)
   .then(loadProfile)
@@ -10409,7 +12810,8 @@ Promise.resolve()
                 x.classList.toggle('on',(x.dataset.bots==='1')===!!S.botLobby));
               const fb=document.getElementById('fillBots');
               if(fb) fb.classList.toggle('on',!!S.botLobby);
-              setOnlineMode(true); setTimeout(updateOnlineChip,400); })
+              setOnlineMode(true); setTimeout(updateOnlineChip,400);
+              if(S.liveChannel) setTimeout(()=>liveConnect(S.liveChannel),1200); })
   .catch(()=>{ init(); updateWallet(); setLobbyTab('play'); });
 </script>
 </body>
