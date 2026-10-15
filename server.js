@@ -108,7 +108,19 @@ const SPARK_PACKS = [
   { id:'s3', sparks:6200,  price:599,  label:'Crate of sparks',  bonus:'24% extra' },
   { id:'s4', sparks:13500, price:1199, label:'Vault of sparks',  bonus:'35% extra' }
 ];
-const CURRENCY = process.env.CURRENCY || 'usd';
+const CURRENCY = envAny('CURRENCY') || 'usd';
+
+/* Stripe turns Managed Payments on by default now, and it refuses any product
+   without a tax code. Two ways out, and which you want depends on whether you
+   want Stripe handling tax for you:
+     - set STRIPE_TAX_CODE to a code from stripe.com/docs/tax/tax-codes and
+       keep Managed Payments on, or
+     - leave it unset and Managed Payments is switched off per session, which
+       is the simpler path while testing.
+   For in-game currency the usual choice is a digital goods or electronically
+   supplied services code — check the list rather than taking my word for it,
+   because the right code depends on what you sell and where you sell it. */
+const STRIPE_TAX_CODE = envAny('STRIPE_TAX_CODE');
 
 function stripeForm(obj, prefix, out){
   out = out || [];
@@ -134,7 +146,7 @@ async function stripeCall(path, body){
 async function createCheckout(acct, packId){
   const pack = SPARK_PACKS.find(p => p.id === packId);
   if (!pack) throw new Error('Unknown pack.');
-  const session = await stripeCall('checkout/sessions', {
+  const body = {
     mode:'payment',
     success_url: PUBLIC_URL + '/?paid=1',
     cancel_url:  PUBLIC_URL + '/?paid=0',
@@ -147,7 +159,20 @@ async function createCheckout(acct, packId){
     'metadata[user]': acct.user,
     'metadata[pack]': pack.id,
     'metadata[sparks]': String(pack.sparks)
-  });
+  };
+  if (STRIPE_TAX_CODE) body['line_items[0][price_data][product_data][tax_code]'] = STRIPE_TAX_CODE;
+  else body['managed_payments[enabled]'] = 'false';
+
+  let session;
+  try {
+    session = await stripeCall('checkout/sessions', body);
+  } catch (e) {
+    // older accounts reject the managed_payments flag outright; retry without it
+    if (/managed_payments/i.test(e.message) && body['managed_payments[enabled]']) {
+      delete body['managed_payments[enabled]'];
+      session = await stripeCall('checkout/sessions', body);
+    } else throw e;
+  }
   return session.url;
 }
 /* Stripe signs every webhook. An unsigned or mis-signed call is somebody
@@ -740,6 +765,7 @@ server.listen(PORT, () => {
   console.log(`  version galebreak-2 · accounts on · google sign in ${GOOGLE_CLIENT_ID?'configured':'not configured'}`);
   console.log(`  subscriber check ${YOUTUBE_CHANNEL_ID?'configured':'off'} · redeem codes: ${Object.keys(REDEEM_CODES).join(', ')}`);
   console.log(`  payments ${paymentsOn()?'configured':'off'}` +
+    (paymentsOn() ? (STRIPE_TAX_CODE ? '  [tax code set]' : '  [managed payments off]') : '') +
     (paymentsOn() ? '' :
       '  [secret:' + (STRIPE_SECRET?'yes':'MISSING') +
       ' webhook:' + (STRIPE_WEBHOOK_SECRET?'yes':'MISSING') +
