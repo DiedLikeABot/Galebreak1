@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>GALEBREAK</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
@@ -25,6 +28,8 @@
   /* the four arms are placed from the centre point outwards, so the gap can
      grow with your spread instead of the whole box being stretched */
   #cross{position:absolute;left:50%;top:50%;width:0;height:0;opacity:.95}
+  #cross.locked i{background:#ff6a4d!important;box-shadow:0 0 5px rgba(255,106,77,.8)!important}
+  #cross.locked b{background:#ff6a4d!important}
   #cross i{position:absolute;background:#fff;border-radius:1px;
     box-shadow:0 0 2px #000,0 0 4px rgba(0,0,0,.6)}
   #cross b{position:absolute;background:#fff;border-radius:50%;
@@ -290,6 +295,59 @@
     .lbrand{font-size:17px;letter-spacing:3px}
     .xpbar{width:90px}
   }
+
+  /* ---------- touch controls ----------
+     Laid out for thumbs: movement bottom left, look anywhere on the right,
+     actions in reach of the right thumb. Everything sits inside the safe
+     area so nothing hides under a notch or a home bar. */
+  #touch{position:fixed;inset:0;display:none;z-index:40;
+    pointer-events:none;touch-action:none;
+    padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px)
+            env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+  body.touch #touch{display:block}
+  body.touch #cross{transform:translate(-50%,-50%) scale(.85)}
+  #tstick{position:absolute;left:26px;bottom:34px;width:150px;height:150px;
+    border-radius:50%;border:2px solid rgba(255,255,255,.16);
+    background:rgba(8,14,24,.3);pointer-events:auto}
+  #tnub{position:absolute;left:50%;top:50%;width:62px;height:62px;margin:-31px 0 0 -31px;
+    border-radius:50%;background:rgba(255,255,255,.3);
+    border:2px solid rgba(255,255,255,.5);transition:background .1s}
+  #tlook{position:absolute;right:0;top:0;bottom:0;width:58%;pointer-events:auto}
+  .tbtn{position:absolute;pointer-events:auto;border-radius:50%;
+    background:rgba(10,18,30,.56);border:2px solid rgba(255,255,255,.22);
+    color:#e6eef7;font-family:inherit;font-size:11px;letter-spacing:1px;
+    display:flex;align-items:center;justify-content:center;text-align:center;
+    user-select:none;-webkit-user-select:none;line-height:1.1}
+  .tbtn.on{background:rgba(232,56,13,.72);border-color:#ff9a7a}
+  .tbtn:active{background:rgba(232,56,13,.6)}
+  #tfire{right:26px;bottom:40px;width:96px;height:96px;font-size:13px}
+  #tjump{right:140px;bottom:46px;width:74px;height:74px}
+  #taim{right:34px;bottom:152px;width:66px;height:66px}
+  #tuse{right:126px;bottom:150px;width:60px;height:60px;font-size:10px}
+  #tbuild{right:28px;bottom:232px;width:62px;height:62px;font-size:10px}
+  #tswap{right:120px;bottom:226px;width:58px;height:58px;font-size:10px}
+  #tassist{right:206px;bottom:152px;width:56px;height:56px;font-size:9px}
+  #tslots{position:absolute;left:26px;bottom:200px;display:flex;gap:8px;pointer-events:auto}
+  #tslots .tsl{width:48px;height:48px;border-radius:8px;background:rgba(10,18,30,.56);
+    border:2px solid rgba(255,255,255,.2);color:#cfe0f0;font-size:11px;
+    display:flex;align-items:center;justify-content:center;pointer-events:auto}
+  #tslots .tsl.on{border-color:#ff9a7a;background:rgba(232,56,13,.5);color:#fff}
+  #tmenu{position:absolute;left:26px;top:14px;width:46px;height:46px;border-radius:8px;
+    background:rgba(10,18,30,.6);border:2px solid rgba(255,255,255,.2);
+    color:#cfe0f0;font-size:18px;display:flex;align-items:center;justify-content:center;
+    pointer-events:auto}
+  #rotate{position:fixed;inset:0;z-index:90;display:none;background:#070b12;
+    color:#dbe6f2;font-family:inherit;align-items:center;justify-content:center;
+    flex-direction:column;text-align:center;padding:40px}
+  body.portrait #rotate{display:flex}
+  #rotate b{font-size:22px;letter-spacing:4px;margin-bottom:10px}
+  #rotate span{color:#8ea4bd;font-size:14px;line-height:1.6;max-width:320px}
+  @media (max-width:900px){
+    body.touch #hud{font-size:12px}
+    body.touch #map{width:120px;height:120px}
+    body.touch #trainhud,body.touch #crhud{display:none!important}
+    body.touch .lpanel{max-height:62vh;overflow-y:auto}
+  }
   .hidden{display:none!important}
 
   #cheats{justify-content:flex-start;padding:24px}
@@ -306,6 +364,14 @@
     background:rgba(255,255,255,.07);padding:3px 8px;border-radius:3px;min-width:104px;display:inline-block}
   .cheatrow .st{margin-left:auto;font-size:11px;letter-spacing:2px;color:#6f8399}
   .cheatrow .st.on{color:#86efac}
+  #livechat{position:absolute;right:22px;bottom:150px;width:330px;display:none;
+    font-size:13px;line-height:1.45;text-shadow:0 2px 5px #000;pointer-events:none}
+  #livechat .lmsg{margin-bottom:3px;color:#e6eef7;word-wrap:break-word}
+  #livechat .lcheer{margin-top:6px;font-size:11px;letter-spacing:2px;color:#ffd873}
+  #livevote{position:absolute;left:50%;top:120px;transform:translateX(-50%);display:none;
+    background:rgba(4,8,16,.78);border:1px solid rgba(159,212,255,.4);border-radius:6px;
+    padding:9px 16px;font-size:13px;color:#cfe0f0;pointer-events:none;text-align:center}
+  #livevote b{color:#9fd4ff;font-size:16px;display:block}
   #clipflash{position:absolute;left:50%;top:92px;transform:translateX(-50%);display:none;
     background:rgba(232,56,13,.92);color:#fff;font-size:12px;letter-spacing:3px;
     padding:8px 18px;border-radius:4px;transition:opacity .5s;pointer-events:none}
@@ -488,6 +554,21 @@
 </head>
 <body>
 
+
+<div id="rotate"><b>TURN YOUR PHONE</b><span>GALEBREAK plays in landscape. Rotate the device and the game will start.</span></div>
+<div id="touch">
+  <div id="tmenu">☰</div>
+  <div id="tstick"><div id="tnub"></div></div>
+  <div id="tlook"></div>
+  <div id="tslots"></div>
+  <div class="tbtn" id="tfire">FIRE</div>
+  <div class="tbtn" id="tjump">JUMP</div>
+  <div class="tbtn" id="taim">AIM</div>
+  <div class="tbtn" id="tuse">PICK<br>UP</div>
+  <div class="tbtn" id="tbuild">BUILD</div>
+  <div class="tbtn" id="tswap">EDIT</div>
+  <div class="tbtn" id="tassist">AUTO<br>ON</div>
+</div>
 <div id="hud" class="hidden">
   <div id="scope"><i></i><i></i></div>
   <canvas id="cues"></canvas>
@@ -537,6 +618,8 @@
   <div id="chatstream"></div>
   <div id="votebox"></div>
   <div id="clipflash">● CLIP SAVED</div>
+  <div id="livechat"></div>
+  <div id="livevote"></div>
   <div id="killcam"></div>
   <div id="elimbanner"></div>
   <div id="emotewheel">
@@ -569,6 +652,7 @@
       <button class="lnavbtn" data-tab="locker">LOCKER</button>
       <button class="lnavbtn" data-tab="shop">ITEM SHOP</button>
       <button class="lnavbtn" data-tab="maps">MAPS</button>
+      <button class="lnavbtn" data-tab="stream">STREAM</button>
       <button class="lnavbtn" data-tab="stream">STREAM</button>
       <button class="lnavbtn" data-tab="unlock">UNLOCK</button>
       <button class="lnavbtn" data-tab="friends">FRIENDS</button>
@@ -763,9 +847,10 @@ const DEFAULTS = {
   cloudShadows:.55,
   saturation:1.08, vignette:.45, grain:.03, aberration:.55, timeOfDay:'midday',
   volMaster:.95, volShots:1, volSteps:1, volUI:1, volAmbient:0,
-  volVoice:1, voiceProximity:true, voiceMode:'ptt', voiceWho:'team',
+  volVoice:1, voiceProximity:true, voiceMode:'ptt', voiceWho:'team', micDevice:'',
+  liveChannel:'', liveOverlay:true, liveLines:7, liveCommands:true, streamerMode:false,
   cues:true, minimap:true, killFeed:true, dmgNums:true, hitMarker:true, stormPanel:true,
-  showTips:true, killcam:true, botLobby:true, toggleSprint:false, autoReload:true, autoPickup:false,
+  showTips:true, killcam:true, botLobby:true, aimAssist:0, autoFire:false, toggleSprint:false, autoReload:true, autoPickup:false,
   botCount:19, botSkill:1, stormSpeed:1, startMats:0
 };
 let S = JSON.parse(JSON.stringify(DEFAULTS));
@@ -861,6 +946,9 @@ const SCHEMA = [
  { group:'Gameplay', items:[
    { k:'showTips', label:'Show control tips while playing', type:'toggle' },
    { k:'killcam', label:'Killcam when you are eliminated', type:'toggle' },
+   { k:'aimAssist', label:'Aim assist', type:'select',
+     opts:[[0,'Off'],[1,'Light'],[2,'Standard'],[3,'Strong']] },
+   { k:'autoFire', label:'Fire automatically when on target', type:'toggle' },
    { k:'botLobby', label:'Bot lobby (fill empty seats with AI)', type:'toggle' },
    { k:'toggleSprint', label:'Sprint toggles instead of held', type:'toggle' },
    { k:'autoReload', label:'Reload automatically when empty', type:'toggle' },
@@ -1238,6 +1326,9 @@ const CROSS_STYLE={
 function updateCrosshair(){
   const el=document.getElementById('cross');
   if(!el) return;
+  // tint the crosshair while the assist has hold of someone
+  if(assistTarget && S.aimAssist) el.classList.add('locked');
+  else el.classList.remove('locked');
   const arms=el.querySelectorAll('i'), dot=el.querySelector('b');
   if(arms.length<4||!dot) return;
 
@@ -1702,6 +1793,439 @@ function updateKillcam(dt){
   return true;
 }
 
+/* ================= aim assist =================
+   A thumb on glass cannot track a moving target the way a mouse can, so the
+   view is given a gentle pull toward whoever is already near the crosshair.
+   This is deliberately not an aimbot: the strength falls off sharply as the
+   target moves away from the centre, it stops entirely outside a narrow
+   cone, it never fires for you unless you ask, and it ignores teammates.
+   On a desktop it is off unless you turn it on. */
+const ASSIST_LEVELS=[
+  { name:'off',      cone:0,    pull:0,    snap:0    },
+  { name:'light',    cone:0.085, pull:2.2, snap:0.18 },
+  { name:'standard', cone:0.125, pull:4.0, snap:0.30 },
+  { name:'strong',   cone:0.175, pull:6.5, snap:0.46 }
+];
+let assistTarget=null, assistLock=0, autoFireT=0;
+
+function assistCandidates(){
+  const out=[];
+  for(const b of bots) if(b.alive && b.state==='ground') out.push({pos:b.pos, obj:b});
+  for(const r of remotePlayers.values())
+    if(r.alive && !isMate(r)) out.push({pos:r.pos, obj:r});
+  return out;
+}
+/* Returns the target nearest the crosshair, and how far off centre it is. */
+function assistPick(origin,fwd,range,cone){
+  let best=null, bestAng=cone;
+  for(const c of assistCandidates()){
+    // aim at the upper chest, which is where a hit actually lands
+    const aimPt=V(c.pos.x, c.pos.y+1.45, c.pos.z);
+    const to=aimPt.clone().sub(origin);
+    const dist=to.length();
+    if(dist<1.2||dist>range) continue;
+    to.multiplyScalar(1/dist);
+    const dot=to.dot(fwd);
+    if(dot<=0) continue;
+    const ang=Math.acos(Math.min(1,dot));
+    // a distant target subtends less angle, so widen the cone a little for it
+    const scaled=ang*Math.max(1,dist/26);
+    if(scaled>=bestAng) continue;
+    if(segBlocked(origin, aimPt)) continue;
+    bestAng=scaled;
+    best={point:aimPt, ang, dist, obj:c.obj};
+  }
+  return best;
+}
+function aimAssist(dt,aiming){
+  const lvl=ASSIST_LEVELS[clamp(S.aimAssist|0,0,3)];
+  assistTarget=null;
+  if(!lvl.pull || !running || paused || spectating || ended) return;
+  const g=heldGun();
+  if(!g) return;
+  if(roundLock) return;
+
+  const origin=camera.getWorldPosition(new THREE.Vector3());
+  const fwd=camera.getWorldDirection(new THREE.Vector3());
+  const range=Math.min(WEAPONS[g.kind].range, 95);
+  // aiming down sights tightens the cone and strengthens the pull, the way
+  // console aim assist does
+  const cone=lvl.cone*(aiming?0.8:1)*(touch.on?1:0.85);
+  const t=assistPick(origin,fwd,range,cone);
+  if(!t){ assistLock=Math.max(0,assistLock-dt*3); return; }
+
+  assistTarget=t;
+  assistLock=Math.min(1,assistLock+dt*5);
+
+  // falls off with angle: full strength dead centre, nothing at the edge
+  const centred=1-Math.min(1,t.ang/cone);
+  const strength=lvl.pull*centred*centred*(aiming?1.25:1)*assistLock;
+
+  const d=t.point.clone().sub(origin).normalize();
+  const ty=Math.atan2(-d.x,-d.z), tp=Math.asin(clamp(d.y,-1,1));
+  let dy=ty-yaw;
+  while(dy> Math.PI) dy-=Math.PI*2;
+  while(dy<-Math.PI) dy+=Math.PI*2;
+  const k=Math.min(0.65, strength*dt);
+  yaw  += dy*k;
+  pitch = clamp(pitch + (tp-pitch)*k*0.85, -1.45, 1.45);
+}
+
+/* ---- auto fire ----
+   Only pulls the trigger when the crosshair is genuinely on someone and the
+   line is clear. It will not shoot through walls and it will not shoot
+   teammates. There is a short settle delay so it does not fire the instant a
+   target crosses the screen. */
+function autoFire(dt){
+  if(!S.autoFire || !running || paused || spectating || ended || roundLock) return;
+  const g=heldGun();
+  if(!g || player.reloading>0) return;
+  if(g.ammo<=0) return;
+
+  const origin=camera.getWorldPosition(new THREE.Vector3());
+  const fwd=camera.getWorldDirection(new THREE.Vector3());
+  const hits=new THREE.Raycaster(origin,fwd,0.4,WEAPONS[g.kind].range)
+    .intersectObjects(hittables,false);
+  let good=false;
+  for(const h of hits){
+    const u=h.object.userData;
+    if(u.bot&&u.bot.alive){ good=true; break; }
+    if(u.remote&&u.remote.alive&&!isMate(u.remote)){ good=true; break; }
+    if(u.target){ good=true; break; }
+    // the first solid thing in the way ends the search
+    if(h.object!==terrain && !u.bot && !u.remote) break;
+    if(h.object===terrain) break;
+  }
+  if(!good){ autoFireT=0; return; }
+  autoFireT+=dt;
+  if(autoFireT<0.10) return;               // a beat, so it feels aimed
+  if(player.fireCd>0) return;
+  fireOnce();
+}
+/* ================= touch controls =================
+   A phone has no pointer lock, no keyboard and a thumb in front of the
+   screen. Movement is a real analogue stick rather than four fake key
+   presses, look is a drag anywhere on the right half, and the buttons sit
+   where a thumb can reach them. */
+const touch={ on:false, move:{x:0,y:0}, moveId:null, lookId:null,
+              lastX:0, lastY:0, firing:false, stickC:{x:0,y:0}, R:60 };
+function isTouchDevice(){
+  return ('ontouchstart' in window) ||
+         (navigator.maxTouchPoints>0 && !window.matchMedia('(pointer:fine)').matches);
+}
+function checkOrientation(){
+  if(!touch.on) return;
+  document.body.classList.toggle('portrait',
+    window.innerHeight>window.innerWidth && running);
+}
+function cycleBuildSlot(){
+  const order=[6,7,8,9];
+  const i=order.indexOf(player.slot);
+  setSlot(order[(i+1)%order.length]);
+  buildTouchSlots();
+}
+function buildTouchSlots(){
+  const box=document.getElementById('tslots');
+  if(!box||!touch.on) return;
+  const cells=[{n:0,t:'AXE'},{n:1,t:'1'},{n:2,t:'2'},{n:3,t:'3'},{n:4,t:'4'},{n:5,t:'5'}];
+  const sig=cells.map(c=>c.n===player.slot?'1':'0').join('');
+  if(box.dataset.sig===sig) return;              // only redraw when it changes
+  box.dataset.sig=sig;
+  box.innerHTML=cells.map(c=>
+    '<div class="tsl'+(player.slot===c.n?' on':'')+'" data-slot="'+c.n+'">'+c.t+'</div>').join('');
+  box.querySelectorAll('[data-slot]').forEach(b=>{
+    b.addEventListener('touchstart',e=>{
+      e.preventDefault(); e.stopPropagation();
+      setSlot(+b.dataset.slot);
+      buildTouchSlots();
+    },{passive:false});
+  });
+}
+function setupTouch(){
+  if(!isTouchDevice()) return;
+  touch.on=true;
+  document.body.classList.add('touch');
+
+  // the desktop defaults will not run on a phone, so start somewhere sensible
+  if(!S.__mobileTuned){
+    S.__mobileTuned=true;
+    S.quality='low'; S.renderScale=72; S.shadows='off'; S.shadowRate=4;
+    S.grassOn=false; S.ssao=0; S.godrays=0; S.dof=0; S.bloom=.3; S.bloomIters=1;
+    S.cloudShadows=false; S.botCount=11; S.showFps=false; S.fov=82;
+    S.aimAssist=2; S.autoFire=true;        // a thumb needs the help
+    saveSettings();
+    try{ applyQuality(S.quality); }catch(e){}
+  }
+
+  const stick=document.getElementById('tstick');
+  const nub=document.getElementById('tnub');
+  const look=document.getElementById('tlook');
+  if(!stick||!look) return;
+
+  const stickRect=()=>{
+    const r=stick.getBoundingClientRect();
+    touch.stickC={x:r.left+r.width/2, y:r.top+r.height/2};
+    touch.R=r.width/2;
+  };
+  stickRect();
+  window.addEventListener('resize',()=>{ stickRect(); checkOrientation(); });
+  window.addEventListener('orientationchange',
+    ()=>setTimeout(()=>{ stickRect(); checkOrientation(); },250));
+
+  const setNub=(dx,dy)=>{
+    nub.style.transform='translate('+dx+'px,'+dy+'px)';
+    nub.style.background=(dx||dy)?'rgba(255,255,255,.52)':'rgba(255,255,255,.3)';
+  };
+  function handleStick(t){
+    let dx=t.clientX-touch.stickC.x, dy=t.clientY-touch.stickC.y;
+    const d=Math.hypot(dx,dy), max=touch.R;
+    if(d>max){ dx*=max/d; dy*=max/d; }
+    setNub(dx,dy);
+    // dead zone then a smooth ramp, so walking slowly is possible
+    const mag=Math.min(1,Math.hypot(dx,dy)/max);
+    const live=mag<0.14?0:(mag-0.14)/0.86;
+    const ang=Math.atan2(dy,dx);
+    touch.move.x=Math.cos(ang)*live;
+    touch.move.y=Math.sin(ang)*live;
+  }
+
+  stick.addEventListener('touchstart',e=>{
+    e.preventDefault();
+    const t=e.changedTouches[0];
+    touch.moveId=t.identifier;
+    stickRect(); handleStick(t);
+  },{passive:false});
+
+  look.addEventListener('touchstart',e=>{
+    e.preventDefault();
+    const t=e.changedTouches[0];
+    touch.lookId=t.identifier;
+    touch.lastX=t.clientX; touch.lastY=t.clientY;
+  },{passive:false});
+
+  document.addEventListener('touchmove',e=>{
+    for(const t of e.changedTouches){
+      if(t.identifier===touch.moveId){ e.preventDefault(); handleStick(t); }
+      else if(t.identifier===touch.lookId){
+        e.preventDefault();
+        const sn=(S.sens||1)*0.0042;
+        yaw-=(t.clientX-touch.lastX)*sn;
+        pitch-=(t.clientY-touch.lastY)*sn;
+        pitch=clamp(pitch,-1.45,1.45);
+        touch.lastX=t.clientX; touch.lastY=t.clientY;
+      }
+    }
+  },{passive:false});
+
+  const endTouch=e=>{
+    for(const t of e.changedTouches){
+      if(t.identifier===touch.moveId){
+        touch.moveId=null; touch.move.x=touch.move.y=0; setNub(0,0);
+      }
+      if(t.identifier===touch.lookId) touch.lookId=null;
+    }
+  };
+  document.addEventListener('touchend',endTouch);
+  document.addEventListener('touchcancel',endTouch);
+
+  const hold=(id,onDown,onUp)=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('touchstart',e=>{
+      e.preventDefault(); e.stopPropagation();
+      el.classList.add('on'); onDown&&onDown();
+    },{passive:false});
+    const up=e=>{ if(e) e.preventDefault(); el.classList.remove('on'); onUp&&onUp(); };
+    el.addEventListener('touchend',up);
+    el.addEventListener('touchcancel',up);
+  };
+
+  hold('tfire', ()=>{
+    touch.firing=true;
+    if(editing) editToggle();
+    else if(phase==='ground') fireOnce();
+  }, ()=>{ touch.firing=false; });
+  hold('tjump', ()=>{
+    keys[S.keys.jump]=true;
+    if(window.doAction) window.doAction('jump');
+  }, ()=>{ keys[S.keys.jump]=false; });
+  hold('taim', ()=>{ ads=true; }, ()=>{ ads=false; });
+  hold('tuse',   ()=>{ if(window.doAction) window.doAction('interact'); });
+  hold('tswap',  ()=>{ tryEdit(); });
+  hold('tbuild', ()=>{ cycleBuildSlot(); });
+  hold('tassist', ()=>{
+    S.autoFire=!S.autoFire;
+    S.aimAssist=S.autoFire?2:0;
+    saveSettings();
+    const el=document.getElementById('tassist');
+    if(el) el.innerHTML='AUTO<br>'+(S.autoFire?'ON':'OFF');
+    toast(S.autoFire?'Aim assist and auto fire <u>on</u>':'Aim assist and auto fire <u>off</u>');
+  });
+  const ta=document.getElementById('tassist');
+  if(ta) ta.innerHTML='AUTO<br>'+(S.autoFire?'ON':'OFF');
+
+  const menu=document.getElementById('tmenu');
+  if(menu) menu.addEventListener('touchstart',e=>{
+    e.preventDefault(); setPaused(!paused);
+  },{passive:false});
+
+  // stop the page itself from scrolling or zooming under the game
+  document.addEventListener('gesturestart',e=>e.preventDefault());
+  document.body.addEventListener('touchmove',e=>{
+    if(running) e.preventDefault();
+  },{passive:false});
+
+  buildTouchSlots();
+  checkOrientation();
+}
+
+/* ================= live chat =================
+   Twitch's IRC gateway accepts anonymous read-only connections over a plain
+   WebSocket, so a channel's chat can be read with no key, no account and no
+   server in the middle. That is the only one of the big platforms that can
+   be done honestly from a web page, and it is done properly here:
+   IRCv3 tags for colour and display name, PING answered, reconnect with
+   backoff, and a hard cap on what is kept in memory. */
+const live={
+  sock:null, channel:'', state:'off', tries:0, backoff:1000,
+  msgs:[], viewers:0, lastPing:0, timer:0,
+  votes:null, voteT:0, cheers:0, shoutT:0
+};
+const LIVE_MAX=120;
+
+function liveSet(state,note){
+  live.state=state;
+  live.note=note||'';
+  if(lobbyTab==='stream') renderLobbyPanel();
+  paintLiveHud();
+}
+function liveConnect(channel){
+  channel=(channel||'').trim().toLowerCase().replace(/^@/,'').replace(/[^a-z0-9_]/g,'');
+  if(!channel){ liveSet('off','Enter your channel name.'); return; }
+  liveDisconnect(true);
+  live.channel=channel;
+  S.liveChannel=channel; saveSettings();
+  liveSet('connecting','Connecting to '+channel+'…');
+  let sock;
+  try{ sock=new WebSocket('wss://irc-ws.chat.twitch.tv:443'); }
+  catch(e){ liveSet('error','Could not open a connection.'); return; }
+  live.sock=sock;
+
+  sock.onopen=()=>{
+    // anonymous login: any nick beginning justinfan is accepted read-only
+    const nick='justinfan'+(10000+Math.floor(Math.random()*89999));
+    sock.send('CAP REQ :twitch.tv/tags twitch.tv/commands');
+    sock.send('PASS SCHMOOPIIE');
+    sock.send('NICK '+nick);
+    sock.send('JOIN #'+channel);
+    live.tries=0; live.backoff=1000;
+  };
+  sock.onmessage=ev=>{
+    for(const raw of String(ev.data).split('\r\n')){
+      if(!raw) continue;
+      if(raw.startsWith('PING')){ sock.send('PONG :tmi.twitch.tv'); continue; }
+      liveParse(raw);
+    }
+  };
+  sock.onerror=()=>{ liveSet('error','Connection problem.'); };
+  sock.onclose=()=>{
+    live.sock=null;
+    if(live.state==='off') return;
+    // reconnect with backoff, because a dropped chat should heal itself
+    live.tries++;
+    const wait=Math.min(30000, live.backoff*Math.pow(1.7,Math.min(live.tries,6)));
+    liveSet('retrying','Reconnecting in '+Math.round(wait/1000)+'s…');
+    clearTimeout(live.timer);
+    live.timer=setTimeout(()=>{ if(live.state!=='off') liveConnect(live.channel); },wait);
+  };
+}
+function liveDisconnect(quiet){
+  clearTimeout(live.timer);
+  const sk=live.sock;
+  live.sock=null;
+  if(!quiet) live.state='off';
+  try{ if(sk) sk.close(); }catch(e){}
+  if(!quiet) liveSet('off','');
+}
+function liveParse(raw){
+  // @tags :nick!user@host PRIVMSG #chan :message
+  let tags={}, rest=raw;
+  if(raw[0]==='@'){
+    const sp=raw.indexOf(' ');
+    raw.slice(1,sp).split(';').forEach(kv=>{
+      const i=kv.indexOf('=');
+      if(i>0) tags[kv.slice(0,i)]=kv.slice(i+1);
+    });
+    rest=raw.slice(sp+1);
+  }
+  if(rest.includes(' 366 ')||rest.includes(' JOIN ')){
+    if(live.state!=='live'){ liveSet('live','Reading chat from '+live.channel+'.'); }
+    return;
+  }
+  const m=rest.match(/^:([^!]+)![^ ]+ PRIVMSG #[^ ]+ :(.*)$/);
+  if(!m) return;
+  const user=tags['display-name']||m[1];
+  const text=m[2];
+  const colour=tags.color||'';
+  const mod=tags.mod==='1'||(tags.badges||'').includes('broadcaster');
+  const sub=(tags.badges||'').includes('subscriber');
+  liveMessage({user,text,colour,mod,sub});
+}
+function liveMessage(msg){
+  live.msgs.push(msg);
+  if(live.msgs.length>LIVE_MAX) live.msgs.shift();
+  paintLiveHud();
+  if(S.liveCommands) liveCommand(msg);
+}
+
+/* ---- viewer commands ---- */
+function liveCommand(m){
+  const t=m.text.trim().toLowerCase();
+  if(t==='!cheer'||t==='!gg'){
+    live.cheers++;
+    live.shoutT=2.2;
+    return;
+  }
+  if(t.startsWith('!drop ')&&phase==='bus'){
+    const where=t.slice(6).trim().slice(0,18);
+    if(!live.votes){ live.votes=new Map(); live.voteT=0; }
+    live.votes.set(m.user, where);
+    return;
+  }
+  if(t==='!where'){ return; }
+}
+function liveTick(dt){
+  if(live.shoutT>0){
+    live.shoutT-=dt;
+    if(live.shoutT<=0) paintLiveHud();
+  }
+  if(live.votes && phase!=='bus'){ live.votes=null; }
+}
+function liveTopVote(){
+  if(!live.votes||!live.votes.size) return null;
+  const count=new Map();
+  for(const v of live.votes.values()) count.set(v,(count.get(v)||0)+1);
+  let best=null,bn=0;
+  for(const [k,n] of count) if(n>bn){ bn=n; best=k; }
+  return best?{name:best,votes:bn,total:live.votes.size}:null;
+}
+
+/* ---- on-screen chat, sized for a stream ---- */
+function paintLiveHud(){
+  const el=document.getElementById('livechat');
+  if(!el) return;
+  const show=S.liveOverlay && live.state==='live' && !!live.msgs.length;
+  el.style.display=show?'block':'none';
+  if(!show) return;
+  const rows=live.msgs.slice(-S.liveLines);
+  el.innerHTML=rows.map(m=>{
+    const safe=m.text.replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+    const col=m.colour||(m.mod?'#7bd88f':(m.sub?'#c4b5fd':'#9fd4ff'));
+    return '<div class="lmsg"><b style="color:'+col+'">'+
+      (m.mod?'⚔ ':'')+m.user.replace(/[<>&]/g,'')+'</b> '+safe+'</div>';
+  }).join('')+
+  (live.shoutT>0?'<div class="lcheer">'+live.cheers+' cheers</div>':'');
+}
 /* ================= clip recorder =================
    The canvas is recorded continuously in rolling segments. A file is only
    built when you ask for one, so this costs memory and nothing else. Each
@@ -2186,12 +2710,53 @@ function micLevel(){
   m.level=Math.max(rms, m.level*0.86);
   return Math.min(1, m.level*4.2);
 }
+/* Device names are hidden until permission is granted, so the list is only
+   worth reading once the microphone is already open. */
+let micList=[];
+async function refreshMicList(){
+  try{
+    const all=await navigator.mediaDevices.enumerateDevices();
+    micList=all.filter(d=>d.kind==='audioinput'&&d.deviceId);
+  }catch(e){ micList=[]; }
+  if(lobbyTab==='friends') renderLobbyPanel();
+  return micList;
+}
+async function setMicDevice(id){
+  S.micDevice=id||'';
+  saveSettings();
+  // reopen the input on the new device and hand the new track to every peer
+  const wasOn=voice.on;
+  const talking=voice.talking;
+  if(voice.stream){ voice.stream.getTracks().forEach(t=>t.stop()); voice.stream=null; }
+  voice.on=false; voice.meter=null;
+  if(!wasOn) return;
+  const ok=await voiceEnable();
+  if(!ok) return;
+  for(const pc of voice.peers.values()){
+    try{
+      const sender=pc.getSenders().find(sd=>sd.track&&sd.track.kind==='audio');
+      const track=voice.stream.getAudioTracks()[0];
+      if(sender&&track) await sender.replaceTrack(track);
+    }catch(e){}
+  }
+  voiceTalk(S.voiceMode==='open'?true:talking);
+}
+
 async function voiceEnable(){
   if(voice.stream) return true;
   try{
-    voice.stream=await navigator.mediaDevices.getUserMedia({
-      audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,
-             channelCount:1, sampleRate:48000}});
+    const au={ echoCancellation:true, noiseSuppression:true, autoGainControl:true,
+               channelCount:1, sampleRate:48000 };
+    if(S.micDevice) au.deviceId={exact:S.micDevice};
+    try{
+      voice.stream=await navigator.mediaDevices.getUserMedia({audio:au});
+    }catch(err){
+      // a saved device that has since been unplugged should not block voice
+      if(S.micDevice){ S.micDevice=''; saveSettings(); delete au.deviceId;
+        voice.stream=await navigator.mediaDevices.getUserMedia({audio:au}); }
+      else throw err;
+    }
+    refreshMicList();
     const openMic=S.voiceMode==='open';
     voice.stream.getAudioTracks().forEach(t=>t.enabled=openMic);
     voice.on=true;
@@ -6913,6 +7478,51 @@ function renderLobbyPanel(){
         '<button class="ghost small" id="voteMode">VOTE: NEXT MODE</button>'+
       '</div>'+
       '<div class="buyline'+(stream.on?' good':'')+'">'+(stream.status||'Not connected.')+'</div>';
+  } else if(lobbyTab==='stream'){
+    const st=live.state;
+    const dot=st==='live'?'#4ade80':(st==='connecting'||st==='retrying'?'#ffd873':'#64748b');
+    el.innerHTML='<div class="ptitle">STREAM</div>'+
+      '<div class="psub">Read your live chat into the game, and let viewers take part. '+
+        'Nothing here broadcasts video — see the note at the bottom for why.</div>'+
+
+      '<div class="setgroup">Twitch chat</div>'+
+      '<div class="prow"><label>Channel</label>'+
+        '<input id="liveCh" maxlength="26" placeholder="your twitch name" value="'+
+          (S.liveChannel||'').replace(/"/g,'')+'" style="text-transform:lowercase">'+
+        '<button class="ghost small" id="liveGo" style="margin:0">'+
+          (st==='off'||st==='error'?'CONNECT':'DISCONNECT')+'</button></div>'+
+      '<div class="diagbox"><span><i style="display:inline-block;width:8px;height:8px;'+
+        'border-radius:50%;background:'+dot+';margin-right:7px"></i>'+
+        st.toUpperCase()+'</span>'+
+        '<span>MESSAGES <b>'+live.msgs.length+'</b></span>'+
+        '<span>CHEERS <b>'+live.cheers+'</b></span></div>'+
+      '<div class="buyline'+(st==='live'?' good':'')+'">'+(live.note||'')+'</div>'+
+
+      '<div class="setgroup">On screen</div>'+
+      '<div class="prow"><label>Show chat in game</label>'+
+        '<button class="sw'+(S.liveOverlay?' on':'')+'" id="liveOv"></button></div>'+
+      '<div class="prow"><label>Lines shown</label>'+
+        '<input id="liveLn" type="range" min="3" max="14" step="1" value="'+S.liveLines+'" '+
+        'style="flex:1"><span class="hintsm">'+S.liveLines+'</span></div>'+
+      '<div class="prow"><label>Viewer commands</label>'+
+        '<button class="sw'+(S.liveCommands?' on':'')+'" id="liveCmd"></button>'+
+        '<span class="hintsm">!drop &lt;place&gt; votes your landing spot · !cheer</span></div>'+
+      '<div class="prow"><label>Streamer mode</label>'+
+        '<button class="sw'+(S.streamerMode?' on':'')+'" id="liveSafe"></button>'+
+        '<span class="hintsm">hides your account name and room codes on screen</span></div>'+
+
+      '<div class="setgroup">The other platforms</div>'+
+      '<div class="psub" style="font-size:12px;line-height:1.7">'+
+        '<b>Twitch</b> works with no key and no account because its chat gateway accepts '+
+        'anonymous read-only connections.<br>'+
+        '<b>YouTube</b> needs an API key and burns quota per poll, so it has to run through '+
+        'your own server rather than the browser.<br>'+
+        '<b>Kick</b> and <b>TikTok</b> publish no public chat API; every library that reads '+
+        'them scrapes private endpoints that break without warning.<br><br>'+
+        '<b>And none of them can be broadcast to from a web page.</b> Going live needs RTMP, '+
+        'which is a raw TCP socket, and browsers have no such thing. Anything claiming '+
+        'otherwise is re-encoding on a server you are paying for. Capture this tab in OBS '+
+        'or Streamlabs as you would any other game.</div>';
   } else if(lobbyTab==='maps'){
     const code=exportMap();
     const list=savedMaps();
@@ -7006,6 +7616,16 @@ function renderLobbyPanel(){
         [['none','NO ONE'],['friends','FRIENDS'],['team','TEAM + FRIENDS'],['all','EVERYONE']].map(([v,l])=>
           '<button class="oppbtn'+(S.voiceWho===v?' on':'')+'" data-vwho="'+v+'">'+l+'</button>').join('')+
         '</div></div>'+
+      (voice.on&&micList.length>1
+        ? '<div class="prow"><label>Microphone in</label>'+
+          '<select id="micPick" style="flex:1;background:rgba(4,8,16,.6);color:#fff;'+
+          'border:1px solid rgba(255,255,255,.18);border-radius:4px;padding:7px 9px;'+
+          'font-family:inherit;font-size:12px">'+
+          micList.map(d=>'<option value="'+d.deviceId+'"'+
+            (S.micDevice===d.deviceId?' selected':'')+'>'+
+            (d.label||'Input '+(micList.indexOf(d)+1)).replace(/[<>]/g,'')+'</option>').join('')+
+          '</select></div>'
+        : '')+
       '<div class="buyline'+(voice.on?' good':'')+'">'+voiceStatusLine()+'</div>'+
       '<div class="prow"><label>Chat</label><span class="hintsm">'+
         prettyKey(S.keys.chat)+' for everyone · '+prettyKey(S.keys.teamChat)+' for your squad</span></div>';
@@ -7023,6 +7643,30 @@ function renderLobbyPanel(){
 }
 function bindPanel(){
   if(lobbyTab==='account') mountGoogleButton();
+  const lg=document.getElementById('liveGo');
+  if(lg) lg.addEventListener('click',()=>{
+    uiClick();
+    if(live.state==='off'||live.state==='error')
+      liveConnect(document.getElementById('liveCh').value);
+    else liveDisconnect();
+  });
+  const lc=document.getElementById('liveCh');
+  if(lc) lc.addEventListener('keydown',e=>{
+    e.stopPropagation();
+    if(e.key==='Enter') document.getElementById('liveGo').click();
+  });
+  const lo=document.getElementById('liveOv');
+  if(lo) lo.addEventListener('click',()=>{ S.liveOverlay=!S.liveOverlay; saveSettings();
+    paintLiveHud(); renderLobbyPanel(); uiClick(); });
+  const lcm=document.getElementById('liveCmd');
+  if(lcm) lcm.addEventListener('click',()=>{ S.liveCommands=!S.liveCommands; saveSettings();
+    renderLobbyPanel(); uiClick(); });
+  const ls=document.getElementById('liveSafe');
+  if(ls) ls.addEventListener('click',()=>{ S.streamerMode=!S.streamerMode; saveSettings();
+    updateWallet(); renderLobbyPanel(); uiClick(); });
+  const ll=document.getElementById('liveLn');
+  if(ll) ll.addEventListener('input',e=>{ S.liveLines=+e.target.value; saveSettings();
+    paintLiveHud(); renderLobbyPanel(); });
   const tr=document.getElementById('turnReset');
   if(tr) tr.addEventListener('click',()=>{
     uiClick(); turn.yaw=0; turn.vel=0; turn.pitch=0; turn.zoom=0; turn.idle=0;
@@ -7138,6 +7782,11 @@ function bindPanel(){
   document.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{
     removeFriend(b.dataset.del); renderLobbyPanel(); uiClick();
   }));
+  const mp=document.getElementById('micPick');
+  if(mp) mp.addEventListener('change',async e=>{
+    await setMicDevice(e.target.value);
+    renderLobbyPanel();
+  });
   document.querySelectorAll('[data-vmode]').forEach(b=>b.addEventListener('click',async()=>{
     S.voiceMode=b.dataset.vmode; saveSettings(); uiClick();
     await applyVoiceMode(); renderLobbyPanel();
@@ -8321,10 +8970,58 @@ function creativeDelete(){
     }
   }
 }
+/* ---- named save slots, stored on the profile ---- */
+function creativeSlots(){ if(!profile.maps) profile.maps=[]; return profile.maps; }
+function creativeSave(name){
+  const code=exportMap();
+  if(!code){ mapMsg='Build something before saving.'; renderLobbyPanel(); return; }
+  name=(name||'').trim().slice(0,24)||('Map '+(creativeSlots().length+1));
+  const list=creativeSlots();
+  const hit=list.find(m=>m.name.toLowerCase()===name.toLowerCase());
+  const rec={name, code, updated:Date.now(), pieces:PIECES.size};
+  if(hit) Object.assign(hit,rec); else list.push(rec);
+  while(list.length>24) list.shift();
+  saveProfile();
+  mapMsg='Saved "'+name+'" · '+PIECES.size+' pieces.';
+  renderLobbyPanel();
+}
+function creativeLoadSlot(name){
+  const m=creativeSlots().find(x=>x.name===name);
+  if(!m){ mapMsg='No such map.'; renderLobbyPanel(); return; }
+  if(!running){ mapMsg='Start a match first, then load.'; renderLobbyPanel(); return; }
+  mapMsg=importMap(m.code);
+  creative.undo.length=0;
+  renderLobbyPanel();
+}
+function creativeDeleteSlot(name){
+  profile.maps=creativeSlots().filter(x=>x.name!==name);
+  saveProfile();
+  mapMsg='Deleted "'+name+'".';
+  renderLobbyPanel();
+}
+
+/* ---- play testing ---- */
+function creativeTest(){
+  creative.testing=!creative.testing;
+  if(creative.testing){
+    creative.wasFly=creative.fly;
+    creative.fly=false;
+    giveLoadout('box');
+    player.pos.y=groundH(player.pos.x,player.pos.z)+0.5;
+    toast('Play testing — press the same key to go back to building');
+  } else {
+    creative.fly=creative.wasFly!==false;
+    player.inv=[null,null,null,null,null];
+    setSlot(0,true);
+    toast('Back to building');
+  }
+  syncHUD();
+}
+
 function creativeTick(dt){
   if(modeCfg().arena!=='creative') return;
   creative.on=true;
-  player.mats=999;
+  if(!creative.testing) player.mats=999;
   propGhost();
   const el=document.getElementById('crhud');
   if(!el) return;
@@ -8332,13 +9029,14 @@ function creativeTick(dt){
   el.style.display='block';
   el.innerHTML=
     '<b>CREATIVE</b>'+
-    '<div><span>mode</span>'+(creative.buildMode?'pieces':'props')+'</div>'+
+    '<div><span>mode</span>'+(creative.testing?'PLAY TESTING':
+      (creative.buildMode?'pieces':'props'))+'</div>'+
     '<div><span>holding</span>'+(creative.buildMode?'wall / ramp / floor / cone':pr.name)+'</div>'+
     '<div><span>grid</span>'+creative.grid+'m</div>'+
     '<div><span>placed</span>'+(creative.placed.length+PIECES.size)+'</div>'+
     '<div><span>fly</span>'+(creative.fly?'on':'off')+'</div>'+
     '<i>TAB props/pieces · [ ] cycle · R rotate · G grid · F fly<br>'+
-    'X delete · Z undo · MAPS tab to save or load</i>'+
+    'X delete · Z undo · P play test · MAPS tab to save</i>'+
     (creative.msg?'<em>'+creative.msg+'</em>':'');
 }
 /* ================= expressions =================
@@ -10105,6 +10803,7 @@ function bindInput(){
       if(e.code==='KeyG'&&!editing){ creative.grid=creative.grid===1?2:(creative.grid===2?4:1);
         toast('Grid '+creative.grid+'m'); return; }
       if(e.code==='KeyZ'){ creativeUndo(); return; }
+      if(e.code==='KeyP'){ creativeTest(); return; }
       if(e.code==='KeyX'){ creativeDelete(); return; }
       if(e.code==='KeyF'){ creative.fly=!creative.fly; toast(creative.fly?'Fly on':'Fly off'); return; }
       if(act==='rotate'){ creative.rot=(creative.rot+Math.PI/4)%(Math.PI*2); return; }
@@ -10179,7 +10878,7 @@ function bindInput(){
     keys[code]=false;
     if(keyAction[code]==='aim') ads=false;
   });
-  window.__auto=()=>!!keys[S.keys.fire];
+  window.__auto=()=>!!keys[S.keys.fire]||touch.firing;
 
   renderer.domElement.addEventListener('click',()=>{
     if(running&&!paused){ tryLock(); return; }
@@ -10208,7 +10907,7 @@ function bindInput(){
       renderer.domElement.style.cursor='none';
     } else {
       renderer.domElement.style.cursor='crosshair';
-      if(lockBusy) return;                       // we asked for this, do not pause
+      if(lockBusy||touch.on) return;             // we asked for this, do not pause
       if(running&&!ended&&!paused&&!lockFailed) setPaused(true);
     }
   });
@@ -10229,6 +10928,10 @@ function goFullscreen(){
 }
 // fullscreen first, then lock — embedded pages often only grant the lock once fullscreen
 function enterImmersive(){
+  if(touch.on){                     // phones have no pointer lock to acquire
+    goFullscreen().catch(()=>{});
+    return;
+  }
   lockFailed=false;
   lockBusy=true;
   clearTimeout(lockBusyT);
@@ -10339,6 +11042,10 @@ function updateAir(dt){
   if(down('back'))    mv.sub(fwd);
   if(down('right'))   mv.add(right);
   if(down('left'))    mv.sub(right);
+  if(touch.on && (touch.move.x||touch.move.y)){
+    mv.addScaledVector(right, touch.move.x);
+    mv.addScaledVector(fwd,  -touch.move.y);
+  }
 
   // how hard you are steering sideways, smoothed, so the canopy banks into it
   const steer=(down('right')?1:0)-(down('left')?1:0);
@@ -10420,6 +11127,10 @@ function updatePlayer(dt){
   if(down('back'))    mv.sub(fwd);
   if(down('right'))   mv.add(right);
   if(down('left'))    mv.sub(right);
+  if(touch.on && (touch.move.x||touch.move.y)){
+    mv.addScaledVector(right, touch.move.x);
+    mv.addScaledVector(fwd,  -touch.move.y);
+  }
   if(modeCfg().arena==='creative' && creative.fly){
     const f2=V(-Math.sin(yaw),0,-Math.cos(yaw)), r2=V(Math.cos(yaw),0,-Math.sin(yaw));
     const fv=V(0,0,0);
@@ -10537,6 +11248,9 @@ function updatePlayer(dt){
     const lt=nearestTargetPoint();
     if(lt) faceToward(lt,dt,26);
   }
+
+  aimAssist(dt, aiming);
+  autoFire(dt);
 
   // holding aim with the aimbot on drags the view onto the nearest target
   if(cheats.aim && aiming && !spectating){
@@ -10796,6 +11510,9 @@ function startOverCountdown(sec){
 }
 
 function toLobby(){
+  const tv=document.getElementById('touch');
+  if(tv) tv.style.display='none';
+  document.body.classList.remove('portrait');
   clearOverCountdown();
   running=false; paused=false; ended=true; winPending=false;
   timeScale=1; slowmoT=0;
@@ -10820,6 +11537,8 @@ function leaveMatch(){
 }
 function setPaused(p){
   paused=p;
+  const tv=document.getElementById('touch');
+  if(tv&&touch.on) tv.style.display=(p||!running)?'none':'block';
   document.getElementById('pause').classList.toggle('hidden',!p);
   if(p){
     // never leave the menu up with the cursor captured
@@ -11729,7 +12448,8 @@ function tick(){
       if(c.position.x>1000) c.position.x=-1000;
     }
     colGridTick();
-    if((waterTick&31)===0){ updateModeBadge(); applyModeHud(); }
+    if((waterTick&31)===0){ updateModeBadge(); applyModeHud();
+      if(touch.on){ buildTouchSlots(); checkOrientation(); } }
     updateRounds(dt);
     if(respawnT>0){
       respawnT-=dt;
@@ -11802,6 +12522,7 @@ function init(){
 
   bindInput();
   bindTurntable();
+  setupTouch();
   initPost();
   applySettings();
   updateMenuKeys();
@@ -11831,6 +12552,11 @@ function start(){
 }
 function buildAndLaunch(){
   resetGame();
+  if(touch.on){
+    const tv=document.getElementById('touch');
+    if(tv) tv.style.display='block';
+    buildTouchSlots(); checkOrientation();
+  }
   clipStart();
   document.getElementById('loading').classList.add('hidden');
   document.getElementById('hud').classList.remove('hidden');
@@ -11944,7 +12670,8 @@ Promise.resolve()
                 x.classList.toggle('on',(x.dataset.bots==='1')===!!S.botLobby));
               const fb=document.getElementById('fillBots');
               if(fb) fb.classList.toggle('on',!!S.botLobby);
-              setOnlineMode(true); setTimeout(updateOnlineChip,400); })
+              setOnlineMode(true); setTimeout(updateOnlineChip,400);
+              if(S.liveChannel) setTimeout(()=>liveConnect(S.liveChannel),1200); })
   .catch(()=>{ init(); updateWallet(); setLobbyTab('play'); });
 </script>
 </body>
