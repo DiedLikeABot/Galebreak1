@@ -887,7 +887,7 @@ const DEFAULTS = {
   volVoice:1, voiceProximity:true, voiceMode:'ptt', voiceWho:'team', micDevice:'',
   liveChannel:'', liveOverlay:true, liveLines:7, liveCommands:true, streamerMode:false,
   cues:true, minimap:true, killFeed:true, dmgNums:true, hitMarker:true, stormPanel:true,
-  showTips:true, killcam:true, botLobby:true, aimAssist:0, autoFire:false, toggleSprint:false, autoReload:true, autoPickup:false,
+  showTips:true, killcam:true, clipRecord:false, botLobby:true, aimAssist:0, autoFire:false, toggleSprint:false, autoReload:true, autoPickup:false,
   botCount:19, botSkill:1, stormSpeed:1, startMats:0
 };
 let S = JSON.parse(JSON.stringify(DEFAULTS));
@@ -983,6 +983,7 @@ const SCHEMA = [
  { group:'Gameplay', items:[
    { k:'showTips', label:'Show control tips while playing', type:'toggle' },
    { k:'killcam', label:'Killcam when you are eliminated', type:'toggle' },
+   { k:'clipRecord', label:'Record clips in the background (costs performance)', type:'toggle' },
    { k:'aimAssist', label:'Aim assist', type:'select',
      opts:[[0,'Off'],[1,'Light'],[2,'Standard'],[3,'Strong']] },
    { k:'autoFire', label:'Fire automatically when on target', type:'toggle' },
@@ -1939,6 +1940,41 @@ function autoFire(dt){
   if(player.fireCd>0) return;
   fireOnce();
 }
+/* ================= stall watchdog =================
+   If frames start taking far too long, something is wrong and the player
+   should not have to diagnose it. Drop the expensive settings automatically,
+   say so once, and keep the game playable rather than freezing. */
+const watch={ bad:0, acted:0, last:0 };
+function watchdog(dtMs){
+  if(!running||paused) return;
+  // a frame over a third of a second reads as a freeze
+  if(dtMs>330){
+    watch.bad++;
+    if(watch.bad>=3 && performance.now()-watch.acted>20000){
+      watch.acted=performance.now();
+      watch.bad=0;
+      let did='';
+      if(S.grassOn){ S.grassOn=false; if(grass) grass.visible=false; did='grass off'; }
+      else if(S.shadows!=='off'){
+        S.shadows='off';
+        if(renderer) renderer.shadowMap.enabled=false;
+        did='shadows off';
+      }
+      else if(S.renderScale>60){
+        S.renderScale=60;
+        try{ resizePost(); }catch(e){}
+        did='render scale 60%';
+      }
+      else if(S.ssao>0){ S.ssao=0; did='ambient occlusion off'; }
+      else return;
+      saveSettings();
+      toast('Frames were stalling, so I turned <u>'+did+'</u>. Settings has the rest.');
+      console.warn('watchdog: dropped',did);
+    }
+  } else if(watch.bad>0 && dtMs<60){
+    watch.bad=Math.max(0,watch.bad-1);
+  }
+}
 /* ================= touch controls =================
    A phone has no pointer lock, no keyboard and a thumb in front of the
    screen. Movement is a real analogue stick rather than four fake key
@@ -2277,6 +2313,7 @@ function clipSupported(){
          renderer && renderer.domElement && renderer.domElement.captureStream;
 }
 function clipStart(){
+  if(!S.clipRecord) return;        // off unless asked for; encoding is not free
   if(clip.on||!clipSupported()) return;
   try{
     const cs=renderer.domElement.captureStream(30);
@@ -2287,7 +2324,8 @@ function clipStart(){
         dest.stream.getAudioTracks().forEach(t=>cs.addTrack(t));
       }
     }catch(e){}
-    const tries=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+    // vp8 first: far cheaper to encode than vp9 while recording and playing
+    const tries=['video/webm;codecs=vp8,opus','video/webm;codecs=vp9,opus','video/webm'];
     clip.mime=tries.find(m=>{ try{ return MediaRecorder.isTypeSupported(m); }catch(e){ return false; } })||'';
     clip.stream=cs;
     clip.on=true;
@@ -2299,7 +2337,7 @@ function clipRoll(){
   const old=clip.rec, finished=clip.cur, startedAt=clip.curStart;
   clip.cur=[]; clip.curStart=performance.now();
   try{
-    const r=new MediaRecorder(clip.stream, clip.mime?{mimeType:clip.mime,videoBitsPerSecond:5000000}:undefined);
+    const r=new MediaRecorder(clip.stream, clip.mime?{mimeType:clip.mime,videoBitsPerSecond:3200000}:undefined);
     const bucket=clip.cur;
     r.ondataavailable=e=>{ if(e.data&&e.data.size) bucket.push(e.data); };
     r.start(1000);
@@ -2317,6 +2355,10 @@ function clipTick(dt){
   if(clip.timer<=0) clipRoll();
 }
 function clipSave(){
+  if(!S.clipRecord){
+    toast('Turn on clip recording in Settings, then press this again');
+    return;
+  }
   if(!clip.on){ toast('Clip recording is not available in this browser'); return; }
   if(clip.saving) return;
   clip.saving=true;
@@ -6303,7 +6345,13 @@ function buildWorld(){
 
 /* ================= ground cover ================= */
 let grass=null;
-const GRASS_SIDE=74, GRASS_N=GRASS_SIDE*GRASS_SIDE, GRASS_STEP=1.15;
+const GRASS_SIDE=74, GRASS_N=GRASS_SIDE*GRASS_SIDE, GRASS_STEP=2.2;
+/* Rebuilding every tuft in one go is five and a half thousand noise lookups
+   in a single frame, which is long enough to see. The work is spread over
+   several frames instead: the field is always complete, it just finishes
+   filling in over the next fraction of a second. */
+const GRASS_PER_FRAME=420;
+let grassJob=null;
 const grassDummy=new THREE.Object3D();
 const grassCol=new THREE.Color();
 let grassAnchor=new THREE.Vector3(1e9,0,1e9);
@@ -6388,14 +6436,28 @@ function buildGrass(){
   refreshGrass();
 }
 function refreshGrass(){
-  if(!grass) return;
-  const bx=Math.floor(player.pos.x/GRASS_STEP)*GRASS_STEP;
-  const bz=Math.floor(player.pos.z/GRASS_STEP)*GRASS_STEP;
+  if(!grass||grassJob) return;
+  // queue the rebuild rather than doing it all now
+  grassJob={ bx:Math.floor(player.pos.x/GRASS_STEP)*GRASS_STEP,
+             bz:Math.floor(player.pos.z/GRASS_STEP)*GRASS_STEP,
+             gx:-Math.floor(GRASS_SIDE/2), gz:-Math.floor(GRASS_SIDE/2), i:0 };
+}
+function grassWork(){
+  if(!grass||!grassJob) return;
+  const {bx,bz}=grassJob;
   const half=Math.floor(GRASS_SIDE/2);
-  let i=0;
-  for(let gx=-half; gx<=half; gx++){
-    for(let gz=-half; gz<=half; gz++){
+  let done=0;
+  let i=grassJob.i;
+  for(let gx=grassJob.gx; gx<=half; gx++){
+    for(let gz=(gx===grassJob.gx?grassJob.gz:-half); gz<=half; gz++){
       if(i>=GRASS_N) break;
+      if(done>=GRASS_PER_FRAME){
+        grassJob.gx=gx; grassJob.gz=gz; grassJob.i=i;
+        grass.instanceMatrix.needsUpdate=true;
+        if(grass.instanceColor) grass.instanceColor.needsUpdate=true;
+        return;
+      }
+      done++;
       const wx=bx+gx*GRASS_STEP, wz=bz+gz*GRASS_STEP;
       const h1=Math.abs(Math.sin(wx*12.9898+wz*78.233)*43758.5453)%1;
       const h2=Math.abs(Math.sin(wx*39.3468+wz*11.135)*24634.6345)%1;
@@ -6430,6 +6492,7 @@ function refreshGrass(){
   grass.instanceMatrix.needsUpdate=true;
   if(grass.instanceColor) grass.instanceColor.needsUpdate=true;
   grassAnchor.set(bx,0,bz);
+  grassJob=null;
 }
 
 /* ================= impact effects ================= */
@@ -12602,6 +12665,8 @@ function tick(){
   requestAnimationFrame(tick);
   const now=performance.now();
   if(S.fpsCap>0 && now-lastFrame < 1000/S.fpsCap - 0.6) return;
+  if(watch.last) watchdog(now-watch.last);
+  watch.last=now;
   lastFrame=now;
 
   const rawDt=Math.min(clock.getDelta(),.05);
@@ -12715,6 +12780,7 @@ function tick(){
     if((waterTick&63)===0) paintChat();
     updateCoach(dt); updateElim(dt); updateCrosshair(); trainTick(dt); clipTick(dt); kcSample(dt);
     updateFaces(dt); creativeTick(dt); updateStream(dt);
+    grassWork();
     updateBall(dt);
     cheatTick(dt);
     updateEsp(dt);
