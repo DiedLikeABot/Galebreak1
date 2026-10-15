@@ -82,9 +82,23 @@ function validName(u){ return /^[A-Za-z0-9_.-]{3,16}$/.test(String(u || '')); }
 
    Read PAYMENTS.txt before switching this on. There are obligations that
    come with taking money that are not solved by code. */
-const STRIPE_SECRET = process.env.STRIPE_SECRET || '';
-const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
-const PUBLIC_URL = process.env.PUBLIC_URL || '';
+/* Environment variable names are case sensitive, and getting that wrong is
+   an easy way to spend an evening wondering why nothing works. Accept any
+   reasonable spelling rather than being precious about it. */
+function envAny(name){
+  const tries = [name, name.toLowerCase(), name.toUpperCase(),
+                 name.replace(/_/g,''), name.toLowerCase().replace(/_/g,'')];
+  for (const t of tries) if (process.env[t]) return String(process.env[t]).trim();
+  // last resort: a case-insensitive sweep of everything that is set
+  const want = name.toLowerCase().replace(/_/g,'');
+  for (const k in process.env)
+    if (k.toLowerCase().replace(/_/g,'') === want && process.env[k])
+      return String(process.env[k]).trim();
+  return '';
+}
+const STRIPE_SECRET = envAny('STRIPE_SECRET');
+const STRIPE_WEBHOOK_SECRET = envAny('STRIPE_WEBHOOK_SECRET');
+const PUBLIC_URL = envAny('PUBLIC_URL').replace(/\/+$/,'');
 const paymentsOn = () => !!(STRIPE_SECRET && STRIPE_WEBHOOK_SECRET && PUBLIC_URL);
 
 // price in the smallest currency unit, so 99 is $0.99
@@ -196,7 +210,7 @@ function iceServers(){
   return list;
 }
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID ||
+const GOOGLE_CLIENT_ID = (typeof envAny==='function' ? envAny('GOOGLE_CLIENT_ID') : '') ||
   '914423154502-mvm7kckhmu1gcgutv3quutej92pnvpf5.apps.googleusercontent.com';
 
 /* ===================== EXCLUSIVE REWARDS =====================
@@ -725,7 +739,11 @@ server.listen(PORT, () => {
   console.log(`GALEBREAK server running: http://localhost:${PORT}`);
   console.log(`  version galebreak-2 · accounts on · google sign in ${GOOGLE_CLIENT_ID?'configured':'not configured'}`);
   console.log(`  subscriber check ${YOUTUBE_CHANNEL_ID?'configured':'off'} · redeem codes: ${Object.keys(REDEEM_CODES).join(', ')}`);
-  console.log(`  payments ${paymentsOn()?'configured':'off'}`);
+  console.log(`  payments ${paymentsOn()?'configured':'off'}` +
+    (paymentsOn() ? '' :
+      '  [secret:' + (STRIPE_SECRET?'yes':'MISSING') +
+      ' webhook:' + (STRIPE_WEBHOOK_SECRET?'yes':'MISSING') +
+      ' url:' + (PUBLIC_URL?'yes':'MISSING') + ']'));
   console.log(`  accounts file: ${ACCT_FILE}`);
   console.log(`  voice relay: ${TURN_URL ? 'TURN configured' : 'STUN only — voice will fail behind strict NATs'}`);
   console.log(`  youtube chat: ${YOUTUBE_API_KEY ? 'key set' : 'not configured (Twitch needs no key)'}`);
