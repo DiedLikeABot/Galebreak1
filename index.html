@@ -838,7 +838,7 @@ const MODES={
   galeball  :{ label:'GALEBALL',       short:'gb', players:8, bots:3, skill:1.2, storm:1,
                playR:150, arena:'ball', bus:false, phases:'box', rounds:1,
                loadout:'ball', respawn:true, target:5 },
-  creative  :{ label:'CREATIVE',       short:'cr', players:16, bots:0, skill:1, storm:1,
+  creative  :{ label:'CREATIVE',       short:'cr', players:1, bots:0, skill:1, storm:1,
                playR:260, arena:'creative', bus:false, phases:'box', rounds:1,
                loadout:'creative' },
   training  :{ label:'TRAINING',       short:'tr', players:1, bots:0, skill:1, storm:1,
@@ -854,11 +854,15 @@ function effBots(){
   if(!S.botLobby) return 0;            // players only unless you ask for a bot lobby
   const m=modeCfg();
   const solo = m.bots!==null ? m.bots : Math.round(S.botCount);
+  // a mode that asks for no bots gets none, connected or not. Creative and
+  // Training were being backfilled from the player count and filling up with
+  // opponents nobody asked for.
+  if(solo<=0) return 0;
   if(!netConnected) return solo;
-  if(!netFillBots || !S.botLobby) return 0;
-  // in a room, bots only fill the seats nobody has taken
+  if(!netFillBots) return 0;
+  // in a room, bots fill the empty seats — but never more than the mode wants
   const target=(m.players||solo+1);
-  return Math.max(0, target-(remotePlayers.size+1));
+  return Math.max(0, Math.min(solo, target-(remotePlayers.size+1)));
 }
 function effSkill(){ const m=modeCfg(); return m.skill!==null?m.skill:S.botSkill; }
 function effStorm(){ const m=modeCfg(); return m.storm!==null?m.storm:S.stormSpeed; }
@@ -6179,11 +6183,17 @@ function buildWorld(){
     buildSky();
     buildArenaFloor();
     buildWater();
-    if(arena==='box') buildArenaBox();
-    else if(arena==='creative') buildArenaCreative();
-    else if(arena==='ball') buildArenaBall();
-    else if(arena==='training') buildArenaTraining();
-    else buildArenaZone();
+    try{
+      if(arena==='box') buildArenaBox();
+      else if(arena==='creative') buildArenaCreative();
+      else if(arena==='ball') buildArenaBall();
+      else if(arena==='training') buildArenaTraining();
+      else buildArenaZone();
+    }catch(err){
+      // better a bare plate you can see than a black screen you cannot
+      console.error('arena build failed:',err);
+      toast('That arena failed to build — the ground is still there');
+    }
     for(let i=0;i<(arena==='box'?10:34);i++){
       const a=RNG()*6.283, d=Math.sqrt(RNG())*(PLAY_R-14);
       spawnPickup(KINDS[Math.floor(RNG()*KINDS.length)],Math.cos(a)*d,Math.sin(a)*d);
@@ -7625,6 +7635,18 @@ function renderLobbyPanel(){
       '<div class="prow"><label>Save as</label>'+
         '<input id="mapName" maxlength="24" placeholder="name this map">'+
         '<button class="ghost small" id="saveMapBtn" style="margin:0">SAVE</button></div>'+
+      '<div class="setgroup">Saved maps</div>'+
+      '<div class="prow"><label>Save as</label>'+
+        '<input id="mapName" maxlength="24" placeholder="name this map">'+
+        '<button class="ghost small" id="saveMap" style="margin:0">SAVE</button></div>'+
+      (creativeSlots().length
+        ? creativeSlots().slice().reverse().map(m=>
+            '<div class="friend on"><i></i><b>'+m.name.replace(/[<>&]/g,'')+'</b>'+
+            '<span>'+(m.pieces||0)+' pieces</span>'+
+            '<button class="ghost small fbtn" data-loadmap="'+m.name.replace(/"/g,'')+'">LOAD</button>'+
+            '<button class="ghost small fbtn" data-delmap="'+m.name.replace(/"/g,'')+'">DELETE</button>'+
+            '</div>').join('')
+        : '<div class="psub">No saved maps yet.</div>')+
       '<div class="setgroup">Load a code</div>'+
       '<div class="prow"><label>Code</label>'+
         '<textarea id="mapIn" rows="2" placeholder="paste a map code" '+
@@ -7831,8 +7853,8 @@ function bindPanel(){
     mapMsg=saveMapAs(document.getElementById('mapName').value);
     renderLobbyPanel();
   });
-  const mn=document.getElementById('mapName');
-  if(mn) mn.addEventListener('keydown',e=>{
+  const mapNameBox=document.getElementById('mapName');
+  if(mapNameBox) mapNameBox.addEventListener('keydown',e=>{
     e.stopPropagation();
     if(e.key==='Enter') document.getElementById('saveMapBtn').click();
   });
@@ -7854,6 +7876,21 @@ function bindPanel(){
   }));
   document.querySelectorAll('[data-delmap]').forEach(b=>b.addEventListener('click',()=>{
     uiClick(); deleteMap(b.dataset.delmap); mapMsg='Deleted.'; renderLobbyPanel();
+  }));
+  const saveMapBtn=document.getElementById('saveMap');
+  if(saveMapBtn) saveMapBtn.addEventListener('click',()=>{
+    uiClick(); creativeSave(document.getElementById('mapName').value);
+  });
+  const mn=document.getElementById('mapName');
+  if(mn) mn.addEventListener('keydown',e=>{
+    e.stopPropagation();
+    if(e.key==='Enter') creativeSave(e.target.value);
+  });
+  document.querySelectorAll('[data-loadmap]').forEach(b=>b.addEventListener('click',()=>{
+    uiClick(); creativeLoadSlot(b.dataset.loadmap);
+  }));
+  document.querySelectorAll('[data-delmap]').forEach(b=>b.addEventListener('click',()=>{
+    uiClick(); creativeDeleteSlot(b.dataset.delmap);
   }));
   const lm=document.getElementById('loadMap');
   if(lm) lm.addEventListener('click',()=>{
@@ -8380,11 +8417,24 @@ function makeFighter(opt){
     brow.rotation.x=-.12;
 
     // eyebrows, which are what an expression actually reads from
-    F.browL=put(new THREE.Mesh(new THREE.BoxGeometry(.050,.009,.012),mats.dark),
-      -.043,HY+.040,-.104);
-    F.browR=put(new THREE.Mesh(new THREE.BoxGeometry(.050,.009,.012),mats.dark),
-       .043,HY+.040,-.104);
-    F.browL.rotation.z=.12; F.browR.rotation.z=-.12;
+    const browMat=new THREE.MeshStandardMaterial({
+      color:new THREE.Color(skin.hair||0x2a1d14).multiplyScalar(.8), roughness:.95});
+    const makeBrow=(sx)=>{
+      const grp=new THREE.Group();
+      grp.position.set(sx*.043, HY+.040, -.104);
+      g.add(grp);
+      // thicker at the inner end, thinning and lifting toward the temple
+      [[-.018,.0105,.018],[0,.0092,.020],[.018,.0062,.016]].forEach(([ox,h,w],i)=>{
+        const seg=new THREE.Mesh(new THREE.BoxGeometry(w,h,.011),browMat);
+        seg.position.set(sx*ox, i*.0018, -i*.0012);
+        seg.rotation.z=sx*(.10+i*.05);
+        seg.castShadow=true;
+        grp.add(seg);
+      });
+      return grp;
+    };
+    F.browL=makeBrow(-1);
+    F.browR=makeBrow(1);
     F.browL.userData.y0=F.browL.position.y;
     F.browR.userData.y0=F.browR.position.y;
 
@@ -8406,6 +8456,16 @@ function makeFighter(opt){
       const pu=put(new THREE.Mesh(new THREE.SphereGeometry(.0042,8,6),pupil),
         ex,HY+.012,-.1085);
       pu.scale.set(1,1,.5);
+      // the single most important detail on a face: a highlight in the eye
+      const glint=put(new THREE.Mesh(new THREE.SphereGeometry(.0030,6,5),
+        new THREE.MeshBasicMaterial({color:0xffffff})),
+        ex-.004,HY+.0175,-.1095);
+      glint.scale.set(1,1,.4);
+      F['glint'+side]=glint;
+      // a lash line along the upper lid, which is what gives an eye its shape
+      const lash=put(new THREE.Mesh(new THREE.BoxGeometry(.044,.0055,.010),mats.dark),
+        ex,HY+.0245,-.0995);
+      lash.rotation.z=(side==='L'?1:-1)*.07;
       // the lid is a cap that rotates down over the eye to blink
       const lid=new THREE.Group();
       lid.position.set(ex,HY+.012,-.090);
@@ -8419,6 +8479,25 @@ function makeFighter(opt){
       F['iris'+side]=ir;
       F['pupil'+side]=pu;
     });
+
+    // the hollows: under the brow, under the cheekbone, under the jaw. These
+    // are faint dark planes rather than geometry, and they do most of the work
+    // of making a head read as three dimensional at a distance.
+    const shade=new THREE.MeshStandardMaterial({
+      color:new THREE.Color(skin.tone).multiplyScalar(.72), roughness:.95});
+    [-1,1].forEach(sx=>{
+      const socketShade=put(new THREE.Mesh(new THREE.SphereGeometry(.034,10,8),shade),
+        sx*.044, HY+.030, -.082);
+      socketShade.scale.set(1,.42,.34);
+      const cheekShade=put(new THREE.Mesh(new THREE.SphereGeometry(.030,9,7),shade),
+        sx*.055, HY-.034, -.072);
+      cheekShade.scale.set(.9,.46,.4);
+    });
+    const underJaw=put(new THREE.Mesh(new THREE.SphereGeometry(.082,12,8),
+      new THREE.MeshStandardMaterial({
+        color:new THREE.Color(skin.tone).multiplyScalar(.6), roughness:.98})),
+      0, HY-.082, .010);
+    underJaw.scale.set(.92,.30,.86);
 
     // nose: bridge, tip and nostrils
     const bridge=put(new THREE.Mesh(new THREE.BoxGeometry(fem?.020:.024,.052,.026),skinMat),
@@ -8441,9 +8520,14 @@ function makeFighter(opt){
       0,HY-.046,-.096);
     F.lipU.scale.set(1.5,fem?.36:.30,.56);
     F.lipU.userData.y0=F.lipU.position.y;
-    const mouthLine=put(new THREE.Mesh(new THREE.BoxGeometry(.046,.005,.012),mats.dark),
+    const mouthLine=put(new THREE.Mesh(new THREE.BoxGeometry(.046,.0042,.012),
+      new THREE.MeshStandardMaterial({
+        color:new THREE.Color(skin.tone).multiplyScalar(.45), roughness:.9})),
       0,HY-.052,-.100);
     F.mouthLine=mouthLine;
+    // the groove between nose and lip
+    const philtrum=put(new THREE.Mesh(new THREE.BoxGeometry(.009,.016,.008),shade),
+      0,HY-.036,-.104);
     const lipL=new THREE.Mesh(new THREE.SphereGeometry(fem?.026:.028,12,7),lipMat);
     lipL.position.set(0,-.078,-.100);
     lipL.scale.set(1.45,fem?.40:.34,.56);
@@ -8467,7 +8551,10 @@ function makeFighter(opt){
 
     // hair, in a style that suits the build
     if(skin.head==='none'||skin.head==='visor'){
-      const hairMat=mats.sec;
+      const hairMat=new THREE.MeshStandardMaterial({
+        color: skin.hair || [0x2a1d14,0x120d09,0x5a3b21,0x7a5230,0x8c8c92][
+          Math.abs((skin.id||'x').charCodeAt(0)+(skin.id||'x').length)%5],
+        roughness:.88, metalness:.02 });
       const cap=put(new THREE.Mesh(
         new THREE.SphereGeometry(.116,seg,10,0,6.283,0,fem?1.5:1.30),hairMat),
         0,HY+.008,.012);
@@ -8485,6 +8572,16 @@ function makeFighter(opt){
           0,HY-.004,.030);
         back.scale.set(1,.9,1.0);
       }
+      // a fringe and sideburns, so the hairline is not a hard edge
+      const fringe=put(new THREE.Mesh(
+        new THREE.SphereGeometry(.112,seg,8,0,6.283,0,.55),hairMat),
+        0,HY+.030,-.012);
+      fringe.scale.set(1,.72,1.04);
+      [-1,1].forEach(sx=>{
+        const burn=put(new THREE.Mesh(new THREE.BoxGeometry(.016,.046,.030),hairMat),
+          sx*.092, HY-.004, -.004);
+        burn.rotation.z=sx*.08;
+      });
     }
   }
 
@@ -8531,7 +8628,7 @@ function makeFighter(opt){
     const vis=add(new THREE.Mesh(new THREE.BoxGeometry(.212,.054,.08),
       new THREE.MeshStandardMaterial({color:skin.acc,roughness:.15,metalness:.5,
         emissive:new THREE.Color(skin.acc).multiplyScalar(.28)})));
-    vis.position.set(0,1.882,-.084);
+    vis.position.set(0,1.922,-.080);
     const band=add(new THREE.Mesh(new THREE.TorusGeometry(.110,.018,7,seg+4),mats.sec));
     band.position.y=1.882; band.rotation.y=Math.PI/2;
   }
@@ -9221,19 +9318,25 @@ function updateFace(P,dt){
     st.look.x=(Math.random()*2-1)*0.22;
     st.look.y=(Math.random()*2-1)*0.12;
   }
-  [['irisL','pupilL','eyeL'],['irisR','pupilR','eyeR']].forEach(([ir,pu,ey])=>{
+  [['irisL','pupilL','eyeL','glintL'],['irisR','pupilR','eyeR','glintR']].forEach(([ir,pu,ey,gl])=>{
     if(!f[ir]||!f[ey]) return;
     const bx=f[ey].position.x, by=f[ey].position.y;
     f[ir].position.x=bx+st.look.x*0.010;
     f[ir].position.y=by+st.look.y*0.008;
     if(f[pu]){ f[pu].position.x=bx+st.look.x*0.011; f[pu].position.y=by+st.look.y*0.009; }
+    if(f[gl]){ f[gl].position.x=bx-0.004+st.look.x*0.009;
+               f[gl].position.y=by+0.0055+st.look.y*0.007; }
   });
 
   if(f.browL){
+    if(f.browL.userData.y0===undefined){
+      f.browL.userData.y0=f.browL.position.y;
+      f.browR.userData.y0=f.browR.position.y;
+    }
     f.browL.position.y=f.browL.userData.y0+st.mix.brow;
     f.browR.position.y=f.browR.userData.y0+st.mix.brow;
-    f.browL.rotation.z= .12+st.mix.browTilt;
-    f.browR.rotation.z=-.12-st.mix.browTilt;
+    f.browL.rotation.z= st.mix.browTilt;
+    f.browR.rotation.z=-st.mix.browTilt;
   }
   if(f.jaw) f.jaw.rotation.x=st.mix.jaw;
   if(f.lipU) f.lipU.position.y=f.lipU.userData.y0-st.mix.lip*0.004;
@@ -11272,7 +11375,8 @@ function updatePlayer(dt){
     player.grounded=false;
   }
   const sprint = S.toggleSprint ? sprintLatch : down('sprint');
-  const speed=(sprint?9.6:6.1)*(1-player.aim*.42)*(cheats.speed?2.5:1);
+  const flying = modeCfg().arena==='creative' && creative.fly && !creative.testing;
+  const speed=(sprint?9.6:6.1)*(1-player.aim*.42)*(cheats.speed?2.5:1)*(flying?2.4:1);
   if(mv.lengthSq()>0){
     mv.normalize().multiplyScalar(speed);
     // a pace tied to ground speed: the foot is planted for the time it takes
@@ -11304,6 +11408,14 @@ function updatePlayer(dt){
 
   const prevY=player.pos.y;
   let fellSpeed=player.vel.y;
+  // creative flight: the toggle existed but nothing ever acted on it
+  if(modeCfg().arena==='creative' && creative.fly && !creative.testing){
+    const fast=keys['ShiftLeft']||keys['ShiftRight'];
+    const climb=((down('jump')?1:0)-(down('sprint')?1:0))*(fast?34:16);
+    player.pos.y+=climb*dt;
+    player.pos.y=clamp(player.pos.y, groundH(player.pos.x,player.pos.z)+0.4, 180);
+    player.vel.y=0; fellSpeed=0; player.grounded=false;
+  }
   if(cheats.noclip){
     player.pos.y+=((down('jump')?1:0)+(sprint?-1:0))*17*dt;
     player.vel.y=0; fellSpeed=0; player.grounded=false;
@@ -11832,6 +11944,9 @@ function giveLoadout(kind){
   } else if(kind==='creative'){
     player.inv=[null,null,null,null,null];
     player.mats=999; player.shield=100; player.hp=100;
+  } else if(kind==='creative'){
+    player.inv=[null,null,null,null,null];
+    player.mats=999; player.hp=100; player.shield=100;
   } else if(kind==='train'){
     player.inv[0]=wep('rifle');
     player.inv[1]=wep('smg');
@@ -11849,7 +11964,8 @@ function giveLoadout(kind){
   }
   player.fireCd=0; player.reloading=0; player.using=null;
   document.getElementById('reloadTip').textContent='';
-  setSlot(kind?1:0,true);
+  // creative starts on the pickaxe, since its inventory is deliberately empty
+  setSlot((kind&&kind!=='creative')?1:0,true);
   syncHUD();
 }
 function arenaSpawn(i){
@@ -12049,6 +12165,14 @@ function resetGame(){
   applyCheatVisuals();
   setSlot(0,true);
   applyModeHud();
+  if(modeCfg().arena==='creative'){
+    creative.fly=true; creative.testing=false;
+    // clear anything that slipped through before the count was fixed
+    for(const b of bots){ if(b.g&&b.g.parent) scene.remove(b.g); }
+    for(let i=hittables.length-1;i>=0;i--) if(hittables[i].userData.bot) hittables.splice(i,1);
+    bots.length=0;
+    refreshAlive();
+  }
   if(!modeCfg().bus){
     if(modeCfg().arena==='box'){ roundPhase='lobby'; roundLock=true; }
     groundStart();
