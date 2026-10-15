@@ -180,6 +180,11 @@
   .onchip.live{color:#dbe6f2}
   #onlineToggle{color:#8ea4bd}
   #onlineToggle.on{color:#4ade80}
+  #getSparks{margin-left:10px;width:26px;height:26px;border-radius:50%;border:0;
+    background:#ffd873;color:#1a1403;font-size:17px;font-weight:bold;line-height:1;
+    cursor:pointer;pointer-events:auto;box-shadow:0 2px 8px rgba(255,216,115,.35);
+    display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit}
+  #getSparks:hover{background:#fff0bd;transform:scale(1.1)}
   .coins{display:flex;align-items:center;gap:7px;font-size:18px;font-weight:bold;color:#ffd873;
     background:rgba(4,8,16,.6);padding:7px 14px;border-radius:5px}
   .coins .spark{color:#ffd873;font-size:14px}
@@ -263,14 +268,25 @@
   .friend b{color:#fff;min-width:120px}
   .friend span{color:#8ea4bd;letter-spacing:2px;flex:1}
   .fbtn{margin:0;padding:6px 12px;font-size:10px}
-  .packs{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:4px 0 6px}
-  .pack{pointer-events:auto;background:rgba(10,18,30,.72);border:2px solid rgba(255,216,115,.3);
-    border-radius:7px;padding:14px 10px;cursor:pointer;color:#cfe0f0;font-family:inherit;
-    display:flex;flex-direction:column;align-items:center;gap:3px;box-shadow:none}
-  .pack:hover{border-color:#ffd873;transform:none}
-  .pack b{font-size:17px;color:#ffd873;letter-spacing:1px}
-  .pack em{font-size:10px;letter-spacing:1px;color:#7bd88f;font-style:normal;min-height:13px}
-  .pack span{font-size:14px;color:#fff;margin-top:4px}
+  .sparkhead{display:flex;align-items:baseline;gap:14px;margin:4px 0 14px;
+    padding-bottom:10px;border-bottom:1px solid rgba(255,216,115,.26)}
+  .sparkhead b{font-size:22px;letter-spacing:5px;color:#ffd873}
+  .sparkhead span{font-size:12px;color:#8ea4bd;letter-spacing:1px}
+  .packs{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px;margin:0 0 10px}
+  .pack{position:relative;pointer-events:auto;cursor:pointer;font-family:inherit;
+    background:linear-gradient(165deg,rgba(255,216,115,.14),rgba(10,18,30,.85));
+    border:2px solid rgba(255,216,115,.34);border-radius:10px;padding:20px 12px 18px;
+    color:#cfe0f0;display:flex;flex-direction:column;align-items:center;gap:4px;
+    box-shadow:none;transition:border-color .12s, background .12s}
+  .pack:hover{border-color:#ffd873;background:linear-gradient(165deg,rgba(255,216,115,.24),rgba(10,18,30,.85))}
+  .pack.best{border-color:#7bd88f}
+  .pack .bestTag{position:absolute;top:-11px;left:50%;transform:translateX(-50%);
+    background:#7bd88f;color:#06130b;font-size:9px;letter-spacing:1.6px;padding:3px 9px;
+    border-radius:3px;white-space:nowrap}
+  .packIcon{font-size:26px;color:#ffd873;line-height:1;margin-bottom:2px}
+  .pack b{font-size:26px;color:#fff;letter-spacing:1px;line-height:1}
+  .pack em{font-size:10px;letter-spacing:1.4px;color:#7bd88f;font-style:normal;min-height:14px}
+  .pack span{font-size:17px;color:#ffd873;margin-top:8px;font-weight:bold}
   .turnhint{display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:1px;
     color:#7f9ab8;margin:-6px 0 14px}
   .svcgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:14px 0}
@@ -677,7 +693,8 @@
       <div id="acctchip" class="onchip"><i></i>guest</div>
       <div id="onlinechip" class="onchip"><i></i>solo</div>
       <button id="onlineToggle" class="lnavbtn on" style="border:0">ONLINE</button>
-      <div class="coins"><span class="spark">◆</span><b id="coinN">0</b></div>
+      <div class="coins" id="coinBox"><span class="spark">◆</span><b id="coinN">0</b>
+        <button id="getSparks" title="Get more sparks">+</button></div>
     </div>
   </div>
 
@@ -7698,17 +7715,32 @@ function renderLobbyPanel(){
       return sym+(c/100).toFixed(2);
     };
     el.innerHTML='<div class="ptitle">ITEM SHOP</div>'+
+      '<div class="sparkhead" id="sparkTop">'+
+        '<b>GET SPARKS</b><span>buy them, or earn them by playing</span></div>'+
       (payPacks&&payPacks.length
-        ? '<div class="setgroup">Sparks</div>'+
-          '<div class="packs">'+payPacks.map(pk=>
-            '<button class="pack" data-pack="'+pk.id+'">'+
-              '<b>◆ '+pk.sparks.toLocaleString()+'</b>'+
+        ? '<div class="packs">'+payPacks.map((pk,i)=>
+            '<button class="pack'+(i===2?' best':'')+'" data-pack="'+pk.id+'">'+
+              (i===2?'<div class="bestTag">BEST VALUE</div>':'')+
+              '<div class="packIcon">◆</div>'+
+              '<b>'+pk.sparks.toLocaleString()+'</b>'+
               (pk.bonus?'<em>'+pk.bonus+'</em>':'<em>&nbsp;</em>')+
               '<span>'+money(pk.price)+'</span></button>').join('')+'</div>'+
           '<div class="buyline'+(/Thank you/.test(buyMsg2)?' good':'')+'">'+
-            (buyMsg2||'Payment is handled by Stripe. This game never sees your card.')+'</div>'+
-          '<div class="setgroup">Earned</div>'
-        : '')+
+            (buyMsg2||(signedIn()
+              ? 'Payment is handled by Stripe. This game never sees your card.'
+              : 'Sign in on the ACCOUNT tab first — sparks attach to an account.'))+'</div>'
+        : '<div class="warnbox">'+
+            (!netConnected
+              ? 'Not connected to a server, so there is nothing to buy from.'
+              : (payPacks===null && serverVersion
+                 ? '<b>Buying sparks is not switched on for this server.</b><br>'+
+                   'It needs a Stripe account and three environment variables — '+
+                   '<i>STRIPE_SECRET</i>, <i>STRIPE_WEBHOOK_SECRET</i> and <i>PUBLIC_URL</i>. '+
+                   'See PAYMENTS.txt. Until then sparks are earned by playing.'
+                 : 'This server is an older <i>server.js</i> with no payment support. '+
+                   'Update it and restart.'))+
+          '</div>')+
+      '<div class="setgroup">Earned</div>'+
       '<div class="buyline'+(buyMsg?' good':'')+'" id="buyLine">'+(buyMsg||
         'Six pieces are made fresh every day and never return. '+rotationLabel()+'.')+'</div>'+
       '<div class="shoprow"><div class="shophead"><b>FEATURED</b><span>'+rotationLabel()+'</span></div>'+
@@ -12713,6 +12745,15 @@ document.getElementById('setReset').addEventListener('click',()=>{
 });
 document.querySelectorAll('.lnavbtn[data-tab]').forEach(b=>{
   b.addEventListener('click',()=>{ uiClick(); setLobbyTab(b.dataset.tab); });
+});
+const gsBtn=document.getElementById('getSparks');
+if(gsBtn) gsBtn.addEventListener('click',e=>{
+  e.stopPropagation(); uiClick();
+  setLobbyTab('shop');
+  setTimeout(()=>{
+    const t=document.getElementById('sparkTop');
+    if(t&&t.scrollIntoView) t.scrollIntoView({behavior:'smooth',block:'start'});
+  },60);
 });
 document.querySelectorAll('.oppbtn').forEach(b=>{
   b.addEventListener('click',()=>{
