@@ -34,6 +34,8 @@
     box-shadow:0 0 2px #000,0 0 4px rgba(0,0,0,.6)}
   #cross b{position:absolute;background:#fff;border-radius:50%;
     transform:translate(-50%,-50%);box-shadow:0 0 2px #000}
+  #hitmark.head i{background:#ffd873!important;height:3px!important}
+  #hitmark.kill i{background:#ff4d2a!important;height:4px!important}
   #hitmark{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(45deg);width:22px;height:22px;opacity:0}
   #hitmark b{position:absolute;background:#ff4b2b;width:2px;height:9px}
   #hitmark b:nth-child(1){left:10px;top:0}
@@ -161,6 +163,24 @@
     background:linear-gradient(180deg,rgba(6,10,18,.88),rgba(6,10,18,0));pointer-events:auto}
   .lbrand{font-size:20px;letter-spacing:5px;flex:0 0 auto;font-weight:bold;color:#fff;text-shadow:0 2px 12px #000}
   .lnav{display:flex;gap:2px;flex:1 1 420px;flex-wrap:wrap;min-width:0}
+  .firstrun{background:linear-gradient(160deg,rgba(232,56,13,.16),rgba(10,18,30,.9));
+    border:2px solid rgba(232,56,13,.45);border-radius:9px;padding:22px 24px;margin-bottom:20px}
+  .firstrun b{font-size:19px;letter-spacing:3px;color:#fff;display:block;margin-bottom:8px}
+  .firstrun p{color:#cfe0f0;font-size:14px;line-height:1.65;margin:0 0 10px}
+  .firstrun .frkeys{font-size:12.5px;color:#9db2c9}
+  .firstrun .frkeys u{color:#ffd873;text-decoration:none;font-weight:bold}
+  .frgo{pointer-events:auto;background:#e8380d;border:0;color:#fff;font-family:inherit;
+    font-size:15px;letter-spacing:4px;padding:13px 32px;border-radius:5px;cursor:pointer;
+    margin-top:6px;font-weight:bold}
+  .frgo:hover{background:#ff4d1f}
+  .frskip{display:block;margin-top:12px;font-size:12px;color:#8ea4bd;cursor:pointer;
+    pointer-events:auto;text-decoration:underline}
+  .subtabs{display:flex;gap:6px;margin:-4px 0 16px;flex-wrap:wrap}
+  .subtab{pointer-events:auto;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);
+    border-radius:4px;color:#8ea4bd;font-family:inherit;font-size:11px;letter-spacing:2px;
+    padding:7px 14px;cursor:pointer;box-shadow:none}
+  .subtab:hover{color:#dbe6f2;border-color:rgba(255,255,255,.32);transform:none}
+  .subtab.on{background:rgba(232,56,13,.18);border-color:#e8380d;color:#fff}
   .lnavbtn{pointer-events:auto;background:transparent;border:0;box-shadow:none;color:#8ea4bd;
     font-family:inherit;font-size:12.5px;letter-spacing:1.8px;padding:10px 11px;cursor:pointer;
     white-space:nowrap;flex:0 0 auto;
@@ -296,6 +316,7 @@
   .svc b{display:block;color:var(--sc);font-size:14px;letter-spacing:1px;margin-bottom:5px}
   .svc p{font-size:11.5px;line-height:1.5;color:#9db2c9;margin:0 0 9px}
   .svcna{font-size:10px;letter-spacing:1.5px;color:#64748b}
+  .svcna.good{color:#7bd88f}
   .vmeter{display:inline-block;width:110px;height:7px;background:rgba(255,255,255,.12);
     border-radius:4px;overflow:hidden;vertical-align:middle;margin-left:6px}
   .vmeter i{display:block;height:100%;background:linear-gradient(90deg,#4ade80,#ffd873,#ff5c5c)}
@@ -396,6 +417,8 @@
     background:rgba(4,8,16,.78);border:1px solid rgba(159,212,255,.4);border-radius:6px;
     padding:9px 16px;font-size:13px;color:#cfe0f0;pointer-events:none;text-align:center}
   #livevote b{color:#9fd4ff;font-size:16px;display:block}
+  #pingTag{position:absolute;right:22px;top:54px;display:none;font-size:11px;
+    letter-spacing:1px;color:#7bd88f;pointer-events:none}
   #clipflash{position:absolute;left:50%;top:92px;transform:translateX(-50%);display:none;
     background:rgba(232,56,13,.92);color:#fff;font-size:12px;letter-spacing:3px;
     padding:8px 18px;border-radius:4px;transition:opacity .5s;pointer-events:none}
@@ -642,6 +665,7 @@
   <div id="chatstream"></div>
   <div id="votebox"></div>
   <div id="clipflash">● CLIP SAVED</div>
+  <div id="pingTag"></div>
   <div id="livechat"></div>
   <div id="livevote"></div>
   <div id="killcam"></div>
@@ -672,18 +696,12 @@
   <div class="ltop">
     <div class="lbrand">GALEBREAK</div>
     <nav class="lnav">
-      <button class="lnavbtn on" data-tab="play">PLAY</button>
-      <button class="lnavbtn" data-tab="locker">LOCKER</button>
-      <button class="lnavbtn" data-tab="shop">ITEM SHOP</button>
-      <button class="lnavbtn" data-tab="maps">MAPS</button>
-      <button class="lnavbtn" data-tab="stream">STREAM</button>
-      <button class="lnavbtn" data-tab="stream">STREAM</button>
-      <button class="lnavbtn" data-tab="unlock">UNLOCK</button>
-      <button class="lnavbtn" data-tab="friends">FRIENDS</button>
-      <button class="lnavbtn" data-tab="account">ACCOUNT</button>
-      <button class="lnavbtn" id="menuParty">PARTY</button>
+      <button class="lnavbtn on" data-group="play">PLAY</button>
+      <button class="lnavbtn" data-group="locker">LOCKER</button>
+      <button class="lnavbtn" data-group="shop">SHOP</button>
+      <button class="lnavbtn" data-group="social">SOCIAL</button>
       <button class="lnavbtn" id="menuSettings">SETTINGS</button>
-      <button class="lnavbtn" id="menuCheats">CODE</button>
+      <button class="lnavbtn" id="menuCheats" style="opacity:.35">CODE</button>
     </nav>
     <div class="lwallet">
       <div class="lvlwrap">
@@ -1854,7 +1872,7 @@ const ASSIST_LEVELS=[
   { name:'standard', cone:0.125, pull:4.0, snap:0.30 },
   { name:'strong',   cone:0.175, pull:6.5, snap:0.46 }
 ];
-let assistTarget=null, assistLock=0, autoFireT=0;
+let assistTarget=null, assistLock=0, autoFireT=0, lastHitKind='';
 
 function assistCandidates(){
   const out=[];
@@ -2411,6 +2429,7 @@ function flashClip(){
    Exclusive pieces are granted by the server, never unlocked locally, so a
    player cannot simply edit their own save to get one. */
 let redeemMsg='', serverCodeCount=null, redeemTimer=null;
+let ytChatReady=false, ytState='', ytNote='';
 function redeemCode(){
   const f=document.getElementById('redeemBox');
   const code=(f?f.value:'').trim();
@@ -3057,6 +3076,50 @@ function voiceUpdatePositions(){
   }
 }
 
+/* ================= reconnection =================
+   Connections drop: a laptop sleeps, wifi hiccups, a free host spins down.
+   Losing the match over it is what makes people stop playing, so the client
+   climbs back in by itself and restores what the server has forgotten. */
+const recon={ want:false, tries:0, timer:null, wasParty:'', pinging:0, ping:0, sentAt:0 };
+function reconSchedule(){
+  if(!recon.want || netConnected) return;
+  clearTimeout(recon.timer);
+  recon.tries++;
+  const wait=Math.min(15000, 700*Math.pow(1.6,Math.min(recon.tries,7)));
+  netStatus('Connection lost. Trying again in '+Math.round(wait/1000)+'s…','bad');
+  recon.timer=setTimeout(()=>{
+    if(netConnected||!recon.want) return;
+    connectMultiplayer(true);
+  },wait);
+}
+function reconOnOpen(){
+  recon.tries=0;
+  clearTimeout(recon.timer);
+  if(recon.wasParty){                       // the server has forgotten your squad
+    netParty=recon.wasParty;
+    netSend({type:'setparty',party:netParty,size:teamSize()});
+  }
+  if(typeof paintSquadState==='function') paintSquadState();
+}
+function pingTick(dt){
+  if(!netConnected) return;
+  recon.pinging-=dt;
+  if(recon.pinging>0) return;
+  recon.pinging=3;
+  recon.sentAt=performance.now();
+  netSend({type:'ping',t:recon.sentAt});
+}
+function pingReply(m){
+  if(!m||!m.t) return;
+  recon.ping=Math.max(0,Math.round(performance.now()-m.t));
+  const el=document.getElementById('pingTag');
+  if(el){
+    el.style.display='block';
+    el.textContent=recon.ping+' ms';
+    el.style.color = recon.ping<80 ? '#7bd88f' : recon.ping<180 ? '#ffd873' : '#ff7a5c';
+  }
+}
+
 /* ================= multiplayer ================= */
 /* ============================================================
    PUT YOUR SERVER ADDRESS HERE AFTER YOU DEPLOY IT, for example
@@ -3228,6 +3291,7 @@ function connectMultiplayer(quiet){
     net=new WebSocket(netUrl());
     net.addEventListener('open',()=>{
       netConnected=true; netJoined=true; serverHasAccounts=false; serverVersion='';
+      recon.want=true; recon.wasParty=netParty; reconOnOpen();
       silentTried=false;
       setTimeout(()=>{
         if(netConnected&&!serverVersion&&lobbyTab==='account'){
@@ -3255,6 +3319,8 @@ function connectMultiplayer(quiet){
     net.addEventListener('close',()=>{
       const hadJoined=netJoined;
       netConnected=false; netId=null; netJoined=false; clearRemotePlayers();
+      const pt=document.getElementById('pingTag'); if(pt) pt.style.display='none';
+      reconSchedule();
       netStatus(hadJoined
         ? 'Connection to <b>'+netUrl()+'</b> was lost. Press CONNECT to try again.'
         : noServerHelp(), 'bad');
@@ -3264,6 +3330,7 @@ function connectMultiplayer(quiet){
   }catch(e){ netStatus('Could not reach the server.','bad'); }
 }
 function disconnectMultiplayer(){
+  recon.want=false; clearTimeout(recon.timer);
   netHost=false; netHostId=null;
   if(net){ try{ net.close(); }catch(e){} }
   net=null; netConnected=false; netId=null;
@@ -3480,6 +3547,14 @@ function handleNet(m){
       feed(m.by||'Someone', b.name);
       refreshAlive();
     }
+  } else if(m.type==='ytchat'){
+    for(const it of (m.items||[])){
+      liveMessage({ user:it.user, text:it.text, colour:it.mod?'#ff6a4d':'#ff9a9a',
+                    mod:!!it.mod, sub:!!it.sub });
+    }
+    if(live.state!=='live'){ live.state='live'; live.note='Reading your YouTube chat.'; }
+  } else if(m.type==='pong'){
+    pingReply(m);
   } else if(m.type==='config'){
     serverHasAccounts=!!m.accounts;
     serverVersion=m.server||'';
@@ -3491,6 +3566,7 @@ function handleNet(m){
     serverPersistent=m.persistent!==false;
     serverCodeCount=(m.codeCount===undefined)?null:m.codeCount;
     payPacks=m.packs||null;
+    ytChatReady=!!m.ytChat; ytState=m.ytState||''; ytNote=m.ytNote||'';
     payCurrency=m.currency||'usd';
     if(!account) setTimeout(googleSilentSignIn,400);
     googleClientId=m.googleClientId||null;
@@ -7539,6 +7615,20 @@ function rotationLabel(){
   return 'new items in '+h+'h '+m+'m';
 }
 
+/* Somebody opening this for the first time has no idea what any of it is.
+   One sentence, one button, and the rest can wait until they have played. */
+function firstRunCard(){
+  if(profile.matches>0) return '';
+  return '<div class="firstrun">'+
+    '<b>New here?</b>'+
+    '<p>You drop onto an island with nineteen others, find a weapon, build cover, '+
+    'and stay inside the shrinking storm. Last one standing wins.</p>'+
+    '<p class="frkeys"><u>WASD</u> move · <u>Space</u> jump and leave the bus · '+
+    '<u>Left click</u> fire · <u>E</u> pick up · <u>Q C F V</u> build</p>'+
+    '<button class="frgo" id="frPlay">DROP IN</button>'+
+    '<span class="frskip" id="frTrain">or try the training range first</span>'+
+    '</div>';
+}
 function renderLobbyPanel(){
   const el=document.getElementById('lobbyPanel');
   if(!el) return;
@@ -7557,7 +7647,7 @@ function renderLobbyPanel(){
       [S.keys.thirdPerson,'First / third person'],
       ['Escape','Pause and leave']
     ];
-    el.innerHTML='<div class="ptitle">DROP IN</div>'+
+    el.innerHTML=subTabBar()+firstRunCard()+'<div class="ptitle">DROP IN</div>'+
       '<div class="psub">Fighters ride the balloon bus across the island. Pick a landing spot, find a weapon '+
       'before anyone else does, and outlast the storm. Eliminations and placement both pay out.</div>'+
       '<div class="statrow">'+
@@ -7571,7 +7661,7 @@ function renderLobbyPanel(){
         '<div><b>'+String(k).split(' ').map(prettyKey).join(' ')+'</b>'+t+'</div>').join('')+'</div>';
   } else if(lobbyTab==='locker'){
     const cats=['skin','pack','pick','glider','emote'];
-    el.innerHTML='<div class="ptitle">LOCKER</div>'+
+    el.innerHTML=subTabBar()+'<div class="ptitle">LOCKER</div>'+
       '<div class="turnhint">Drag the character to turn them · wheel to zoom'+
         ' · <button class="ghost small" id="turnReset" style="margin:0;padding:4px 10px;'+
         'font-size:10px">RESET</button></div>'+
@@ -7582,7 +7672,7 @@ function renderLobbyPanel(){
       '<div class="buyline'+(buyMsg?' good':'')+'" id="buyLine">'+(buyMsg||'Pick a slot, then choose what to wear.')+'</div>'+
       '<div class="grid">'+CATALOG[lockerCat].map(it=>itemCard(lockerCat,it,'locker')).join('')+'</div>';
   } else if(lobbyTab==='account'){
-    el.innerHTML='<div class="ptitle">ACCOUNT</div>'+
+    el.innerHTML=subTabBar()+'<div class="ptitle">ACCOUNT</div>'+
       (signedIn()
         ? '<div class="codebox"><span>SIGNED IN AS</span><b>'+account.user+'</b>'+
             '<button class="ghost small" id="logoutBtn">SIGN OUT</button></div>'+
@@ -7647,7 +7737,7 @@ function renderLobbyPanel(){
       ['tiktok','TikTok','#ff0050','Live chat needs a signed connection that only a '+
         'server library can make. Not possible from a browser.']
     ];
-    el.innerHTML='<div class="ptitle">STREAM</div>'+
+    el.innerHTML=subTabBar()+'<div class="ptitle">STREAM</div>'+
       '<div class="psub">This links your <b>chat</b> to the game, so viewers can see what '+
         'you see and vote on what happens. It does not broadcast video — going live still '+
         'means OBS, because browsers cannot speak RTMP.</div>'+
@@ -7680,7 +7770,7 @@ function renderLobbyPanel(){
   } else if(lobbyTab==='stream'){
     const st=live.state;
     const dot=st==='live'?'#4ade80':(st==='connecting'||st==='retrying'?'#ffd873':'#64748b');
-    el.innerHTML='<div class="ptitle">STREAM</div>'+
+    el.innerHTML=subTabBar()+'<div class="ptitle">STREAM</div>'+
       '<div class="psub">Read your live chat into the game, and let viewers take part. '+
         'Nothing here broadcasts video — see the note at the bottom for why.</div>'+
 
@@ -7726,7 +7816,7 @@ function renderLobbyPanel(){
     const code=exportMap();
     const list=savedMaps();
     const names=Object.keys(list).sort((x,y)=>list[y].at-list[x].at);
-    el.innerHTML='<div class="ptitle">MAPS</div>'+
+    el.innerHTML=subTabBar()+'<div class="ptitle">MAPS</div>'+
       '<div class="psub">Anything you build — pieces and props — packs into a code. '+
         'Save it here, or send the code to a friend and they load the same map.</div>'+
       '<div class="setgroup">Current build</div>'+
@@ -7768,7 +7858,7 @@ function renderLobbyPanel(){
                          :'Start a match to load a map into it.'))+'</div>';
   } else if(lobbyTab==='unlock'){
     const got=owns('skin','subscriber');
-    el.innerHTML='<div class="ptitle">SUBSCRIBER OUTFIT</div>'+
+    el.innerHTML=subTabBar()+'<div class="ptitle">SUBSCRIBER OUTFIT</div>'+
       '<div class="exclusive'+(got?' got':'')+'">'+
         '<div class="exname">Signal Breaker</div>'+
         '<div class="exrar">LEGENDARY — NOT SOLD IN THE SHOP</div>'+
@@ -7800,7 +7890,7 @@ function renderLobbyPanel(){
   } else if(lobbyTab==='friends'){
     const list=friends();
     const online=list.filter(f=>f.online).length;
-    el.innerHTML='<div class="ptitle">FRIENDS</div>'+
+    el.innerHTML=subTabBar()+'<div class="ptitle">FRIENDS</div>'+
       '<div class="psub">Share your code and add theirs. When you are both connected you can '+
       'see who is online, invite each other into a match, and talk.</div>'+
       '<div class="codebox"><span>YOUR FRIEND CODE</span><b>'+myCode()+'</b>'+
@@ -7846,7 +7936,7 @@ function renderLobbyPanel(){
       const sym={usd:'$',eur:'€',gbp:'£',cad:'C$',aud:'A$'}[payCurrency]||'';
       return sym+(c/100).toFixed(2);
     };
-    el.innerHTML='<div class="ptitle">ITEM SHOP</div>'+
+    el.innerHTML=subTabBar()+'<div class="ptitle">ITEM SHOP</div>'+
       '<div class="sparkhead" id="sparkTop">'+
         '<b>GET SPARKS</b><span>buy them, or earn them by playing</span></div>'+
       (payPacks&&payPacks.length
@@ -7883,6 +7973,13 @@ function renderLobbyPanel(){
   bindPanel();
 }
 function bindPanel(){
+  const fr=document.getElementById('frPlay');
+  if(fr) fr.addEventListener('click',()=>{ uiClick(); gameMode='casual'; start(); });
+  const ft=document.getElementById('frTrain');
+  if(ft) ft.addEventListener('click',()=>{ uiClick(); gameMode='training'; start(); });
+  document.querySelectorAll('[data-sub]').forEach(b=>b.addEventListener('click',()=>{
+    uiClick(); setLobbyTab(b.dataset.sub);
+  }));
   if(lobbyTab==='account') mountGoogleButton();
   const rnb=document.getElementById('renameBtn');
   if(rnb) rnb.addEventListener('click',()=>{ uiClick(); doRename(); });
@@ -8141,10 +8238,40 @@ function refreshCosmetics(){
   if(avParts) avParts.current=null;
   updateWallet();
 }
+/* Five things at the top, and the rest as sub-tabs inside them. The old
+   eleven buttons grew one request at a time and read as a wall. */
+const TAB_GROUPS={
+  play  :{ label:'PLAY',   tabs:[['play','PLAY']] },
+  locker:{ label:'LOCKER', tabs:[['locker','OUTFITS'],['unlock','UNLOCKS'],['maps','MAPS']] },
+  shop  :{ label:'SHOP',   tabs:[['shop','ITEM SHOP']] },
+  social:{ label:'SOCIAL', tabs:[['friends','FRIENDS'],['party','PARTY'],
+                                 ['account','ACCOUNT'],['stream','STREAM']] }
+};
+function groupOf(tab){
+  for(const g in TAB_GROUPS)
+    if(TAB_GROUPS[g].tabs.some(([t])=>t===tab)) return g;
+  return 'play';
+}
+function setLobbyGroup(g){
+  const grp=TAB_GROUPS[g];
+  if(!grp) return;
+  setLobbyTab(grp.tabs[0][0]);
+}
 function setLobbyTab(t){
+  if(t==='party'){ openParty(); return; }      // party still has its own screen
   lobbyTab=t; buyMsg='';
-  document.querySelectorAll('.lnavbtn[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  const g=groupOf(t);
+  document.querySelectorAll('.lnavbtn[data-group]').forEach(b=>
+    b.classList.toggle('on', b.dataset.group===g));
   renderLobbyPanel();
+}
+/* the row of sub-tabs that appears inside a group with more than one page */
+function subTabBar(){
+  const g=TAB_GROUPS[groupOf(lobbyTab)];
+  if(!g || g.tabs.length<2) return '';
+  return '<div class="subtabs">'+g.tabs.map(([t,label])=>
+    '<button class="subtab'+(lobbyTab===t?' on':'')+'" data-sub="'+t+'">'+label+'</button>'
+  ).join('')+'</div>';
 }
 
 /* ================= rewards ================= */
@@ -10128,6 +10255,7 @@ function shoot(){
   }
   pelletHits.clear(); remoteHits.clear();
   let anyHit=false;
+  lastHitKind='';
   if(modeCfg().arena==='training') trainStats.shots+=(t.pellets||1);
   const sp=t.spread*(1-player.aim*.62)*((cheats.aim||cheats.steady)?0:(cheats.wall?.25:1));
 
@@ -10193,7 +10321,9 @@ function shoot(){
         let dmg=isHead?(t.head||t.dmg*(t.headMul||2)):t.dmg;
         if(g.kind==='shotgun') dmg*=clamp(1.26-h.distance/44,.26,1);
         if(modeCfg().arena==='training'){ trainStats.hits++; if(isHead) trainStats.heads++; }
+        const wasAlive=bot.alive;
         damageBot(bot,dmg,isHead,true);
+        lastHitKind = (wasAlive && !bot.alive) ? 'kill' : (isHead ? 'head' : '');
         const acc=pelletHits.get(bot)||{d:0,head:false};
         acc.d+=dmg; acc.head=acc.head||isHead; pelletHits.set(bot,acc);
         anyHit=true;
@@ -10208,7 +10338,7 @@ function shoot(){
     if(bot.alive||e.d>0) floatDamage(bot.pos.clone().setY(bot.pos.y+1.75), e.d, e.head);
   });
   remoteHits.forEach((e)=>{ sendNetHit(e.obj, e.d, e.head); });
-  if(anyHit) hitmarker();
+  if(anyHit) hitmarker(lastHitKind);
   if(netConnected) sendNetShot(origin, origin.clone().add(base.clone().multiplyScalar(Math.min(t.range,60))));
   if(g.ammo===0 && S.autoReload) startReload();
   syncHUD();
@@ -10315,7 +10445,21 @@ function hurtPlayer(amount, from, byName){
     else endGame(false);
   }
 }
-function hitmarker(){
+function hitmarker(kind){
+  const el=document.getElementById('hitmark');
+  if(el){
+    el.className='hm'+(kind==='head'?' head':(kind==='kill'?' kill':''));
+    el.style.display='block';
+    el.style.opacity='1';
+    clearTimeout(el.__t);
+    el.__t=setTimeout(()=>{ el.style.opacity='0'; },kind==='kill'?260:150);
+  }
+  // pitch tells you what happened without having to look
+  blip(kind==='head'?1500:(kind==='kill'?1900:1150), .035, kind?.14:.10, 'square');
+  if(kind==='kill') setTimeout(()=>blip(1300,.05,.14,'square'),70);
+  return;
+}
+function hitmarkerOld(){
   if(S.hitMarker){
     const h=document.getElementById('hitmark');
     h.style.transition='none'; h.style.opacity=1;
@@ -12872,6 +13016,7 @@ function tick(){
     }
     updateTeamPads(dt);
     pollPresence(dt);
+    pingTick(dt);
     cloudSave(dt);
     voiceSync(dt);
     voiceUpdatePositions();
@@ -12988,7 +13133,7 @@ function buildAndLaunch(){
 }
 
 document.getElementById('pauseCheats').addEventListener('click',()=>{ uiClick(); openCheats(); });
-document.getElementById('menuCheats').addEventListener('click',()=>{ uiClick(); openCheats(); });
+(document.getElementById('menuCheats')||{addEventListener(){}}).addEventListener('click',()=>{ uiClick(); openCheats(); });
 document.getElementById('cheatBack').addEventListener('click',()=>{ uiClick(); closeCheats(); });
 document.getElementById('cheatClear').addEventListener('click',()=>{
   for(const k in cheats) cheats[k]=false;
@@ -13006,7 +13151,7 @@ document.getElementById('codeIn').addEventListener('keydown',e=>{
   if(e.key==='Enter'){ runCode(e.currentTarget.value); e.currentTarget.value=''; }
   if(e.key==='Escape'){ closeCheats(); }
 });
-document.getElementById('menuParty').addEventListener('click',()=>{ uiClick(); openParty(); });
+(document.getElementById('menuParty')||{addEventListener(){}}).addEventListener('click',()=>{ uiClick(); openParty(); });
 document.getElementById('partyBack').addEventListener('click',()=>{ uiClick(); closeParty(); });
 document.getElementById('connectBtn').addEventListener('click',()=>{
   netName=(document.getElementById('playerName').value||'Player').trim().slice(0,16)||'Player';
@@ -13018,12 +13163,12 @@ document.getElementById('playerName').addEventListener('keydown',e=>e.stopPropag
 document.getElementById('serverAddr').addEventListener('keydown',e=>e.stopPropagation());
 document.getElementById('roomCode').addEventListener('keydown',e=>e.stopPropagation());
 document.getElementById('squadCode').addEventListener('keydown',e=>e.stopPropagation());
-document.getElementById('menuParty').addEventListener('click',()=>{ uiClick(); openParty(); });
+(document.getElementById('menuParty')||{addEventListener(){}}).addEventListener('click',()=>{ uiClick(); openParty(); });
 document.getElementById('partyBack').addEventListener('click',()=>{ uiClick(); closeParty(); });
-document.getElementById('squadSet').addEventListener('click',()=>{
+(document.getElementById('squadSet')||{addEventListener(){}}).addEventListener('click',()=>{
   uiClick(); setParty(document.getElementById('squadCode').value); paintSquadState();
 });
-document.getElementById('squadNew').addEventListener('click',()=>{
+(document.getElementById('squadNew')||{addEventListener(){}}).addEventListener('click',()=>{
   uiClick();
   const code=('SQ'+myCode()).slice(0,12).toUpperCase();
   document.getElementById('squadCode').value=code;
@@ -13045,8 +13190,8 @@ document.getElementById('setReset').addEventListener('click',()=>{
   S=JSON.parse(JSON.stringify(DEFAULTS));
   applySettings(); buildSettings(); saveSettings(); uiClick();
 });
-document.querySelectorAll('.lnavbtn[data-tab]').forEach(b=>{
-  b.addEventListener('click',()=>{ uiClick(); setLobbyTab(b.dataset.tab); });
+document.querySelectorAll('.lnavbtn[data-group]').forEach(b=>{
+  b.addEventListener('click',()=>{ uiClick(); setLobbyGroup(b.dataset.group); });
 });
 const gsBtn=document.getElementById('getSparks');
 if(gsBtn) gsBtn.addEventListener('click',e=>{
@@ -13100,7 +13245,7 @@ document.querySelectorAll('.modebtn').forEach(b=>{
     uiClick();
   });
 });
-document.getElementById('onlineToggle').addEventListener('click',()=>{
+(document.getElementById('onlineToggle')||{addEventListener(){}}).addEventListener('click',()=>{
   uiClick(); setOnlineMode(!onlineMode);
 });
 document.getElementById('startBtn').addEventListener('click',()=>{

@@ -221,7 +221,98 @@ function creditSparks(user, sparks, sessionId){
 /* YouTube live chat, if you give the server an API key. Twitch needs nothing
    and is handled entirely in the browser; Kick and TikTok have no usable
    public chat endpoint, so they are not offered rather than offered broken. */
-const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || '';
+const YOUTUBE_API_KEY = envAny('YOUTUBE_API_KEY');
+
+/* ===================== YOUTUBE LIVE CHAT =====================
+   Twitch can be read straight from the browser. YouTube cannot: it needs an
+   API key, and a key in a web page is a key anyone can take and spend. So the
+   server does the polling and passes the messages down to whoever is playing.
+
+   Quota is the real constraint. A key gets 10,000 units a day. Finding your
+   live broadcast costs 100, and each poll of the chat costs 5, so polling
+   every six seconds burns roughly 3,000 an hour. That is about three hours of
+   streaming per day. The poll respects YouTube's own suggested interval and
+   stops when nobody is connected, which is most of what keeps it in budget. */
+const yt = { chatId:null, videoId:null, page:null, timer:null,
+             state:'off', note:'', nextAt:0, units:0, seen:new Set() };
+
+async function ytApi(path, params){
+  const q = new URLSearchParams(Object.assign({ key: YOUTUBE_API_KEY }, params));
+  const res = await fetch('https://www.googleapis.com/youtube/v3/' + path + '?' + q);
+  const body = await res.json();
+  if (!res.ok) {
+    const msg = (body.error && body.error.message) || ('HTTP ' + res.status);
+    throw new Error(msg);
+  }
+  return body;
+}
+async function ytFindLive(){
+  if (!YOUTUBE_CHANNEL_ID) throw new Error('No channel id set.');
+  // 100 units, so this is done once and remembered
+  const found = await ytApi('search', {
+    part:'id', channelId:YOUTUBE_CHANNEL_ID, eventType:'live', type:'video', maxResults:1 });
+  yt.units += 100;
+  const item = (found.items || [])[0];
+  if (!item) throw new Error('That channel is not live right now.');
+  yt.videoId = item.id.videoId;
+  const vid = await ytApi('videos', { part:'liveStreamingDetails', id:yt.videoId });
+  yt.units += 1;
+  const det = ((vid.items || [])[0] || {}).liveStreamingDetails || {};
+  if (!det.activeLiveChatId) throw new Error('That broadcast has no live chat.');
+  yt.chatId = det.activeLiveChatId;
+  yt.page = null;
+}
+function ytViewers(){
+  let n = 0;
+  for (const r of rooms.values()) n += r.size;
+  return n;
+}
+async function ytTick(){
+  if (!YOUTUBE_API_KEY || !YOUTUBE_CHANNEL_ID) return;
+  // nobody playing means nothing to send messages to, and quota is finite
+  if (!ytViewers()) { yt.state = 'idle'; yt.note = 'Waiting for a player.'; return; }
+  if (Date.now() < yt.nextAt) return;
+  try {
+    if (!yt.chatId) {
+      yt.state = 'finding';
+      await ytFindLive();
+      yt.state = 'live';
+      yt.note = 'Reading chat from your broadcast.';
+      console.log('youtube chat attached to', yt.videoId);
+    }
+    const res = await ytApi('liveChat/messages', {
+      liveChatId: yt.chatId, part:'snippet,authorDetails',
+      maxResults: 200, pageToken: yt.page || '' });
+    yt.units += 5;
+    yt.page = res.nextPageToken || null;
+    yt.nextAt = Date.now() + Math.max(5000, Number(res.pollingIntervalMillis) || 6000);
+
+    const out = [];
+    for (const it of (res.items || [])) {
+      if (yt.seen.has(it.id)) continue;
+      yt.seen.add(it.id);
+      const sn = it.snippet || {}, au = it.authorDetails || {};
+      const text = sn.displayMessage || (sn.textMessageDetails && sn.textMessageDetails.messageText);
+      if (!text) continue;
+      out.push({ user: au.displayName || 'viewer', text: String(text).slice(0,200),
+                 mod: !!(au.isChatModerator || au.isChatOwner),
+                 sub: !!au.isChatSponsor, src:'yt' });
+    }
+    if (yt.seen.size > 3000) yt.seen = new Set();
+    if (out.length) {
+      for (const r of rooms.values())
+        for (const p of r.values()) send(p.ws, { type:'ytchat', items: out });
+    }
+  } catch (e) {
+    yt.state = 'error';
+    yt.note = e.message;
+    yt.chatId = null;
+    // a stream that has ended should be retried slowly, not hammered
+    yt.nextAt = Date.now() + (/not live|no live chat/i.test(e.message) ? 120000 : 45000);
+    console.log('youtube chat:', e.message);
+  }
+}
+setInterval(() => { ytTick().catch(()=>{}); }, 3000);
 
 const TURN_URL  = process.env.TURN_URL  || '';
 const TURN_USER = process.env.TURN_USER || '';
@@ -454,7 +545,8 @@ wss.on('connection', (ws) => {
              persistent: acctPersistent,
              ice: iceServers(),
              turn: !!TURN_URL,
-             ytChat: !!YOUTUBE_API_KEY,
+             ytChat: !!(YOUTUBE_API_KEY && YOUTUBE_CHANNEL_ID),
+             ytState: yt.state, ytNote: yt.note,
              codeCount: Object.keys(REDEEM_CODES).length,
              payments: paymentsOn(),
              packs: paymentsOn() ? SPARK_PACKS : null,
@@ -585,6 +677,10 @@ wss.on('connection', (ws) => {
         send(ws, { type:'reward', ok:false, error: err.message });
       });
       return;
+    }
+
+    if (m.type === 'ping') {
+      return send(ws, { type:'pong', t:m.t });
     }
 
     if (m.type === 'resume') {
@@ -780,7 +876,9 @@ server.listen(PORT, () => {
       ' url:' + (PUBLIC_URL?'yes':'MISSING') + ']'));
   console.log(`  accounts file: ${ACCT_FILE}`);
   console.log(`  voice relay: ${TURN_URL ? 'TURN configured' : 'STUN only — voice will fail behind strict NATs'}`);
-  console.log(`  youtube chat: ${YOUTUBE_API_KEY ? 'key set' : 'not configured (Twitch needs no key)'}`);
+  console.log(`  youtube chat: ${
+    (YOUTUBE_API_KEY && YOUTUBE_CHANNEL_ID) ? 'ready, polls while people are playing'
+    : (YOUTUBE_API_KEY ? 'key set but no channel id' : 'not configured (Twitch needs no key)')}`);
   if (!acctPersistent) {
     console.log('  WARNING: that path is not a persistent disk. On a host that');
     console.log('  resets its filesystem, accounts will be lost on every restart.');
