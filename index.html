@@ -708,6 +708,13 @@
 
   <div class="lbottom">
     <div id="oppopick">
+      <span>TEAM</span>
+      <button class="oppbtn on" data-team="1">SOLO</button>
+      <button class="oppbtn" data-team="2">DUO</button>
+      <button class="oppbtn" data-team="3">TRIO</button>
+      <button class="oppbtn" data-team="4">SQUAD</button>
+    </div>
+    <div id="oppopick">
       <span>OPPONENTS</span>
       <button class="oppbtn on" data-bots="1">BOT LOBBY</button>
       <button class="oppbtn" data-bots="0">PLAYERS ONLY</button>
@@ -772,7 +779,9 @@
     <div class="prow"><label>Server</label><input id="serverAddr" maxlength="60" placeholder="your-server-address"></div>
     <div class="prow"><label>Room code</label><input id="roomCode" maxlength="12" value="MAIN" style="text-transform:uppercase"></div>
     <div class="prow"><label>Squad</label><input id="squadCode" maxlength="12" placeholder="blank = solo" style="text-transform:uppercase">
-      <button id="squadSet" class="ghost small" style="margin:0">SET</button></div>
+      <button id="squadSet" class="ghost small" style="margin:0">SET</button>
+      <button id="squadNew" class="ghost small" style="margin:0">MAKE ONE</button></div>
+    <div id="squadState" class="buyline"></div>
     <div class="pstep" style="margin-top:0">Same squad code = teammates: green name tags, visible through walls,
       health bars on your HUD. Friendly fire stays on, so you can still shoot each other.</div>
     <div class="prow"><label>Fill with bots</label><button class="sw" id="fillBots"></button>
@@ -887,7 +896,7 @@ const DEFAULTS = {
   volVoice:1, voiceProximity:true, voiceMode:'ptt', voiceWho:'team', micDevice:'',
   liveChannel:'', liveOverlay:true, liveLines:7, liveCommands:true, streamerMode:false,
   cues:true, minimap:true, killFeed:true, dmgNums:true, hitMarker:true, stormPanel:true,
-  showTips:true, killcam:true, clipRecord:false, botLobby:true, aimAssist:0, autoFire:false, toggleSprint:false, autoReload:true, autoPickup:false,
+  showTips:true, killcam:true, clipRecord:false, friendlyFire:false, teamSize:1, botLobby:true, aimAssist:0, autoFire:false, toggleSprint:false, autoReload:true, autoPickup:false,
   botCount:19, botSkill:1, stormSpeed:1, startMats:0
 };
 let S = JSON.parse(JSON.stringify(DEFAULTS));
@@ -983,6 +992,7 @@ const SCHEMA = [
  { group:'Gameplay', items:[
    { k:'showTips', label:'Show control tips while playing', type:'toggle' },
    { k:'killcam', label:'Killcam when you are eliminated', type:'toggle' },
+   { k:'friendlyFire', label:'Friendly fire (your own side can hurt you)', type:'toggle' },
    { k:'clipRecord', label:'Record clips in the background (costs performance)', type:'toggle' },
    { k:'aimAssist', label:'Aim assist', type:'select',
      opts:[[0,'Off'],[1,'Light'],[2,'Standard'],[3,'Strong']] },
@@ -3064,8 +3074,26 @@ let netParty='';
 function isMate(r){ return !!netParty && r && r.party===netParty; }
 function setParty(code){
   netParty=(code||'').trim().toUpperCase().slice(0,12);
-  netSend({type:'setparty', party:netParty||null});
-  refreshTeamLooks(); renderMembers();
+  netSend({type:'setparty', party:netParty||null, size:teamSize()});
+  refreshTeamLooks(); renderMembers(); paintSquadState();
+}
+/* Being on a team should be legible at a glance, not something you infer
+   from a name tag colour mid-fight. */
+function paintSquadState(){
+  const el=document.getElementById('squadState');
+  if(!el) return;
+  if(!netConnected){ el.textContent='Not connected.'; el.className='buyline'; return; }
+  if(!netParty){
+    el.innerHTML='You are <b>solo</b>. Make a squad, or accept a friend\'s invite.';
+    el.className='buyline';
+    return;
+  }
+  const mates=[...remotePlayers.values()].filter(r=>r.party===netParty);
+  el.innerHTML='Squad <b>'+netParty+'</b> ('+squadHumans()+'/'+teamSize()+') · '+
+    (mates.length
+      ? 'with '+mates.map(m=>m.name.replace(/[<>&]/g,'')).join(', ')
+      : 'nobody else yet. Send them this code, or invite them from FRIENDS.');
+  el.className='buyline'+(mates.length?' good':'');
 }
 const stormNet={have:false,r:0,cx:0,cz:0};
 const remotePlayers=new Map();
@@ -3096,8 +3124,8 @@ function noServerHelp(){
   return msg;
 }
 function roomWithMode(){
-  const base=(netRoom||'MAIN').replace(/-(BR|TN|ZW|BX)$/,'');
-  return base+'-'+(modeCfg().short||'br').toUpperCase();
+  const base=(netRoom||'MAIN').replace(/-[A-Z]{2}\d?$/,'');
+  return base+'-'+(modeCfg().short||'br').toUpperCase()+teamSize();
 }
 function netUrl(){
   const addr=(document.getElementById('serverAddr').value||'').trim();
@@ -3118,6 +3146,7 @@ function netStatus(msg,cls){
   }
 }
 function renderMembers(){
+  paintSquadState();
   const el=document.getElementById('memberlist');
   if(!el) return;
   const diag=document.getElementById('netdiag');
@@ -3153,7 +3182,7 @@ function quickPlay(){
   if(!netConnected) autoConnect();
   if(!netConnected) return false;
   quickJoining=true;
-  netSend({type:'quickplay', mode:(modeCfg().short||'br').toUpperCase(),
+  netSend({type:'quickplay', mode:(modeCfg().short||'br').toUpperCase()+teamSize(),
            name:netName, party:netParty||null, skin:profile.equipped.skin});
   return true;
 }
@@ -3208,7 +3237,8 @@ function connectMultiplayer(quiet){
         }
       },3000);
       if(quickJoining){
-        net.send(JSON.stringify({type:'quickplay',mode:(modeCfg().short||'br').toUpperCase(),
+        net.send(JSON.stringify({type:'quickplay',
+          mode:(modeCfg().short||'br').toUpperCase()+teamSize(),
           name:netName,party:netParty||null,skin:profile.equipped.skin,code:myCode()}));
       } else {
         net.send(JSON.stringify({type:'join',name:netName,room:netRoom,party:netParty||null,
@@ -3424,7 +3454,13 @@ function handleNet(m){
     if(!netHost) spawnGhostBots(m.names||[]);
   } else if(m.type==='bots'){
     if(!netHost) applyBotSnapshot(m.a);
+  } else if(m.type==='partyFull'){
+    toast('Squad <u>'+m.party+'</u> is full ('+m.size+')');
+    netParty='';
+    const sc=document.getElementById('squadCode'); if(sc) sc.value='';
+    paintSquadState();
   } else if(m.type==='player_party'){
+    setTimeout(paintSquadState,0);
     if(m.id===netId) return;
     const r=remotePlayers.get(m.id);
     if(r){ r.party=m.party||null; refreshTeamLooks(); renderMembers(); }
@@ -3484,7 +3520,7 @@ function handleNet(m){
     if(lobbyTab==='friends') renderLobbyPanel();
   } else if(m.type==='invite'){
     toast('<u>'+m.from+'</u> invited you · press <u>'+prettyKey(S.keys.accept)+'</u> to join');
-    pendingInvite={room:m.room,from:m.from};
+    pendingInvite={room:m.room,from:m.from,party:m.party||null};
   } else if(m.type==='inviteSent'){
     toast('Invite sent to <u>'+m.name+'</u>');
   } else if(m.type==='inviteFail'){
@@ -3631,6 +3667,7 @@ function updateGhostBot(b,dt){
   }
 }
 
+function allyBot(b){ return teamSize()>1 && teamOfBot(b)===0; }
 function refreshTeamLooks(){
   for(const r of remotePlayers.values()){
     const mate=isMate(r);
@@ -3724,6 +3761,8 @@ function sendNetShot(origin,end){
 function sendNetHit(obj,dmg,head){
   const r=obj&&obj.userData.remote;
   if(!r||!r.alive) return;
+  // a squad is a team: shots at your own side do nothing unless you ask for it
+  if(!S.friendlyFire && isMate(r)) return;
   netSend({type:'hit',target:r.id,dmg:dmg,head:!!head});
 }
 function sendNetBuild(m){
@@ -8003,7 +8042,17 @@ function bindPanel(){
     if(e.key==='Enter') document.getElementById('addFriendBtn').click();
   });
   document.querySelectorAll('[data-inv]').forEach(b=>b.addEventListener('click',()=>{
-    netSend({type:'invite',code:b.dataset.inv}); buyMsg='Invite sent.'; renderLobbyPanel(); uiClick();
+    // an invitation with no squad behind it just puts two people in one match,
+    // so make sure a squad exists before sending it
+    if(!netParty){
+      netParty=('SQ'+myCode()).slice(0,12).toUpperCase();
+      setParty(netParty);
+      const sc=document.getElementById('squadCode');
+      if(sc) sc.value=netParty;
+    }
+    netSend({type:'invite',code:b.dataset.inv});
+    buyMsg='Invite sent — they will join squad '+netParty+'.';
+    renderLobbyPanel(); uiClick();
   }));
   document.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{
     removeFriend(b.dataset.del); renderLobbyPanel(); uiClick();
@@ -9637,13 +9686,52 @@ const BOT_GUN={
   sniper :{dmg:55, cd:[1.4,2.5], rng:130}
 };
 
+/* ================= team size =================
+   Solo, duo, trio or squad. The choice decides who you are matched with, how
+   many people your squad holds, and — in a bot lobby — how the bots are
+   divided up, including the ones who fight alongside you to fill your squad. */
+const TEAM_SIZES=[[1,'SOLO'],[2,'DUO'],[3,'TRIO'],[4,'SQUAD']];
+function teamSize(){ return clamp(S.teamSize|0,1,4)||1; }
+function squadHumans(){
+  if(!netParty) return 1;
+  return 1+[...remotePlayers.values()].filter(r=>r.party===netParty).length;
+}
+/* Bots are dealt into teams. The first few join yours, so a duo is still a duo
+   when your friend is offline. */
+function assignBotTeams(){
+  const size=teamSize();
+  if(size<=1){ for(const b of bots) b.team=-1; return; }
+  const allies=Math.max(0, size-squadHumans());
+  let t=1;                                   // team 0 is yours
+  bots.forEach((b,i)=>{
+    if(i<allies){ b.team=0; return; }
+    b.team=t;
+    if((i-allies+1)%size===0) t++;
+  });
+}
+function entTeam(e){
+  if(!e) return -1;
+  if(e===PLAYER_ENT || e.isPlayer) return 0;
+  if(typeof e.team==='number') return e.team;                          // a bot
+  if(e.party!==undefined) return (e.party&&e.party===netParty)?0:-1;   // a remote player
+  return -1;
+}
+function sameTeam(a,b){
+  if(teamSize()<=1) return false;
+  const ta=entTeam(a), tb=entTeam(b);
+  return ta>=0 && ta===tb;
+}
+function teamOfBot(b){ return (typeof b.team==='number')?b.team:-1; }
+
 function findEnemy(b){
   const eye=eyePos(b);
   const cands=[];
-  if(aliveOf(PLAYER_ENT)) cands.push(PLAYER_ENT);
-  for(const o of bots) if(o!==b && o.alive && o.state==='ground' && !o.ghost) cands.push(o);
+  if(aliveOf(PLAYER_ENT) && !sameTeam(b,PLAYER_ENT)) cands.push(PLAYER_ENT);
+  for(const o of bots)
+    if(o!==b && o.alive && o.state==='ground' && !o.ghost && !sameTeam(b,o)) cands.push(o);
   if(netConnected&&netHost)
-    for(const r of remotePlayers.values()) if(r.alive&&r.phase==='ground') cands.push(r);
+    for(const r of remotePlayers.values())
+      if(r.alive && r.phase==='ground' && !sameTeam(b,r)) cands.push(r);
   cands.sort((p,q)=>eye.distanceToSquared(posOf(p))-eye.distanceToSquared(posOf(q)));
   const n=Math.min(4,cands.length);
   for(let i=0;i<n;i++){
@@ -9997,6 +10085,7 @@ const remoteHits=new Map();
 function remoteAccum(obj,dmg,head){
   const r=obj&&obj.userData.remote;
   if(!r||!r.alive) return;
+  if(!S.friendlyFire && isMate(r)) return;
   const e=remoteHits.get(r)||{d:0,head:false,obj};
   e.d+=dmg; e.head=e.head||head; remoteHits.set(r,e);
 }
@@ -10157,6 +10246,7 @@ function breakProp(o){
 
 function damageBot(bot,dmg,head,defer){
   if(modeCfg().arena==='ball') return;
+  if(!S.friendlyFire && teamSize()>1 && teamOfBot(bot)===0) return;
   if(roundLock) return;               // no free hits before the bell
   if(cheats.oneshot) dmg=9999;
   const total=dmg;
@@ -11106,10 +11196,17 @@ function bindInput(){
     if(act==='teamChat') openChat('team');
     if(act==='accept' && pendingInvite){
       netRoom=pendingInvite.room;
+      if(pendingInvite.party){
+        netParty=pendingInvite.party;             // their squad, not yours
+        const sc=document.getElementById('squadCode');
+        if(sc) sc.value=netParty;
+      }
       netSend({type:'join',name:netName,room:netRoom,party:netParty||null,
                skin:profile.equipped.skin,code:myCode()});
-      toast('Joining <u>'+pendingInvite.from+'</u>');
+      if(netParty) netSend({type:'setparty',party:netParty});
+      toast('Joined <u>'+pendingInvite.from+'</u>'+(netParty?' · squad '+netParty:''));
       pendingInvite=null;
+      renderLobbyPanel();
     }
     if(act==='use') startUse();
     if(act==='edit') tryEdit();
@@ -12081,6 +12178,7 @@ function respawnPlayer(){
   syncHUD(); refreshAlive();
 }
 function armBots(){
+  assignBotTeams();
   if(modeCfg().arena==='ball'){ ballSetupBots(); return; }
   const train=modeCfg().arena==='training';
   for(const b of bots){
@@ -12910,9 +13008,6 @@ document.getElementById('codeIn').addEventListener('keydown',e=>{
 });
 document.getElementById('menuParty').addEventListener('click',()=>{ uiClick(); openParty(); });
 document.getElementById('partyBack').addEventListener('click',()=>{ uiClick(); closeParty(); });
-document.getElementById('squadSet').addEventListener('click',()=>{
-  uiClick(); setParty(document.getElementById('squadCode').value);
-});
 document.getElementById('connectBtn').addEventListener('click',()=>{
   netName=(document.getElementById('playerName').value||'Player').trim().slice(0,16)||'Player';
   netParty=(document.getElementById('squadCode').value||'').trim().toUpperCase().slice(0,12);
@@ -12926,7 +13021,14 @@ document.getElementById('squadCode').addEventListener('keydown',e=>e.stopPropaga
 document.getElementById('menuParty').addEventListener('click',()=>{ uiClick(); openParty(); });
 document.getElementById('partyBack').addEventListener('click',()=>{ uiClick(); closeParty(); });
 document.getElementById('squadSet').addEventListener('click',()=>{
-  uiClick(); setParty(document.getElementById('squadCode').value);
+  uiClick(); setParty(document.getElementById('squadCode').value); paintSquadState();
+});
+document.getElementById('squadNew').addEventListener('click',()=>{
+  uiClick();
+  const code=('SQ'+myCode()).slice(0,12).toUpperCase();
+  document.getElementById('squadCode').value=code;
+  setParty(code);
+  paintSquadState();
 });
 document.getElementById('fillBots').addEventListener('click',e=>{
   netFillBots=!netFillBots;
@@ -12955,11 +13057,32 @@ if(gsBtn) gsBtn.addEventListener('click',e=>{
     if(t&&t.scrollIntoView) t.scrollIntoView({behavior:'smooth',block:'start'});
   },60);
 });
-document.querySelectorAll('.oppbtn').forEach(b=>{
+document.querySelectorAll('[data-team]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    S.teamSize=+b.dataset.team;
+    saveSettings();
+    document.querySelectorAll('[data-team]').forEach(x=>
+      x.classList.toggle('on',x===b));
+    // a team needs a squad to put people in
+    if(S.teamSize>1 && !netParty && netConnected){
+      const code=('SQ'+myCode()).slice(0,12).toUpperCase();
+      const sc=document.getElementById('squadCode');
+      if(sc) sc.value=code;
+      setParty(code);
+    }
+    if(netConnected){
+      netRoom=roomWithMode();
+      netSend({type:'join',name:netName,room:netRoom,party:netParty||null,
+               skin:profile.equipped.skin,code:myCode()});
+    }
+    renderLobbyPanel(); uiClick();
+  });
+});
+document.querySelectorAll('[data-bots]').forEach(b=>{
   b.addEventListener('click',()=>{
     S.botLobby = b.dataset.bots==='1';
     netFillBots = S.botLobby;
-    document.querySelectorAll('.oppbtn').forEach(x=>x.classList.toggle('on',x===b));
+    document.querySelectorAll('[data-bots]').forEach(x=>x.classList.toggle('on',x===b));
     saveSettings(); renderLobbyPanel(); uiClick();
   });
 });
@@ -12998,8 +13121,10 @@ Promise.resolve()
   .then(loadProfile)
   .then(()=>{ init(); updateWallet(); setLobbyTab('play');
               netFillBots=S.botLobby;
-              document.querySelectorAll('.oppbtn').forEach(x=>
+              document.querySelectorAll('[data-bots]').forEach(x=>
                 x.classList.toggle('on',(x.dataset.bots==='1')===!!S.botLobby));
+              document.querySelectorAll('[data-team]').forEach(x=>
+                x.classList.toggle('on',+x.dataset.team===(S.teamSize||1)));
               const fb=document.getElementById('fillBots');
               if(fb) fb.classList.toggle('on',!!S.botLobby);
               setOnlineMode(true); setTimeout(updateOnlineChip,400);

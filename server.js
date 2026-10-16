@@ -642,7 +642,15 @@ wss.on('connection', (ws) => {
     if(!r) return;
 
     if(m.type === 'setparty'){
-      p.party = m.party ? String(m.party).toUpperCase().slice(0,12) : null;
+      const want = m.party ? String(m.party).toUpperCase().slice(0,12) : null;
+      // a duo is two people; joining a full squad has to be refused somewhere
+      if (want && want !== p.party) {
+        const size = Math.max(1, Math.min(4, Number(m.size) || 4));
+        let inSquad = 0;
+        for (const q of r.values()) if (q !== p && q.party === want) inSquad++;
+        if (inSquad >= size) return send(ws, { type:'partyFull', party:want, size });
+      }
+      p.party = want;
       broadcast(r, { type:'player_party', id:p.id, party:p.party, name:p.name });
       send(ws, { type:'player_party', id:p.id, party:p.party, name:p.name });
       console.log(`${p.name} squad -> ${p.party || 'none'}`);
@@ -714,7 +722,7 @@ wss.on('connection', (ws) => {
     } else if(m.type === 'invite'){
       const t = byCode.get(String(m.code || '').toUpperCase());
       if(!t) return send(ws, { type:'inviteFail', code:m.code });
-      send(t.ws, { type:'invite', from:p.name, code:p.code, room:p.room });
+      send(t.ws, { type:'invite', from:p.name, code:p.code, room:p.room, party:p.party || null });
       send(ws, { type:'inviteSent', name:t.name });
 
     } else if(m.type === 'rtc'){
