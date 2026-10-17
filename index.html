@@ -7398,8 +7398,7 @@ function updateLobby(dt){
     if(!turn.dragging){
       turn.vel*=Math.pow(0.0016,dt);               // spin down after a flick
       turn.yaw+=turn.vel;
-      turn.idle+=dt;
-      if(turn.idle>2.6) turn.yaw-=dt*0.18;         // idle drift
+      turn.idle+=dt;                                // no idle drift: it stays put
       turn.pitch+=(0-turn.pitch)*Math.min(1,dt*1.1);
     }
     const dist=4.5+turn.zoom;
@@ -7476,10 +7475,23 @@ function swatchFor(cat,it){
   const c=(it.col!==undefined?it.col:0x64748b).toString(16).padStart(6,'0');
   return '<div class="swatch" style="background:linear-gradient(140deg,#'+c+'99,#0e141d)"></div>';
 }
+function facePreview(it){
+  // draw the face small, so the shop shows what you are buying
+  const cv=document.createElement('canvas');
+  cv.width=cv.height=96;
+  const x=cv.getContext('2d');
+  x.fillStyle='#d6b49a'; x.beginPath(); x.arc(48,50,38,0,6.3); x.fill();
+  const yAt=(ly)=>50-ly*300;
+  const ink=(cx,w)=>{ cx.strokeStyle='#14100c'; cx.lineWidth=Math.max(1.2,w*0.18);
+                      cx.lineCap='round'; cx.lineJoin='round'; };
+  if(it.draw){ try{ it.draw(x,48,yAt,96*5.4,96*5.4,ink); }catch(e){} }
+  return cv.toDataURL();
+}
 function itemCard(cat,it,ctx){
   const own=cat==='emote'?owns('emote',it.id):owns(cat,it.id);
   if(it.exclusive && !own && ctx!=='locker') return '';
   const eq=profile.equipped[cat]===it.id;
+  if(cat==='face' && it.draw) it.__prev=it.__prev||facePreview(it);
   const price=itemPrice(it);
   let foot;
   if(it.exclusive) foot=own?'<div class="cp owned">UNLOCKED</div>':'<div class="cp locked">LOCKED</div>';
@@ -7531,6 +7543,12 @@ function genRarity(r){
   return 'legendary';
 }
 function genItem(cat,day,n){
+  if(cat==='face'){
+    // faces are hand drawn, so the shop picks one rather than generating it
+    const buyable=FACE_STYLES.filter(f=>f.draw);
+    const r=genRand(day*977+n*31);
+    return buyable[Math.floor(r()*buyable.length)];
+  }
   const r=genRand(day*977+n*7919+cat.length*131);
   const rarity=genRarity(r);
   const id='d'+day+'-'+cat.slice(0,2)+n;
@@ -7578,7 +7596,10 @@ function dailyShop(){
 
   // six made fresh for today, never seen before and not seen again
   const fresh=[];
-  const plan=['skin','skin','skin','pick','glider','pack'];
+  // a face turns up roughly every other day, in place of a third outfit
+  const plan = (day%2===0)
+    ? ['skin','skin','face','pick','glider','pack']
+    : ['skin','skin','skin','pick','glider','pack'];
   plan.forEach((cat,i)=>{
     const it=genItem(cat,day,i);
     if(it){ fresh.push({cat,it,fresh:true}); }
@@ -8217,6 +8238,7 @@ function updateWallet(){
 function refreshCosmetics(){
   refreshLobbyChar();
   if(scene && avatar) buildAvatar();
+  for(const b of bots) if(b.face) b.face.dirty=true;
   if(viewGroup){
     if(viewPick){ viewGroup.remove(viewPick); }
     viewPick=new THREE.Group();
@@ -8453,8 +8475,201 @@ const EMOTE_ITEMS=[
   {id:'sprinkler',name:'Sprinkler',  rarity:'epic'}
 ];
 
-const CATALOG={ skin:SKINS, pack:PACKS, pick:PICKS, glider:GLIDERS, emote:EMOTE_ITEMS };
-const CAT_LABEL={ skin:'Outfit', pack:'Back Bling', pick:'Harvesting Tool', glider:'Glider', emote:'Emote' };
+/* ================= reaction faces =================
+   Wearable expressions, drawn here rather than borrowed. The well known
+   meme faces are all somebody's artwork — Trollface, Pepe and most of the
+   rage faces are actively enforced copyrights — and a game taking real money
+   is the worst possible place to borrow one. These are original drawings in
+   the same spirit: heavy ink, exaggerated features, zero subtlety.
+
+   Each one gets the canvas, the centre of the face, and a row lookup, and
+   draws whatever it likes over the painted skin. */
+const FACE_STYLES=[
+  { id:'natural', name:'Natural', rarity:'common', price:0, draw:null },
+
+  { id:'smug', name:'The Smugness', rarity:'epic', draw:(x,C,yAt,W,H,ink)=>{
+      // half-lidded eyes and a grin that goes most of the way round the head
+      ink(x,9);
+      [-1,1].forEach(sx=>{
+        const ex=C+sx*0.052*W, ey=yAt(0.014);
+        x.beginPath();
+        x.moveTo(ex-0.040*W, ey-0.004*H);
+        x.quadraticCurveTo(ex, ey-0.026*H, ex+0.040*W, ey-0.002*H);
+        x.stroke();
+        x.beginPath();
+        x.moveTo(ex-0.036*W, ey+0.002*H);
+        x.quadraticCurveTo(ex, ey+0.012*H, ex+0.036*W, ey+0.001*H);
+        x.stroke();
+        x.fillStyle='#14100c';
+        x.beginPath(); x.arc(ex+sx*0.008*W, ey+0.002*H, 0.011*W, 0, 6.3); x.fill();
+      });
+      // brows, low and amused
+      ink(x,11);
+      [-1,1].forEach(sx=>{
+        const ex=C+sx*0.052*W, by=yAt(0.044);
+        x.beginPath();
+        x.moveTo(ex-sx*0.040*W, by+0.012*H);
+        x.quadraticCurveTo(ex, by-0.006*H, ex+sx*0.038*W, by+0.004*H);
+        x.stroke();
+      });
+      // the grin
+      const my=yAt(-0.044);
+      ink(x,10);
+      x.beginPath();
+      x.moveTo(C-0.105*W, my-0.016*H);
+      x.quadraticCurveTo(C, my+0.044*H, C+0.105*W, my-0.016*H);
+      x.stroke();
+      // teeth
+      x.fillStyle='#f6f2ea';
+      x.beginPath();
+      x.moveTo(C-0.092*W, my-0.008*H);
+      x.quadraticCurveTo(C, my+0.030*H, C+0.092*W, my-0.008*H);
+      x.quadraticCurveTo(C, my+0.006*H, C-0.092*W, my-0.008*H);
+      x.fill();
+      ink(x,3);
+      for(let i=-3;i<=3;i++){
+        const tx=C+i*0.026*W;
+        x.beginPath();
+        x.moveTo(tx, my-0.004*H);
+        x.lineTo(tx, my+0.016*H);
+        x.stroke();
+      }
+    }},
+
+  { id:'shock', name:'Absolutely Not', rarity:'rare', draw:(x,C,yAt,W,H,ink)=>{
+      [-1,1].forEach(sx=>{
+        const ex=C+sx*0.050*W, ey=yAt(0.012);
+        x.fillStyle='#fbf8f2';
+        x.beginPath(); x.ellipse(ex, ey, 0.044*W, 0.040*H, 0, 0, 6.3); x.fill();
+        ink(x,7); x.beginPath(); x.ellipse(ex, ey, 0.044*W, 0.040*H, 0, 0, 6.3); x.stroke();
+        x.fillStyle='#14100c';
+        x.beginPath(); x.arc(ex, ey, 0.013*W, 0, 6.3); x.fill();
+      });
+      ink(x,10);
+      [-1,1].forEach(sx=>{
+        const ex=C+sx*0.050*W, by=yAt(0.058);
+        x.beginPath();
+        x.moveTo(ex-0.034*W, by+0.004*H);
+        x.quadraticCurveTo(ex, by-0.018*H, ex+0.034*W, by+0.004*H);
+        x.stroke();
+      });
+      const my=yAt(-0.050);
+      x.fillStyle='#2a1410';
+      x.beginPath(); x.ellipse(C, my, 0.040*W, 0.048*H, 0, 0, 6.3); x.fill();
+      ink(x,7); x.beginPath(); x.ellipse(C, my, 0.040*W, 0.048*H, 0, 0, 6.3); x.stroke();
+    }},
+
+  { id:'squint', name:'Deeply Suspicious', rarity:'uncommon', draw:(x,C,yAt,W,H,ink)=>{
+      ink(x,12);
+      [-1,1].forEach(sx=>{
+        const ex=C+sx*0.050*W, ey=yAt(0.014);
+        x.beginPath();
+        x.moveTo(ex-0.042*W, ey);
+        x.lineTo(ex+0.042*W, ey-0.004*H);
+        x.stroke();
+      });
+      ink(x,11);
+      [-1,1].forEach(sx=>{
+        const ex=C+sx*0.050*W, by=yAt(0.046);
+        x.beginPath();
+        x.moveTo(ex-sx*0.038*W, by-0.004*H);
+        x.lineTo(ex+sx*0.034*W, by+0.016*H);
+        x.stroke();
+      });
+      const my=yAt(-0.048);
+      ink(x,9);
+      x.beginPath();
+      x.moveTo(C-0.046*W, my+0.004*H);
+      x.lineTo(C+0.046*W, my-0.002*H);
+      x.stroke();
+    }},
+
+  { id:'beam', name:'Pure Joy', rarity:'rare', draw:(x,C,yAt,W,H,ink)=>{
+      ink(x,11);
+      [-1,1].forEach(sx=>{
+        const ex=C+sx*0.050*W, ey=yAt(0.014);
+        x.beginPath();
+        x.moveTo(ex-0.038*W, ey+0.012*H);
+        x.quadraticCurveTo(ex, ey-0.030*H, ex+0.038*W, ey+0.012*H);
+        x.stroke();
+      });
+      const my=yAt(-0.046);
+      ink(x,9);
+      x.beginPath();
+      x.moveTo(C-0.078*W, my-0.012*H);
+      x.quadraticCurveTo(C, my+0.040*H, C+0.078*W, my-0.012*H);
+      x.stroke();
+      x.fillStyle='#f6f2ea';
+      x.beginPath();
+      x.moveTo(C-0.068*W, my-0.006*H);
+      x.quadraticCurveTo(C, my+0.028*H, C+0.068*W, my-0.006*H);
+      x.quadraticCurveTo(C, my+0.004*H, C-0.068*W, my-0.006*H);
+      x.fill();
+      // blush
+      x.fillStyle='rgba(205,95,80,.30)';
+      [-1,1].forEach(sx=>{
+        x.beginPath();
+        x.ellipse(C+sx*0.092*W, yAt(-0.028), 0.030*W, 0.018*H, 0, 0, 6.3);
+        x.fill();
+      });
+    }},
+
+  { id:'void', name:'Nobody Home', rarity:'epic', draw:(x,C,yAt,W,H,ink)=>{
+      [-1,1].forEach(sx=>{
+        const ex=C+sx*0.050*W, ey=yAt(0.012);
+        x.fillStyle='#07070a';
+        x.beginPath(); x.ellipse(ex, ey, 0.030*W, 0.034*H, 0, 0, 6.3); x.fill();
+      });
+      const my=yAt(-0.050);
+      ink(x,8);
+      x.beginPath();
+      x.moveTo(C-0.052*W, my);
+      x.lineTo(C+0.052*W, my);
+      x.stroke();
+    }},
+
+  { id:'menace', name:'Quiet Menace', rarity:'legendary', draw:(x,C,yAt,W,H,ink)=>{
+      [-1,1].forEach(sx=>{
+        const ex=C+sx*0.050*W, ey=yAt(0.014);
+        x.fillStyle='#fdfaf4';
+        x.beginPath();
+        x.moveTo(ex-0.044*W, ey+0.004*H);
+        x.lineTo(ex+0.044*W, ey-0.014*H);
+        x.lineTo(ex+0.030*W, ey+0.018*H);
+        x.closePath(); x.fill();
+        ink(x,6); x.stroke();
+        x.fillStyle='#b4342a';
+        x.beginPath(); x.arc(ex+0.006*W, ey+0.001*H, 0.012*W, 0, 6.3); x.fill();
+      });
+      ink(x,13);
+      [-1,1].forEach(sx=>{
+        const ex=C+sx*0.050*W, by=yAt(0.050);
+        x.beginPath();
+        x.moveTo(ex-sx*0.044*W, by-0.010*H);
+        x.lineTo(ex+sx*0.030*W, by+0.020*H);
+        x.stroke();
+      });
+      const my=yAt(-0.046);
+      ink(x,9);
+      x.beginPath();
+      x.moveTo(C-0.086*W, my+0.006*H);
+      x.quadraticCurveTo(C, my+0.034*H, C+0.086*W, my+0.006*H);
+      x.stroke();
+      ink(x,5);
+      for(let i=-2;i<=2;i++){
+        const tx=C+i*0.030*W;
+        x.beginPath();
+        x.moveTo(tx, my+0.012*H);
+        x.lineTo(tx+0.010*W, my+0.026*H);
+        x.stroke();
+      }
+    }}
+];
+function findFace(id){ return FACE_STYLES.find(f=>f.id===id)||FACE_STYLES[0]; }
+const CATALOG={ skin:SKINS, pack:PACKS, pick:PICKS, glider:GLIDERS, emote:EMOTE_ITEMS,
+                face:FACE_STYLES };
+const CAT_LABEL={ skin:'Outfit', pack:'Back Bling', pick:'Harvesting Tool', glider:'Glider',
+                  emote:'Emote', face:'Face' };
 function itemPrice(it){
   if(it.exclusive) return 0; return it.price!==undefined ? it.price : RARITY[it.rarity].px; }
 function findItem(cat,id){ return (CATALOG[cat]||[]).find(x=>x.id===id) || CATALOG[cat][0]; }
@@ -8465,7 +8680,8 @@ const DEFAULT_PROFILE={
   friendCode:null, friends:[], customItems:{}, aimBest:0, maps:{},
   owned:{ skin:['recruit','dustline'], pack:['none','daypack'], pick:['standard'],
           glider:['standard'], emote:['wave','bounce','clap'] },
-  equipped:{ skin:'recruit', pack:'daypack', pick:'standard', glider:'standard', emote:'wave' }
+  equipped:{ skin:'recruit', pack:'daypack', pick:'standard', glider:'standard', emote:'wave',
+             face:'natural' }
 };
 let profile=JSON.parse(JSON.stringify(DEFAULT_PROFILE));
 
@@ -8488,24 +8704,374 @@ function equippedItem(cat){ return findItem(cat, profile.equipped[cat]); }
 
 /* ================= character builder ================= */
 // a limb with a real joint in the middle, so elbows and knees bend
-function makeLimb2(upLen,loLen,rTop,rMid,rBot,mat,seg){
+/* A cylinder with a ball stuck on the end reads as a cylinder with a ball
+   stuck on the end. A real arm is one continuous surface whose radius varies
+   along its length — wide at the deltoid, narrow at the elbow, swelling at
+   the forearm, narrow again at the wrist — and it is not round in section.
+   This builds that surface directly. */
+function tubeLimb(profile, seg, mat, squash){
+  const RINGS=profile.length, SEG=seg||12;
+  const pos=[], nrm=[], idx=[];
+  const flat=squash||1;
+  for(let r=0;r<RINGS;r++){
+    const [y,rad,sq]=profile[r];
+    const sqz=(sq===undefined?flat:sq);
+    for(let i=0;i<=SEG;i++){
+      const a2=(i/SEG)*Math.PI*2;
+      const cx=Math.cos(a2), cz=Math.sin(a2);
+      pos.push(cx*rad, y, cz*rad*sqz);
+      nrm.push(cx, 0, cz*sqz);
+    }
+  }
+  for(let r=0;r<RINGS-1;r++){
+    for(let i=0;i<SEG;i++){
+      const a2=r*(SEG+1)+i, b2=a2+SEG+1;
+      idx.push(a2,b2,a2+1, b2,b2+1,a2+1);
+    }
+  }
+  // round the ends rather than leaving them open
+  const capEnd=(ringIdx,y,rad,dir)=>{
+    const base=pos.length/3;
+    pos.push(0,y+dir*rad*0.78,0); nrm.push(0,dir,0);
+    for(let i=0;i<SEG;i++){
+      const a2=ringIdx*(SEG+1)+i;
+      if(dir>0) idx.push(base,a2+1,a2); else idx.push(base,a2,a2+1);
+    }
+  };
+  capEnd(0, profile[0][0], profile[0][1], 1);
+  capEnd(RINGS-1, profile[RINGS-1][0], profile[RINGS-1][1], -1);
+
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('normal',new THREE.Float32BufferAttribute(nrm,3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  const m=new THREE.Mesh(g,mat);
+  m.castShadow=true;
+  return m;
+}
+
+function makeLimb2(upLen,loLen,rTop,rMid,rBot,mat,seg,isArm){
   const g=new THREE.Group();
-  const up=new THREE.Mesh(new THREE.CylinderGeometry(rTop,rMid,upLen,seg||10),mat);
-  up.position.y=-upLen/2; up.castShadow=true; g.add(up);
-  const cap=new THREE.Mesh(new THREE.SphereGeometry(rTop*1.03,seg||10,7),mat);
-  cap.castShadow=true; g.add(cap);
+  // upper segment: shoulder or thigh swelling, tapering to the joint
+  const up=tubeLimb([
+    [ 0.02,        rTop*0.86],
+    [-upLen*0.10,  rTop*1.04],
+    [-upLen*0.32,  rTop*0.97],
+    [-upLen*0.62,  rMid*1.14],
+    [-upLen*0.88,  rMid*1.02],
+    [-upLen,       rMid*0.97]
+  ], seg||12, mat, isArm?0.92:0.95);
+  g.add(up);
+
   const knee=new THREE.Group();
   knee.position.y=-upLen;
-  const ball=new THREE.Mesh(new THREE.SphereGeometry(rMid*1.06,seg||10,7),mat);
-  ball.castShadow=true; knee.add(ball);
-  const lo=new THREE.Mesh(new THREE.CylinderGeometry(rMid,rBot,loLen,seg||10),mat);
-  lo.position.y=-loLen/2; lo.castShadow=true; knee.add(lo);
+  // lower segment: calf or forearm belly, then a narrow wrist or ankle
+  const lo=tubeLimb([
+    [ 0.01,        rMid*1.00],
+    [-loLen*0.08,  rMid*1.08],
+    [-loLen*0.30,  rMid*1.12],
+    [-loLen*0.58,  rBot*1.22],
+    [-loLen*0.84,  rBot*1.00],
+    [-loLen,       rBot*0.90]
+  ], seg||12, mat, isArm?0.90:0.93);
+  knee.add(lo);
   g.add(knee);
+
   g.userData.knee=knee;
   g.knee=knee;
   g.userData.end=-loLen;
   return g;
 }
+
+/* A head is not a sphere. This takes a sphere's worth of vertices and pushes
+   each one in or out by how far it is from the features that actually define
+   a face: the brow ridge, the cheekbones, the jaw line, the chin, the bridge
+   and tip of the nose, and the sockets the eyes sit in. */
+/* A lathe is radially symmetric, so whatever profile you give it the result
+   is a barrel. A torso is not: the chest is broad and flat, the back flatter
+   still, the waist pinches from the sides more than the front, the lats flare
+   under the arms, and there is a shelf where the shoulders sit. Radius has to
+   vary with angle as well as height. */
+function sculptTorso(fem, seg, mat){
+  const RINGS=26, SEG=(seg||14)+6;
+  const pos=[], idx=[];
+  const Y0=-0.135, H=0.845;                    // seat to the base of the neck
+  for(let r=0;r<RINGS;r++){
+    const t=r/(RINGS-1);                       // 0 at the seat, 1 at the collar
+    const y=Y0+t*H;
+    /* Read against a reference pose: seat, hip, belt, ribcage, shoulder shelf.
+       The belt is the key line — without it a torso is a tube. */
+    let w = 0.206
+      + 0.034*Math.exp(-Math.pow((t-0.06)/0.09,2))      // seat and pelvis
+      + 0.014*Math.exp(-Math.pow((t-0.20)/0.09,2))      // hip
+      - 0.020*Math.exp(-Math.pow((t-0.33)/0.10,2))      // belt
+      + 0.046*Math.exp(-Math.pow((t-0.72)/0.15,2))      // ribcage
+      + (fem? -0.008 : 0.022)*Math.exp(-Math.pow((t-0.90)/0.08,2)); // shoulders
+    if(t<0.06) w *= 1 - (0.06-t)*3.0;                   // round off the seat
+    if(t>0.95) w *= 1 - (t-0.95)*7.0;                   // taper into the neck
+    if(fem) w *= 0.955;
+    for(let i=0;i<=SEG;i++){
+      const a=(i/SEG)*Math.PI*2;
+      const cx=Math.cos(a), cz=Math.sin(a);
+      const fwd=Math.max(0,-cz), back=Math.max(0,cz), side=Math.abs(cx);
+      let k=1;
+      k *= 1 - 0.30*fwd*fwd;                            // chest is flat, not round
+      k *= 1 - 0.36*back*back;                          // back flatter still
+      k *= 1 - 0.040*side*Math.exp(-Math.pow((t-0.33)/0.11,2));  // belt pinches at the sides
+      k *= 1 + 0.070*side*Math.exp(-Math.pow((t-0.82)/0.13,2));  // lats flare
+      k *= 1 + 0.085*back*Math.exp(-Math.pow((t-0.07)/0.08,2));   // seat
+      k *= 1 + (fem?0.11:0.05)*fwd*Math.exp(-Math.pow((t-0.72)/0.09,2)); // chest swell
+      k *= 1 + 0.04*fwd*Math.exp(-Math.pow((t-0.26)/0.13,2));    // belly
+      pos.push(cx*w*k, y, cz*w*k*0.86);
+    }
+  }
+  for(let r=0;r<RINGS-1;r++)
+    for(let i=0;i<SEG;i++){
+      const a=r*(SEG+1)+i, b=a+SEG+1;
+      idx.push(a,b,a+1, b,b+1,a+1);
+    }
+  // close the bottom so there is no hole under the seat
+  const base=pos.length/3;
+  pos.push(0,Y0-0.03,0);
+  for(let i=0;i<SEG;i++) idx.push(base,i,i+1);
+
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  const m=new THREE.Mesh(g,mat);
+  m.castShadow=true;
+  return m;
+}
+/* The same shaping maths as sculptHead, exposed as a query. Features can
+   then be placed on the surface rather than at depths guessed for a sphere —
+   which is what left eyes floating and brows sunk once the head stopped
+   being round. */
+/* ================= the face, painted =================
+   Eyes and lips built out of spheres and boxes read as lumps stuck to a
+   skull, no matter how carefully they are placed. Every stylised game of
+   this kind paints the face onto the head instead, and that is what this
+   does: one canvas, mapped onto the sculpted head, with the features drawn
+   where the sphere's own UVs put them.
+
+   The face sits at u = 0.75 because of how three.js lays out sphere UVs, and
+   v runs from the crown at 1 down to the chin at 0. */
+const _faceTexCache=new Map();
+function faceUV_y(localY, R){
+  const c=Math.max(-1,Math.min(1,localY/R));
+  return 1 - Math.acos(c)/Math.PI;
+}
+function faceTexture(tone, eyeCol, fem, closed, styleId){
+  const style=findFace(styleId||'natural');
+  const key=tone+'|'+eyeCol+'|'+(fem?1:0)+'|'+(closed?1:0)+'|'+style.id;
+  if(_faceTexCache.has(key)) return _faceTexCache.get(key);
+
+  const W=512, H=512;
+  const cv=document.createElement('canvas');
+  cv.width=W; cv.height=H;
+  const x=cv.getContext('2d');
+  const skin=new THREE.Color(tone);
+  const hex=(c)=>'#'+c.getHexString();
+  const shade=(k)=>hex(skin.clone().multiplyScalar(k));
+
+  x.fillStyle=hex(skin);
+  x.fillRect(0,0,W,H);
+
+  const CX=0.75*W;                       // the middle of the face
+  const R=0.108;
+  const yAt=(ly)=>(1-faceUV_y(ly,R))*H;  // local height -> canvas row
+  const EW=0.048*W;                      // half the distance between the eyes
+
+  // warmth through the cheeks and a cooler forehead
+  const g1=x.createRadialGradient(CX,yAt(-0.03),10,CX,yAt(-0.03),0.16*W);
+  g1.addColorStop(0, shade(1.04)); g1.addColorStop(1, hex(skin));
+  x.fillStyle=g1; x.fillRect(CX-0.2*W, yAt(0.06), 0.4*W, 0.3*H);
+
+  // brow ridge shadow
+  x.fillStyle=shade(0.90);
+  x.beginPath();
+  x.ellipse(CX, yAt(0.026), 0.105*W, 0.022*H, 0, 0, 6.3);
+  x.fill();
+
+  // eye sockets
+  [-1,1].forEach(sx=>{
+    const ex=CX+sx*EW;
+    const gy=x.createRadialGradient(ex,yAt(0.012),2,ex,yAt(0.012),0.045*W);
+    gy.addColorStop(0, shade(0.80)); gy.addColorStop(1, hex(skin));
+    x.fillStyle=gy;
+    x.beginPath(); x.ellipse(ex, yAt(0.012), 0.046*W, 0.030*H, 0, 0, 6.3); x.fill();
+  });
+
+  // eyes
+  [-1,1].forEach(sx=>{
+    const ex=CX+sx*EW, ey=yAt(0.012);
+    const w=0.034*W, h=closed?0.004*H:0.020*H;
+    if(!closed){
+      x.fillStyle='#f4f1ec';
+      x.beginPath(); x.ellipse(ex, ey, w, h, 0, 0, 6.3); x.fill();
+      // iris and pupil
+      x.fillStyle='#'+new THREE.Color(eyeCol||0x4b6a4f).getHexString();
+      x.beginPath(); x.arc(ex, ey, h*0.95, 0, 6.3); x.fill();
+      x.fillStyle='#0a0c10';
+      x.beginPath(); x.arc(ex, ey, h*0.44, 0, 6.3); x.fill();
+      // a highlight, which is what makes an eye look alive
+      x.fillStyle='rgba(255,255,255,.92)';
+      x.beginPath(); x.arc(ex-h*0.34, ey-h*0.36, h*0.22, 0, 6.3); x.fill();
+      // the lower lid catches light
+      x.strokeStyle=shade(1.06); x.lineWidth=2.2;
+      x.beginPath(); x.ellipse(ex, ey+h*0.75, w*0.92, h*0.30, 0, 0.1, 3.0); x.stroke();
+    }
+    // lash line, heavier when the eye is shut
+    x.strokeStyle='#241a14'; x.lineWidth=closed?3.4:3.0;
+    x.beginPath();
+    x.ellipse(ex, ey-(closed?0:h*0.12), w*(closed?1.0:1.02), h*0.95, 0, Math.PI*1.05, Math.PI*1.95);
+    x.stroke();
+  });
+
+  // eyebrows
+  [-1,1].forEach(sx=>{
+    const ex=CX+sx*EW, by=yAt(0.040);
+    x.strokeStyle='#3a2a1c';
+    x.lineWidth=fem?5.5:8;
+    x.lineCap='round';
+    x.beginPath();
+    x.moveTo(ex-sx*0.030*W, by+0.006*H);
+    x.quadraticCurveTo(ex, by-0.009*H, ex+sx*0.030*W, by+0.002*H);
+    x.stroke();
+  });
+
+  // nose: a soft shadow down one side, a highlight on the bridge, nostrils
+  x.fillStyle=shade(0.93);
+  x.beginPath();
+  x.ellipse(CX+0.012*W, yAt(-0.004), 0.013*W, 0.046*H, 0, 0, 6.3);
+  x.fill();
+  x.fillStyle=shade(1.05);
+  x.beginPath();
+  x.ellipse(CX-0.006*W, yAt(-0.004), 0.009*W, 0.042*H, 0, 0, 6.3);
+  x.fill();
+  x.fillStyle=shade(0.74);
+  [-1,1].forEach(sx=>{
+    x.beginPath();
+    x.ellipse(CX+sx*0.016*W, yAt(-0.028), 0.007*W, 0.005*H, 0, 0, 6.3);
+    x.fill();
+  });
+  x.fillStyle=shade(0.88);
+  x.beginPath(); x.ellipse(CX, yAt(-0.034), 0.026*W, 0.008*H, 0, 0, 6.3); x.fill();
+
+  // mouth
+  const my=yAt(-0.052);
+  const lip=skin.clone().lerp(new THREE.Color(0xa3524b), fem?0.52:0.34);
+  x.fillStyle='#'+lip.getHexString();
+  x.beginPath(); x.ellipse(CX, my-0.006*H, 0.040*W, 0.011*H, 0, 0, 6.3); x.fill();
+  x.beginPath(); x.ellipse(CX, my+0.009*H, 0.038*W, 0.013*H, 0, 0, 6.3); x.fill();
+  x.strokeStyle=shade(0.52); x.lineWidth=2.6;
+  x.beginPath();
+  x.moveTo(CX-0.040*W, my+0.001*H);
+  x.quadraticCurveTo(CX, my+0.006*H, CX+0.040*W, my+0.001*H);
+  x.stroke();
+  // the groove above the lip
+  x.fillStyle=shade(0.94);
+  x.beginPath(); x.ellipse(CX, my-0.020*H, 0.006*W, 0.010*H, 0, 0, 6.3); x.fill();
+
+  // a little colour in the cheeks and under the jaw
+  x.fillStyle='rgba(170,90,70,.10)';
+  [-1,1].forEach(sx=>{
+    x.beginPath();
+    x.ellipse(CX+sx*0.085*W, yAt(-0.030), 0.040*W, 0.030*H, 0, 0, 6.3);
+    x.fill();
+  });
+
+  if(style.draw){
+    // a reaction face paints over the natural one: skin back in, then ink
+    x.fillStyle=hex(skin);
+    x.fillRect(CX-0.24*W, yAt(0.095), 0.48*W, (yAt(-0.098)-yAt(0.095)));
+    // keep a hint of the nose so the head still reads as three dimensional
+    x.fillStyle=shade(0.93);
+    x.beginPath(); x.ellipse(CX+0.010*W, yAt(-0.006), 0.011*W, 0.036*H, 0, 0, 6.3); x.fill();
+    const ink=(cx,w)=>{ cx.strokeStyle='#14100c'; cx.lineWidth=w; cx.lineCap='round';
+                        cx.lineJoin='round'; };
+    style.draw(x, CX, yAt, W, H, ink);
+  }
+  const t=new THREE.CanvasTexture(cv);
+  t.needsUpdate=true;
+  _faceTexCache.set(key,t);
+  return t;
+}
+function headSurface(R, nx, ny, nz){
+  const l=Math.hypot(nx,ny,nz)||1;
+  nx/=l; ny/=l; nz/=l;
+  const up=ny, fwd=-nz, side=Math.abs(nx);
+  let k=1;
+  k*= 1 - 0.10*Math.max(0,up)*Math.max(0,up);
+  k*= 1 + 0.06*Math.max(0,-up)*fwd;
+  k*= 1 - 0.30*Math.max(0,-up-0.05)*side;
+  k*= 1 + 0.055*Math.exp(-Math.pow((up-0.34)/0.14,2))*Math.max(0,fwd);
+  k*= 1 - 0.075*Math.exp(-Math.pow((up-0.16)/0.13,2))*
+          Math.exp(-Math.pow((side-0.42)/0.22,2))*Math.max(0,fwd);
+  k*= 1 + 0.045*Math.exp(-Math.pow((up+0.08)/0.16,2))*
+          Math.exp(-Math.pow((side-0.60)/0.26,2));
+  k*= 1 + 0.115*Math.exp(-Math.pow(side/0.17,2))*
+          Math.exp(-Math.pow((up-0.05)/0.26,2))*Math.max(0,fwd);
+  k*= 1 - 0.030*Math.exp(-Math.pow((up+0.30)/0.10,2))*
+          Math.exp(-Math.pow(side/0.34,2))*Math.max(0,fwd);
+  k*= 1 + 0.038*Math.exp(-Math.pow((up+0.26)/0.055,2))*
+          Math.exp(-Math.pow(side/0.30,2))*Math.max(0,fwd);
+  k*= 1 - 0.05*Math.exp(-Math.pow((up-0.30)/0.2,2))*Math.exp(-Math.pow((side-0.85)/0.2,2));
+  k*= 1 - 0.07*Math.max(0,-fwd)*Math.max(0,-fwd);
+  return { x:nx*R*k, y:ny*R*k, z:nz*R*k*1.06 };
+}
+function sculptHead(R, segW, segH, mat){
+  const geo=new THREE.SphereGeometry(R, segW||26, segH||20);
+  const p=geo.attributes.position;
+  const v=new THREE.Vector3();
+  for(let i=0;i<p.count;i++){
+    v.fromBufferAttribute(p,i);
+    const n=v.clone().normalize();
+    const up=n.y, fwd=-n.z, side=Math.abs(n.x);
+    let k=1;
+
+    k*= 1 - 0.10*Math.max(0,up)*Math.max(0,up);            // crown settles
+    k*= 1 + 0.06*Math.max(0,-up)*fwd;                      // chin comes forward
+    // jaw narrows below the cheekbones
+    const below=Math.max(0,-up-0.05);
+    k*= 1 - 0.30*below*side;
+    // brow ridge
+    const brow=Math.exp(-Math.pow((up-0.34)/0.14,2))*Math.max(0,fwd);
+    k*= 1 + 0.055*brow;
+    // eye sockets, just under it
+    const sock=Math.exp(-Math.pow((up-0.16)/0.13,2))*
+               Math.exp(-Math.pow((side-0.42)/0.22,2))*Math.max(0,fwd);
+    k*= 1 - 0.075*sock;
+    // cheekbones
+    const cheek=Math.exp(-Math.pow((up+0.08)/0.16,2))*
+                Math.exp(-Math.pow((side-0.60)/0.26,2));
+    k*= 1 + 0.045*cheek;
+    // the nose: a bridge running down, swelling at the tip
+    const nose=Math.exp(-Math.pow(side/0.17,2))*
+               Math.exp(-Math.pow((up-0.05)/0.26,2))*Math.max(0,fwd);
+    k*= 1 + 0.115*nose;
+    // mouth hollow and the lips below the nose
+    const mouth=Math.exp(-Math.pow((up+0.30)/0.10,2))*
+                Math.exp(-Math.pow(side/0.34,2))*Math.max(0,fwd);
+    k*= 1 - 0.030*mouth;
+    const lips=Math.exp(-Math.pow((up+0.26)/0.055,2))*
+               Math.exp(-Math.pow(side/0.30,2))*Math.max(0,fwd);
+    k*= 1 + 0.038*lips;
+    // temples pull in, back of the skull is flatter than a ball
+    k*= 1 - 0.05*Math.exp(-Math.pow((up-0.30)/0.2,2))*Math.exp(-Math.pow((side-0.85)/0.2,2));
+    k*= 1 - 0.07*Math.max(0,-fwd)*Math.max(0,-fwd);
+
+    v.multiplyScalar(k);
+    v.z*=1.06;                                             // longer than it is wide
+    p.setXYZ(i, v.x, v.y, v.z);
+  }
+  geo.computeVertexNormals();
+  const m=new THREE.Mesh(geo, mat);
+  m.castShadow=true;
+  return m;
+}
+
 
 let _fabricTex=null;
 function fabricTexture(){
@@ -8583,31 +9149,43 @@ function makeFighter(opt){
   const add=(m)=>{ m.castShadow=true; g.add(m); return m; };
 
   /* ---- torso: a lathed profile, flattened front to back like a ribcage ---- */
-  // waist, chest and shoulder taper all shift between the two builds
-  const prof = fem
-    ? [[.222,0],[.254,.09],[.228,.24],[.186,.38],[.206,.50],[.240,.62],
-       [.248,.70],[.228,.77],[.132,.82]]
-    : [[.215,0],[.252,.09],[.232,.24],[.198,.38],[.212,.50],[.262,.62],
-       [.282,.70],[.256,.77],[.140,.82]];
-  const torsoGeo=new THREE.LatheGeometry(prof.map(p=>new THREE.Vector2(p[0],p[1])),seg+4);
-  const torso=add(new THREE.Mesh(torsoGeo,mats.pri));
-  torso.position.y=.98; torso.scale.z=.70;
+  const torso=add(sculptTorso(fem, seg, mats.pri));
+  torso.position.y=.98;
 
-  const hips=add(new THREE.Mesh(new THREE.SphereGeometry(fem?.238:.225,seg,8),mats.sec));
-  hips.position.y=1.00; hips.scale.set(1,.62,fem?.86:.80);
+  // the pelvis is part of the torso mesh now; this stays only as an anchor
+  const hips=new THREE.Group();
+  hips.position.y=1.00; g.add(hips);
 
   // shoulders and collar
-  const SHX=fem?.188:.208, SHR=fem?.106:.120;
-  const shL=add(new THREE.Mesh(new THREE.SphereGeometry(SHR,seg,9),mats.pri));
-  shL.position.set(-SHX,1.655,0); shL.scale.set(1,.92,1);
-  const shR=add(new THREE.Mesh(new THREE.SphereGeometry(SHR,seg,9),mats.pri));
-  shR.position.set(SHX,1.655,0); shR.scale.set(1,.92,1);
+  const SHX=fem?.206:.232, SHR=fem?.104:.118;
+  // a deltoid is a wedge that merges into the chest, not a ball on a stick
+  // the deltoid is part of the arm: it covers the joint and turns with it
+  const deltoid=(sx,parent)=>{
+    const d=tubeLimb([
+      [ .075, SHR*0.46],
+      [ .035, SHR*0.95],
+      [-.020, SHR*1.06],
+      [-.085, SHR*0.92],
+      [-.145, SHR*0.76]
+    ], seg, mats.pri, 0.88);
+    d.position.set(0,0,0);
+    d.rotation.z = sx*0.10;
+    parent.add(d);
+    return d;
+  };
   const collar=add(new THREE.Mesh(new THREE.CylinderGeometry(.128,.162,.075,seg),mats.sec));
   collar.position.y=1.700; collar.scale.z=.78;
 
-  const neck=add(new THREE.Mesh(new THREE.CylinderGeometry(
-    fem?.054:.064, fem?.070:.082, .115, seg),mats.tone));
-  neck.position.y=1.740;
+  // the neck leans forward slightly and widens into the trapezius, which is
+  // what stops a head looking dropped into a hole
+  const neck=add(tubeLimb([
+    [ .070, fem?.050:.058],
+    [ .020, fem?.056:.066],
+    [-.030, fem?.070:.082],
+    [-.070, fem?.092:.108]
+  ], seg, mats.tone, 0.92));
+  neck.position.y=1.742;
+  neck.rotation.x=-.07;
 
   /* ---- head ---- */
   /* ---- head and face ----
@@ -8617,24 +9195,33 @@ function makeFighter(opt){
      can drive it later. */
   const F={};                                   // face parts, for expressions
   const HY=1.862;                               // head centre height
-  const head=add(new THREE.Mesh(new THREE.SphereGeometry(.108,seg+6,seg+4),mats.tone));
+  const faceMat=new THREE.MeshStandardMaterial({
+    color:0xffffff, roughness:.58, metalness:0, envMapIntensity:.7,
+    map: faceTexture(skin.tone, skin.eyes, fem, false, opt.face||profile.equipped.face)
+  });
+  faceMat.onBeforeCompile=mats.tone.onBeforeCompile;   // same warm shadow as skin
+  const head=add(sculptHead(.108, seg+10, seg+8, faceMat));
+  head.userData.faceOpen  = faceMat.map;
+  head.userData.faceShut  = faceTexture(skin.tone, skin.eyes, fem, true,
+                                        opt.face||profile.equipped.face);
+  head.userData.faceMat   = faceMat;
   head.position.y=HY;
   head.scale.set(.96*(fem?.965:1.0), 1.22, 1.04);
 
   if(detail){
     const skinMat=mats.tone;
-    const put=(m,x,y,z)=>{ m.position.set(x,y,z); return add(m); };
+    /* The sculpted head is fuller than the sphere these offsets were written
+       for, so anything on the front of the face is pushed out to meet it.
+       Ears and hair sit at the sides and back and are left alone. */
+    const FZ=-0.031;
+    const fz=(z)=> z<-0.05 ? z+FZ : z;
+    const put=(m,x,y,z)=>{ m.position.set(x,y,fz(z)); return add(m); };
 
     // cranium shaping: a flatter back and a fuller forehead
-    const occ=put(new THREE.Mesh(new THREE.SphereGeometry(.098,seg,10),skinMat),0,HY-.012,.030);
-    occ.scale.set(.96,1.02,.86);
+
 
     // cheekbones, higher and sharper on the lighter build
-    [-1,1].forEach(sx=>{
-      const ch=put(new THREE.Mesh(new THREE.SphereGeometry(fem?.040:.044,10,8),skinMat),
-        sx*.062, HY-.018, -.058);
-      ch.scale.set(.9,fem?.62:.70,.78);
-    });
+
 
     // jaw, hinged so it can open
     const jaw=new THREE.Group();
@@ -8645,134 +9232,15 @@ function makeFighter(opt){
     jawM.scale.set(fem?.93:1.0, fem?.66:.72, 1.02);
     jawM.castShadow=true; jaw.add(jawM);
     const chin=new THREE.Mesh(new THREE.SphereGeometry(fem?.032:.038,10,8),skinMat);
-    chin.position.set(0,-.070,-.058);
+    chin.position.set(0,-.070,-.058+FZ);
     chin.scale.set(fem?.86:1.0,.72,.80);
     chin.castShadow=true; jaw.add(chin);
     F.jaw=jaw;
 
     // brow ridge: pronounced on the heavier build, barely there on the other
-    const brow=put(new THREE.Mesh(new THREE.BoxGeometry(.150,fem?.016:.026,.044),skinMat),
-      0,HY+.026,-.090);
-    brow.rotation.x=-.12;
 
-    // eyebrows, which are what an expression actually reads from
-    const browMat=new THREE.MeshStandardMaterial({
-      color:new THREE.Color(skin.hair||0x2a1d14).multiplyScalar(.8), roughness:.95});
-    const makeBrow=(sx)=>{
-      const grp=new THREE.Group();
-      grp.position.set(sx*.043, HY+.040, -.104);
-      g.add(grp);
-      // thicker at the inner end, thinning and lifting toward the temple
-      [[-.018,.0105,.018],[0,.0092,.020],[.018,.0062,.016]].forEach(([ox,h,w],i)=>{
-        const seg=new THREE.Mesh(new THREE.BoxGeometry(w,h,.011),browMat);
-        seg.position.set(sx*ox, i*.0018, -i*.0012);
-        seg.rotation.z=sx*(.10+i*.05);
-        seg.castShadow=true;
-        grp.add(seg);
-      });
-      return grp;
-    };
-    F.browL=makeBrow(-1);
-    F.browR=makeBrow(1);
-    F.browL.userData.y0=F.browL.position.y;
-    F.browR.userData.y0=F.browR.position.y;
 
-    // eyes: a white, a coloured iris and a pupil, set into a socket
-    const eyeW=new THREE.MeshStandardMaterial({color:0xf2f0ec,roughness:.26});
-    const iris=new THREE.MeshStandardMaterial({color:skin.eyes||0x4b6a4f,roughness:.2,
-      metalness:.05});
-    const pupil=new THREE.MeshStandardMaterial({color:0x07090c,roughness:.15});
-    [[-.042,'L'],[.042,'R']].forEach(([ex,side])=>{
-      const socket=put(new THREE.Mesh(new THREE.SphereGeometry(.030,10,8),mats.dark),
-        ex,HY+.012,-.086);
-      socket.scale.set(1,.72,.5);
-      socket.material=new THREE.MeshStandardMaterial({color:0x2a1f1c,roughness:.9});
-      const ball=put(new THREE.Mesh(new THREE.SphereGeometry(.0205,12,10),eyeW),
-        ex,HY+.012,-.090);
-      const ir=put(new THREE.Mesh(new THREE.SphereGeometry(.0092,10,8),iris),
-        ex,HY+.012,-.1055);
-      ir.scale.set(1,1,.5);
-      const pu=put(new THREE.Mesh(new THREE.SphereGeometry(.0042,8,6),pupil),
-        ex,HY+.012,-.1085);
-      pu.scale.set(1,1,.5);
-      // the single most important detail on a face: a highlight in the eye
-      const glint=put(new THREE.Mesh(new THREE.SphereGeometry(.0030,6,5),
-        new THREE.MeshBasicMaterial({color:0xffffff})),
-        ex-.004,HY+.0175,-.1095);
-      glint.scale.set(1,1,.4);
-      F['glint'+side]=glint;
-      // a lash line along the upper lid, which is what gives an eye its shape
-      const lash=put(new THREE.Mesh(new THREE.BoxGeometry(.044,.0055,.010),mats.dark),
-        ex,HY+.0245,-.0995);
-      lash.rotation.z=(side==='L'?1:-1)*.07;
-      // the lid is a cap that rotates down over the eye to blink
-      const lid=new THREE.Group();
-      lid.position.set(ex,HY+.012,-.090);
-      g.add(lid);
-      const lidM=new THREE.Mesh(new THREE.SphereGeometry(.0225,12,8,0,6.283,0,1.25),skinMat);
-      lidM.rotation.x=-1.25;
-      lidM.castShadow=true;
-      lid.add(lidM);
-      F['lid'+side]=lid;
-      F['eye'+side]=ball;
-      F['iris'+side]=ir;
-      F['pupil'+side]=pu;
-    });
-
-    // the hollows: under the brow, under the cheekbone, under the jaw. These
-    // are faint dark planes rather than geometry, and they do most of the work
-    // of making a head read as three dimensional at a distance.
-    const shade=new THREE.MeshStandardMaterial({
-      color:new THREE.Color(skin.tone).multiplyScalar(.72), roughness:.95});
-    [-1,1].forEach(sx=>{
-      const socketShade=put(new THREE.Mesh(new THREE.SphereGeometry(.034,10,8),shade),
-        sx*.044, HY+.030, -.082);
-      socketShade.scale.set(1,.42,.34);
-      const cheekShade=put(new THREE.Mesh(new THREE.SphereGeometry(.030,9,7),shade),
-        sx*.055, HY-.034, -.072);
-      cheekShade.scale.set(.9,.46,.4);
-    });
-    const underJaw=put(new THREE.Mesh(new THREE.SphereGeometry(.082,12,8),
-      new THREE.MeshStandardMaterial({
-        color:new THREE.Color(skin.tone).multiplyScalar(.6), roughness:.98})),
-      0, HY-.082, .010);
-    underJaw.scale.set(.92,.30,.86);
-
-    // nose: bridge, tip and nostrils
-    const bridge=put(new THREE.Mesh(new THREE.BoxGeometry(fem?.020:.024,.052,.026),skinMat),
-      0,HY+.012,-.100);
-    bridge.rotation.x=.16;
-    const tip=put(new THREE.Mesh(new THREE.SphereGeometry(fem?.019:.022,10,8),skinMat),
-      0,HY-.020,-.110);
-    tip.scale.set(1,.86,1.1);
-    [-1,1].forEach(sx=>{
-      const nos=put(new THREE.Mesh(new THREE.SphereGeometry(.009,8,6),mats.dark),
-        sx*.014,HY-.028,-.104);
-      nos.scale.set(.8,.7,.8);
-    });
-
-    // lips, as two cushions around a dark line, so the mouth has form
-    const lipMat=new THREE.MeshStandardMaterial({
-      color:new THREE.Color(skin.tone).lerp(new THREE.Color(0xa3524b),fem?.52:.34),
-      roughness:.5});
-    F.lipU=put(new THREE.Mesh(new THREE.SphereGeometry(fem?.027:.029,12,7),lipMat),
-      0,HY-.046,-.096);
-    F.lipU.scale.set(1.5,fem?.36:.30,.56);
-    F.lipU.userData.y0=F.lipU.position.y;
-    const mouthLine=put(new THREE.Mesh(new THREE.BoxGeometry(.046,.0042,.012),
-      new THREE.MeshStandardMaterial({
-        color:new THREE.Color(skin.tone).multiplyScalar(.45), roughness:.9})),
-      0,HY-.052,-.100);
-    F.mouthLine=mouthLine;
-    // the groove between nose and lip
-    const philtrum=put(new THREE.Mesh(new THREE.BoxGeometry(.009,.016,.008),shade),
-      0,HY-.036,-.104);
-    const lipL=new THREE.Mesh(new THREE.SphereGeometry(fem?.026:.028,12,7),lipMat);
-    lipL.position.set(0,-.078,-.100);
-    lipL.scale.set(1.45,fem?.40:.34,.56);
-    lipL.castShadow=true;
-    jaw.add(lipL);
-    F.lipL=lipL;
+    F.painted=true;
 
     // ears with a lobe
     [-1,1].forEach(sx=>{
@@ -8825,22 +9293,36 @@ function makeFighter(opt){
   }
 
   /* ---- clothing over the torso ---- */
+  /* Clothing follows the body it sits on. These are the same sculpt as the
+     torso, scaled up a few millimetres, so a vest hugs the chest instead of
+     hanging off it as a tube. */
+  const garment=(yTop,yBot,swell)=>{
+    const m=sculptTorso(fem, seg, mats.sec);
+    m.position.y=.98;
+    m.scale.setScalar(1+swell);
+    // trim it to the band of the body it covers
+    const pp=m.geometry.attributes.position;
+    for(let i=0;i<pp.count;i++){
+      const y=pp.getY(i)+.98;
+      if(y>yTop||y<yBot) pp.setXYZ(i, pp.getX(i)*0.0001, pp.getY(i), pp.getZ(i)*0.0001);
+    }
+    pp.needsUpdate=true;
+    m.geometry.computeVertexNormals();
+    return add(m);
+  };
   if(skin.torso==='vest'){
-    const v=add(new THREE.Mesh(new THREE.CylinderGeometry(.244,.222,.44,seg),mats.sec));
-    v.position.y=1.45; v.scale.z=.74;
+    garment(1.63, 1.26, .028);
   } else if(skin.torso==='jacket'){
-    const v=add(new THREE.Mesh(new THREE.CylinderGeometry(.266,.234,.60,seg),mats.sec));
-    v.position.y=1.39; v.scale.z=.76;
-    const zip=add(new THREE.Mesh(new THREE.BoxGeometry(.035,.60,.03),mats.acc));
-    zip.position.set(0,1.39,-.196);
+    garment(1.66, 1.12, .036);
+    const zip=add(new THREE.Mesh(new THREE.BoxGeometry(.030,.52,.028),mats.acc));
+    zip.position.set(0,1.39,-.172);
   } else if(skin.torso==='armor'){
-    const pl=add(new THREE.Mesh(new THREE.CylinderGeometry(.274,.246,.44,seg),mats.sec));
-    pl.position.y=1.50; pl.scale.z=.78;
-    const trim=add(new THREE.Mesh(new THREE.TorusGeometry(.264,.020,7,seg+6),mats.acc));
-    trim.position.y=1.70; trim.rotation.x=Math.PI/2; trim.scale.z=.78;
-    [-.235,.235].forEach(x=>{
-      const pad=add(new THREE.Mesh(new THREE.SphereGeometry(.108,seg,8),mats.acc));
-      pad.position.set(x,1.68,0); pad.scale.set(1,.8,1);
+    garment(1.66, 1.30, .042);
+    const trim=add(new THREE.Mesh(new THREE.TorusGeometry(.232,.018,7,seg+6),mats.acc));
+    trim.position.y=1.63; trim.rotation.x=Math.PI/2; trim.scale.z=.86;
+    [-SHX-.01,SHX+.01].forEach(x=>{
+      const pad=add(new THREE.Mesh(new THREE.SphereGeometry(.100,seg,8),mats.acc));
+      pad.position.set(x,1.635,0); pad.scale.set(1,.78,1);
     });
   }
 
@@ -8864,21 +9346,23 @@ function makeFighter(opt){
     const vis=add(new THREE.Mesh(new THREE.BoxGeometry(.165,.048,.062),mats.dark));
     vis.position.set(0,1.858,-.112);
   } else if(skin.head==='visor'){
-    const vis=add(new THREE.Mesh(new THREE.BoxGeometry(.212,.054,.08),
+    const vis=add(new THREE.Mesh(new THREE.BoxGeometry(.206,.040,.07),
       new THREE.MeshStandardMaterial({color:skin.acc,roughness:.15,metalness:.5,
         emissive:new THREE.Color(skin.acc).multiplyScalar(.28)})));
-    vis.position.set(0,1.922,-.080);
+    vis.position.set(0,1.946,-.060);
+    vis.rotation.x=-.18;
     const band=add(new THREE.Mesh(new THREE.TorusGeometry(.110,.018,7,seg+4),mats.sec));
     band.position.y=1.882; band.rotation.y=Math.PI/2;
   }
 
   /* ---- limbs ---- */
-  const LR=fem?.088:.094, LR2=fem?.066:.070, AR=fem?.064:.074;
-  const LX=fem?.106:.098;
-  const legL=makeLimb2(.50,.47,LR,LR2,.056,mats.sec,seg); legL.position.set(-LX,1.01,0);
-  const legR=makeLimb2(.50,.47,LR,LR2,.056,mats.sec,seg); legR.position.set(LX,1.01,0);
-  const armL=makeLimb2(.355,.325,AR,.050,.042,mats.pri,seg); armL.position.set(-SHX-.006,1.638,0);
-  const armR=makeLimb2(.355,.325,AR,.050,.042,mats.pri,seg); armR.position.set(SHX+.006,1.638,0);
+  const LR=fem?.108:.116, LR2=fem?.074:.079, AR=fem?.066:.076;
+  const LX=fem?.102:.096;
+  const legL=makeLimb2(.50,.47,LR,LR2,.063,mats.sec,seg,false); legL.position.set(-LX,1.01,0);
+  const legR=makeLimb2(.50,.47,LR,LR2,.063,mats.sec,seg,false); legR.position.set(LX,1.01,0);
+  const armL=makeLimb2(.345,.325,AR,.055,.046,mats.pri,seg,true); armL.position.set(-SHX-.004,1.628,0);
+  const armR=makeLimb2(.345,.325,AR,.055,.046,mats.pri,seg,true); armR.position.set(SHX+.004,1.628,0);
+  const shL=deltoid(-1,armL), shR=deltoid(1,armR);
 
   const bootGeo=new THREE.BoxGeometry(.115,.085,.215);
   [legL,legR].forEach(l=>{
@@ -8891,8 +9375,13 @@ function makeFighter(opt){
     sole.position.set(0,-.545,.045); sole.castShadow=true; l.knee.add(sole);
   });
   [armL,armR].forEach(a=>{
-    const hand=new THREE.Mesh(new THREE.SphereGeometry(.050,9,7),mats.tone);
-    hand.position.set(0,-.352,0); hand.scale.set(.80,1.15,1.10); hand.castShadow=true; a.knee.add(hand);
+    const hand=tubeLimb([
+      [ 0,     .040],
+      [-.024,  .050],
+      [-.058,  .047],
+      [-.082,  .034]
+    ], 10, mats.tone, 0.52);
+    hand.position.set(0,-.330,0); hand.castShadow=true; a.knee.add(hand);
     const thumb=new THREE.Mesh(new THREE.SphereGeometry(.022,7,5),mats.tone);
     thumb.position.set(0,-.336,-.046); thumb.castShadow=true; a.knee.add(thumb);
   });
@@ -8931,14 +9420,18 @@ function makeFighter(opt){
     }
   }
 
-  const held=new THREE.Group(); held.position.set(.245,1.285,-.20); g.add(held);
+  // parented to the forearm, so whatever you are carrying moves with the arm
+  const held=new THREE.Group();
+  held.position.set(0,-.318,-.035);
+  held.rotation.set(-1.15,0,0);          // tools point forward out of the fist
+  armR.knee.add(held);
   const meshes=[];
   g.traverse(o=>{ if(o.isMesh) meshes.push(o); });
   torso.userData.y0=torso.position.y;
-  shL.userData.y0=shL.position.y;
-  shR.userData.y0=shR.position.y;
+
   g.scale.setScalar(fem?0.975:1.0);
   torso.userData.y0=torso.position.y;
+  F.head=head;
   return {group:g, parts:{legL,legR,armL,armR,held,head,torso,chest:torso,hips,shL,shR,mats,
                           face:F, fem},
           meshes, skin};
@@ -9532,7 +10025,31 @@ function setExpression(P,name,hold){
 function updateFace(P,dt){
   const f=P&&P.face;
   const st=faceState(P);
-  if(!st||!f.lidL) return;
+  if(!st) return;
+  if(f.painted){
+    const h=P.head||f.head;
+    if(!h||!h.userData.faceMat) return;
+    if(st.hold>0){ st.hold-=dt; if(st.hold<=0) st.cur='neutral'; }
+    if(h.userData.faceShut===h.userData.faceOpen){ st.closing=0; }
+    else {
+      st.blink-=dt;
+      if(st.blink<=0 && st.closing<=0){ st.closing=0.13; st.blink=2.4+Math.random()*4.2; }
+    }
+    let shut=false;
+    if(st.closing>0){ st.closing-=dt; shut=true; }
+    if(st.cur==='dead') shut=true;
+    const want = shut ? h.userData.faceShut : h.userData.faceOpen;
+    if(h.userData.faceMat.map!==want){
+      h.userData.faceMat.map=want;
+      h.userData.faceMat.needsUpdate=true;
+    }
+    // the jaw still opens, which carries hurt and shouting
+    const target=EXPR_SET[st.cur]||EXPR_SET.neutral;
+    for(const k in st.mix) st.mix[k]+=(target[k]-st.mix[k])*Math.min(1,dt*7);
+    if(f.jaw) f.jaw.rotation.x=st.mix.jaw;
+    return;
+  }
+  if(!f.lidL) return;
 
   // hold an expression for a moment, then settle back
   if(st.hold>0){ st.hold-=dt; if(st.hold<=0) st.cur='neutral'; }
@@ -9617,7 +10134,7 @@ function avatarHeld(){
   let mesh=null;
   if(it&&it.type==='weapon') mesh=gunModel(it.kind);
   else if(it&&it.type==='heal') mesh=healModel(it.kind);
-  else if(player.slot===0) mesh=makePickaxe();
+  else if(player.slot===0) mesh=makePickaxe(null,true);
   if(mesh){ mesh.traverse(o=>{ if(o.isMesh) o.castShadow=true; }); avParts.held.add(mesh); }
 }
 
@@ -10146,8 +10663,7 @@ function poseWalk(P,sw,cw,aiming){
     P.torso.rotation.x=gait*.06;
   }
   // shoulders roll with the swing
-  if(P.shL) P.shL.position.y=(P.shL.userData.y0||P.shL.position.y)-Math.max(0,sw)*.02*gait;
-  if(P.shR) P.shR.position.y=(P.shR.userData.y0||P.shR.position.y)-Math.max(0,-sw)*.02*gait;
+  // shoulders now ride on the arms, so the swing carries them
 
   // the head stays level while the body moves under it
   if(P.head){
