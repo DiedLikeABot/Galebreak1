@@ -7469,17 +7469,14 @@ function rarityCol(r){ return RARITY[r].col; }
 
 function swatchFor(cat,it){
   if(cat==='face'){
-    if(!it.draw) return '<div class="sw" style="background:#2b3442;display:flex;'+
-      'align-items:center;justify-content:center;color:#7f9ab8;font-size:11px;'+
-      'letter-spacing:2px">NO FACE</div>';
+    const box=(inner)=>'<div class="swatch" style="background:linear-gradient(150deg,#2b3442,#121a26);'+
+      'display:flex;align-items:center;justify-content:center">'+inner+'</div>';
+    if(!it.draw) return box('<span style="color:#8ea4bd;font-size:11px;letter-spacing:2px">'+
+      'YOUR OWN FACE</span>');
     it.__prev=it.__prev||facePreview(it);
-    if(!it.__prev)
-      return '<div class="sw" style="background:#2b3442;display:flex;align-items:center;'+
-        'justify-content:center;color:#cfe0f0;font-size:12px;letter-spacing:2px">'+
-        it.name.toUpperCase()+'</div>';
-    return '<div class="sw" style="background:#1b2330;display:flex;align-items:center;'+
-      'justify-content:center"><img src="'+it.__prev+'" style="height:86%;'+
-      'image-rendering:auto" alt=""></div>';
+    if(!it.__prev) return box('<span style="color:#cfe0f0;font-size:12px;letter-spacing:2px">'+
+      it.name.toUpperCase()+'</span>');
+    return box('<img src="'+it.__prev+'" style="height:92%;max-width:92%" alt="">');
   }
   if(cat==='skin')
     return '<div class="swatch" style="background:linear-gradient(140deg,#'+
@@ -9369,13 +9366,33 @@ function makeFighter(opt){
     const r=add(new THREE.Mesh(new THREE.TorusGeometry(.112,.024,7,seg+4),mats.sec));
     r.position.y=1.858; r.rotation.x=Math.PI/2; r.scale.set(1.04,1.04,1);
   } else if(skin.head==='hood'){
-    const h=add(new THREE.Mesh(new THREE.SphereGeometry(.146,seg+2,10,0,6.283,0,1.8),mats.pri));
-    h.position.set(0,1.856,.024); h.scale.set(1,1.06,1.14);
+    // the cowl wraps the sides and back; the opening leaves the face visible
+    const h=add(new THREE.Mesh(
+      new THREE.SphereGeometry(.146,seg+2,12,0,6.283,0,1.28),mats.pri));
+    h.position.set(0,1.864,.020); h.scale.set(1,1.08,1.14);
+    const cowl=add(new THREE.Mesh(
+      new THREE.SphereGeometry(.150,seg+2,12,1.75,2.78,0.5,1.5),mats.pri));
+    cowl.position.set(0,1.836,.030); cowl.scale.set(1,1.06,1.12);
+    const rim=add(new THREE.Mesh(new THREE.TorusGeometry(.118,.020,7,seg+6),mats.sec));
+    rim.position.set(0,1.886,-.052); rim.rotation.x=1.30;
   } else if(skin.head==='helmet'){
-    const h=add(new THREE.Mesh(new THREE.SphereGeometry(.132,seg+2,10),mats.acc));
-    h.position.y=1.872; h.scale.set(1,1.02,1.06);
-    const vis=add(new THREE.Mesh(new THREE.BoxGeometry(.165,.048,.062),mats.dark));
-    vis.position.set(0,1.858,-.112);
+    /* open faced, so you can see who is wearing it. A dome over the crown and
+       back of the skull, cheek guards down the sides, and nothing across the
+       face itself. */
+    const h=add(new THREE.Mesh(
+      new THREE.SphereGeometry(.130,seg+2,12,0,6.283,0,1.15),mats.acc));
+    h.position.y=1.876; h.scale.set(1,1.06,1.06);
+    const back=add(new THREE.Mesh(
+      new THREE.SphereGeometry(.128,seg+2,10,2.05,2.18,0.6,1.25),mats.acc));
+    back.position.y=1.858; back.scale.set(1,1.04,1.06);
+    [-1,1].forEach(sx=>{
+      const cheek=add(new THREE.Mesh(new THREE.BoxGeometry(.030,.105,.115),mats.acc));
+      cheek.position.set(sx*.118, 1.800, -.012);
+      cheek.rotation.y=sx*.12;
+    });
+    const brim=add(new THREE.Mesh(new THREE.BoxGeometry(.196,.030,.072),mats.dark));
+    brim.position.set(0,1.936,-.078);
+    brim.rotation.x=-.20;
   } else if(skin.head==='visor'){
     const vis=add(new THREE.Mesh(new THREE.BoxGeometry(.206,.040,.07),
       new THREE.MeshStandardMaterial({color:skin.acc,roughness:.15,metalness:.5,

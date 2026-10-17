@@ -67,6 +67,70 @@ function authReply(ws, acct){
   send(ws, { type:'auth', ok:true, user:acct.user, token:acct.token,
              code:acct.code, profile:acct.profile || null });
 }
+/* The client sends its whole profile when it saves. Taken at face value that
+   is an invitation to set your own spark balance, so it is treated as a
+   request: the shape is rebuilt field by field, lists are capped, and the
+   balance may fall freely (spending) but only rise by a plausible amount
+   between saves. Anything bigger is clamped and logged. */
+const MAX_COINS = 10000000;
+const MAX_GAIN_PER_SAVE = 5000;        // a very good match pays a few hundred
+function strArray(v, cap){
+  if (!Array.isArray(v)) return [];
+  const out = [];
+  for (const x of v) {
+    if (typeof x !== 'string') continue;
+    const t = x.slice(0, 40);
+    if (t && out.indexOf(t) < 0) out.push(t);
+    if (out.length >= cap) break;
+  }
+  return out;
+}
+function sanitizeProfile(inc, prev){
+  prev = prev || {};
+  const num = (v, lo, hi, dflt) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? Math.max(lo, Math.min(hi, Math.floor(n))) : dflt;
+  };
+  const out = {};
+  const prevCoins = num(prev.coins, 0, MAX_COINS, 0);
+  let coins = num(inc.coins, 0, MAX_COINS, prevCoins);
+  if (coins > prevCoins + MAX_GAIN_PER_SAVE) {
+    console.log('clamped a spark jump for', prev.user || 'account',
+                prevCoins, '->', coins);
+    coins = prevCoins + MAX_GAIN_PER_SAVE;
+  }
+  out.coins   = coins;
+  out.xp      = Math.max(num(prev.xp,0,1e9,0), num(inc.xp, 0, 1e9, 0));
+  out.matches = Math.max(num(prev.matches,0,1e7,0), num(inc.matches, 0, 1e7, 0));
+  out.wins    = Math.max(num(prev.wins,0,1e7,0),    num(inc.wins, 0, 1e7, 0));
+  out.kills   = Math.max(num(prev.kills,0,1e8,0),   num(inc.kills, 0, 1e8, 0));
+  out.aimBest = num(inc.aimBest, 0, 1e6, num(prev.aimBest,0,1e6,0));
+
+  out.owned = {};
+  const inOwned = (inc.owned && typeof inc.owned === 'object') ? inc.owned : {};
+  for (const cat of ['skin','face','pack','pick','glider','emote']) {
+    out.owned[cat] = strArray(inOwned[cat], 400);
+  }
+  out.equipped = {};
+  const inEq = (inc.equipped && typeof inc.equipped === 'object') ? inc.equipped : {};
+  for (const cat of ['skin','face','pack','pick','glider','emote']) {
+    const v = inEq[cat];
+    out.equipped[cat] = (typeof v === 'string') ? v.slice(0,40) : '';
+  }
+  out.friends = strArray(inc.friends, 200);
+  out.customItems = (inc.customItems && typeof inc.customItems === 'object')
+    ? JSON.parse(JSON.stringify(inc.customItems).slice(0, 200000)) : (prev.customItems || {});
+  if (Array.isArray(inc.maps)) {
+    out.maps = inc.maps.slice(0, 24).map(mp => ({
+      name: String(mp && mp.name || '').slice(0,24),
+      code: String(mp && mp.code || '').slice(0, 20000),
+      pieces: num(mp && mp.pieces, 0, 5000, 0),
+      updated: num(mp && mp.updated, 0, 4e12, Date.now())
+    }));
+  } else out.maps = prev.maps || [];
+  return out;
+}
+
 function validName(u){ return /^[A-Za-z0-9_.-]{3,16}$/.test(String(u || '')); }
 
 /* ===================== PAYMENTS =====================
@@ -189,10 +253,40 @@ function stripeSigValid(raw, header){
   const a = Buffer.from(expect), b = Buffer.from(parts.v1);
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
-const paidSessions = new Set();        // so a repeated webhook cannot double-credit
+/* Kept on disk beside the accounts, because an in-memory set forgets every
+   payment the moment the server restarts — and Stripe retries webhooks for
+   days, so a restart at the wrong moment credits somebody twice. */
+const PAID_FILE = process.env.PAID_PATH ||
+  path.join(path.dirname(ACCT_FILE), 'paid-sessions.json');
+let paidSessions = new Set();
+try {
+  if (fs.existsSync(PAID_FILE))
+    paidSessions = new Set(JSON.parse(fs.readFileSync(PAID_FILE,'utf8')));
+} catch(e){ console.log('could not read the payment log:', e.message); }
+let paidDirty = false;
+function rememberPaid(id){
+  paidSessions.add(id);
+  // keep the file from growing without bound
+  if (paidSessions.size > 20000)
+    paidSessions = new Set([...paidSessions].slice(-10000));
+  paidDirty = true;
+  flushPaid();
+}
+function flushPaid(){
+  if (!paidDirty) return;
+  try {
+    fs.writeFileSync(PAID_FILE, JSON.stringify([...paidSessions]));
+    paidDirty = false;
+  } catch(e){ console.log('could not write the payment log:', e.message); }
+}
 function creditSparks(user, sparks, sessionId){
-  if (paidSessions.has(sessionId)) return false;
-  paidSessions.add(sessionId);
+  if (paidSessions.has(sessionId)) {
+    console.log('ignoring a repeat webhook for session', sessionId);
+    return false;
+  }
+  // written before the sparks are granted, so a crash in between cannot
+  // leave a payment looking uncredited and get replayed
+  rememberPaid(sessionId);
   const a = accounts[String(user).toLowerCase()];
   if (!a) return false;
   a.profile = a.profile || {};
@@ -508,10 +602,24 @@ const server = http.createServer((req, res) => {
     return res.end(JSON.stringify({ ok:true, online: totalOnline(),
       accounts: Object.keys(accounts).length, rooms: list }));
   }
+  /* Serving whatever is asked for out of the application directory means
+     accounts.json, server.js and anything else sitting there is one URL away.
+     Only these extensions are public, and a few names are never served no
+     matter what. */
+  const PUBLIC_EXT = new Set(['.html','.js','.css','.png','.jpg','.jpeg','.gif','.svg',
+                              '.webp','.ico','.mp4','.webm','.woff','.woff2','.ttf','.txt']);
+  const NEVER = new Set(['accounts.json','server.js','package.json','package-lock.json',
+                         '.env','payments.json','.git']);
   const file = u.pathname === '/' ? indexFile() : u.pathname;
   const safe = path.normalize(file).replace(/^(\.\.[\/\\])+/, '');
   const full = path.join(ROOT, safe);
   if(!full.startsWith(ROOT)){ res.writeHead(403); return res.end('Forbidden'); }
+  const base = path.basename(full).toLowerCase();
+  const ext = path.extname(full).toLowerCase();
+  if(NEVER.has(base) || base.startsWith('.') || !PUBLIC_EXT.has(ext)){
+    res.writeHead(404, { 'Content-Type':'text/plain' });
+    return res.end('Not found');
+  }
   fs.readFile(full, (err, data) => {
     if(err){
       res.writeHead(404, { 'Content-Type':'text/html' });
@@ -693,7 +801,8 @@ wss.on('connection', (ws) => {
 
     if (m.type === 'saveProfile') {
       if (!p.acct || !m.profile) return;
-      p.acct.profile = m.profile; acctDirty = true;
+      p.acct.profile = sanitizeProfile(m.profile, p.acct.profile);
+      acctDirty = true;
       return;
     }
 
@@ -772,10 +881,37 @@ wss.on('connection', (ws) => {
       const t = r.get(String(m.target || ''));
       if(!t || !t.alive || t.id === p.id) return;
       const now = Date.now();
-      if(now - p.lastHit < 35) return;   // crude rate limit
+
+      /* The client reports its own hits, so the server checks whether each
+         one could have happened: both players alive and on the ground, within
+         the range of the longest weapon in the game, not on the same squad,
+         and not arriving faster than any weapon can fire. None of this makes
+         the client trustworthy — that needs server-side simulation — but it
+         turns "any damage to anyone" into "plausible damage to someone you
+         could actually see". */
+      if(p.phase !== 'ground' || t.phase !== 'ground') return;
+      if(p.party && t.party && p.party === t.party) return;   // same squad
+
+      const dx = (p.x||0)-(t.x||0), dy = (p.y||0)-(t.y||0), dz = (p.z||0)-(t.z||0);
+      const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+      const MAX_RANGE = 150;                 // the sniper, plus a margin
+      if(dist > MAX_RANGE){
+        p.badHits = (p.badHits||0)+1;
+        if(p.badHits === 20) console.log('implausible hit distances from', p.name);
+        return;
+      }
+
+      // a burst allowance, so a fast weapon is fine but a stream of hits is not
+      p.hitBucket = Math.min(6, (p.hitBucket===undefined?6:p.hitBucket) +
+                                (now - (p.lastHit||now))/120);
+      if(p.hitBucket < 1){ return; }
+      p.hitBucket -= 1;
       p.lastHit = now;
+
       const asName = m.asName ? String(m.asName).slice(0,16) : null;
-      let dmg = Math.max(0, Math.min(250, Number(m.dmg)||0));
+      // no weapon in the game does more than this, even to the head
+      let dmg = Math.max(0, Math.min(130, Number(m.dmg)||0));
+      if(dist > 60) dmg = Math.min(dmg, 110);      // falloff at distance
       const shield = Math.min(t.shield, dmg);
       t.shield -= shield; dmg -= shield;
       t.hp = Math.max(0, t.hp - dmg);
