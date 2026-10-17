@@ -2690,6 +2690,7 @@ function handleAuth(m){
     // the account is the source of truth once you sign in
     const sv=m.profile;
     profile=Object.assign(JSON.parse(JSON.stringify(DEFAULT_PROFILE)),sv);
+    migrateProfile();
     profile.owned=Object.assign(JSON.parse(JSON.stringify(DEFAULT_PROFILE.owned)),sv.owned||{});
     profile.equipped=Object.assign(JSON.parse(JSON.stringify(DEFAULT_PROFILE.equipped)),sv.equipped||{});
     profile.friendCode=m.code;
@@ -7472,6 +7473,10 @@ function swatchFor(cat,it){
       'align-items:center;justify-content:center;color:#7f9ab8;font-size:11px;'+
       'letter-spacing:2px">NO FACE</div>';
     it.__prev=it.__prev||facePreview(it);
+    if(!it.__prev)
+      return '<div class="sw" style="background:#2b3442;display:flex;align-items:center;'+
+        'justify-content:center;color:#cfe0f0;font-size:12px;letter-spacing:2px">'+
+        it.name.toUpperCase()+'</div>';
     return '<div class="sw" style="background:#1b2330;display:flex;align-items:center;'+
       'justify-content:center"><img src="'+it.__prev+'" style="height:86%;'+
       'image-rendering:auto" alt=""></div>';
@@ -7485,6 +7490,10 @@ function swatchFor(cat,it){
   return '<div class="swatch" style="background:linear-gradient(140deg,#'+c+'99,#0e141d)"></div>';
 }
 function facePreview(it){
+  try{ return facePreviewInner(it); }
+  catch(e){ console.error('face preview failed for',it.id,e); return null; }
+}
+function facePreviewInner(it){
   // draw the face small, so the shop shows what you are buying
   const cv=document.createElement('canvas');
   cv.width=cv.height=96;
@@ -8496,7 +8505,7 @@ const EMOTE_ITEMS=[
 const FACE_STYLES=[
   { id:'natural', name:'Natural', rarity:'common', price:0, draw:null },
 
-  { id:'smug', name:'The Smugness', rarity:'epic', draw:(x,C,yAt,W,H,ink)=>{
+  { id:'smug', name:'The Smugness', rarity:'epic', price:600, draw:(x,C,yAt,W,H,ink)=>{
       // half-lidded eyes and a grin that goes most of the way round the head
       ink(x,9);
       [-1,1].forEach(sx=>{
@@ -8545,7 +8554,7 @@ const FACE_STYLES=[
       }
     }},
 
-  { id:'shock', name:'Absolutely Not', rarity:'rare', draw:(x,C,yAt,W,H,ink)=>{
+  { id:'shock', name:'Absolutely Not', rarity:'rare', price:400, draw:(x,C,yAt,W,H,ink)=>{
       [-1,1].forEach(sx=>{
         const ex=C+sx*0.050*W, ey=yAt(0.012);
         x.fillStyle='#fbf8f2';
@@ -8568,7 +8577,7 @@ const FACE_STYLES=[
       ink(x,7); x.beginPath(); x.ellipse(C, my, 0.040*W, 0.048*H, 0, 0, 6.3); x.stroke();
     }},
 
-  { id:'squint', name:'Deeply Suspicious', rarity:'uncommon', draw:(x,C,yAt,W,H,ink)=>{
+  { id:'squint', name:'Deeply Suspicious', rarity:'uncommon', price:250, draw:(x,C,yAt,W,H,ink)=>{
       ink(x,12);
       [-1,1].forEach(sx=>{
         const ex=C+sx*0.050*W, ey=yAt(0.014);
@@ -8593,7 +8602,7 @@ const FACE_STYLES=[
       x.stroke();
     }},
 
-  { id:'beam', name:'Pure Joy', rarity:'rare', draw:(x,C,yAt,W,H,ink)=>{
+  { id:'beam', name:'Pure Joy', rarity:'rare', price:400, draw:(x,C,yAt,W,H,ink)=>{
       ink(x,11);
       [-1,1].forEach(sx=>{
         const ex=C+sx*0.050*W, ey=yAt(0.014);
@@ -8623,7 +8632,7 @@ const FACE_STYLES=[
       });
     }},
 
-  { id:'void', name:'Nobody Home', rarity:'epic', draw:(x,C,yAt,W,H,ink)=>{
+  { id:'void', name:'Nobody Home', rarity:'epic', price:600, draw:(x,C,yAt,W,H,ink)=>{
       [-1,1].forEach(sx=>{
         const ex=C+sx*0.050*W, ey=yAt(0.012);
         x.fillStyle='#07070a';
@@ -8637,7 +8646,7 @@ const FACE_STYLES=[
       x.stroke();
     }},
 
-  { id:'menace', name:'Quiet Menace', rarity:'legendary', draw:(x,C,yAt,W,H,ink)=>{
+  { id:'menace', name:'Quiet Menace', rarity:'legendary', price:900, draw:(x,C,yAt,W,H,ink)=>{
       [-1,1].forEach(sx=>{
         const ex=C+sx*0.050*W, ey=yAt(0.014);
         x.fillStyle='#fdfaf4';
@@ -8687,19 +8696,32 @@ function findItem(cat,id){ return (CATALOG[cat]||[]).find(x=>x.id===id) || CATAL
 const DEFAULT_PROFILE={
   coins:800, xp:0, matches:0, wins:0, kills:0,
   friendCode:null, friends:[], customItems:{}, aimBest:0, maps:{},
-  owned:{ skin:['recruit','dustline'], pack:['none','daypack'], pick:['standard'],
+  owned:{ skin:['recruit','dustline'], face:['natural'], pack:['none','daypack'], pick:['standard'],
           glider:['standard'], emote:['wave','bounce','clap'] },
   equipped:{ skin:'recruit', pack:'daypack', pick:'standard', glider:'standard', emote:'wave',
              face:'natural' }
 };
 let profile=JSON.parse(JSON.stringify(DEFAULT_PROFILE));
 
+/* Profiles saved before a category existed have no entry for it, which makes
+   every item in that category look unowned and unequippable. */
+function migrateProfile(){
+  if(!profile) return;
+  profile.owned=profile.owned||{};
+  profile.equipped=profile.equipped||{};
+  for(const cat in CATALOG){
+    if(!Array.isArray(profile.owned[cat])) profile.owned[cat]=[];
+    if(!profile.equipped[cat]) profile.equipped[cat]=CATALOG[cat][0].id;
+  }
+  if(profile.owned.face.indexOf('natural')<0) profile.owned.face.push('natural');
+}
 function saveProfile(){ storeSet('gbprofile', JSON.stringify(profile)); }
 function loadProfile(){
   return storeGet('gbprofile').then(v=>{
     if(!v) return;
     const sv=JSON.parse(v);
     profile=Object.assign(JSON.parse(JSON.stringify(DEFAULT_PROFILE)),sv);
+    migrateProfile();
     profile.owned=Object.assign(JSON.parse(JSON.stringify(DEFAULT_PROFILE.owned)),sv.owned||{});
     profile.equipped=Object.assign(JSON.parse(JSON.stringify(DEFAULT_PROFILE.equipped)),sv.equipped||{});
     profile.customItems=sv.customItems||{};
@@ -8991,7 +9013,7 @@ function faceTexture(tone, eyeCol, fem, closed, styleId){
     x.fill();
   });
 
-  if(style.draw){
+  if(style.draw) try{
     // a reaction face paints over the natural one: skin back in, then ink
     x.fillStyle=hex(skin);
     x.fillRect(CX-0.24*W, yAt(0.095), 0.48*W, (yAt(-0.098)-yAt(0.095)));
@@ -9001,7 +9023,7 @@ function faceTexture(tone, eyeCol, fem, closed, styleId){
     const ink=(cx,w)=>{ cx.strokeStyle='#14100c'; cx.lineWidth=w; cx.lineCap='round';
                         cx.lineJoin='round'; };
     style.draw(x, CX, yAt, W, H, ink);
-  }
+  }catch(e){ console.error('face style failed:',style.id,e); }
   const t=new THREE.CanvasTexture(cv);
   t.needsUpdate=true;
   _faceTexCache.set(key,t);
