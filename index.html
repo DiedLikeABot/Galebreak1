@@ -7467,6 +7467,15 @@ let lobbyTab='play', lockerCat='skin', buyMsg='';
 function rarityCol(r){ return RARITY[r].col; }
 
 function swatchFor(cat,it){
+  if(cat==='face'){
+    if(!it.draw) return '<div class="sw" style="background:#2b3442;display:flex;'+
+      'align-items:center;justify-content:center;color:#7f9ab8;font-size:11px;'+
+      'letter-spacing:2px">NO FACE</div>';
+    it.__prev=it.__prev||facePreview(it);
+    return '<div class="sw" style="background:#1b2330;display:flex;align-items:center;'+
+      'justify-content:center"><img src="'+it.__prev+'" style="height:86%;'+
+      'image-rendering:auto" alt=""></div>';
+  }
   if(cat==='skin')
     return '<div class="swatch" style="background:linear-gradient(140deg,#'+
       it.pri.toString(16).padStart(6,'0')+' 0 52%,#'+it.sec.toString(16).padStart(6,'0')+' 52% 100%)">'+
@@ -7681,7 +7690,7 @@ function renderLobbyPanel(){
       '<div class="keys">'+rows.map(([k,t])=>
         '<div><b>'+String(k).split(' ').map(prettyKey).join(' ')+'</b>'+t+'</div>').join('')+'</div>';
   } else if(lobbyTab==='locker'){
-    const cats=['skin','pack','pick','glider','emote'];
+    const cats=['skin','face','pack','pick','glider','emote'];
     el.innerHTML=subTabBar()+'<div class="ptitle">LOCKER</div>'+
       '<div class="turnhint">Drag the character to turn them · wheel to zoom'+
         ' · <button class="ghost small" id="turnReset" style="margin:0;padding:4px 10px;'+
